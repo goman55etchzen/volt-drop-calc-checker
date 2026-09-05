@@ -1,19 +1,27 @@
 <template>
     <div class="home-container">
+      <!-- 3モード切り替えタブ -->
       <div class="mode-tabs">
         <button
           class="tab-btn"
           :class="{ active: currentMode === 'normal' }"
           @click="currentMode = 'normal'"
         >
-          許容配線長 算出
+          許容配線長
         </button>
         <button
           class="tab-btn"
           :class="{ active: currentMode === 'reversed' }"
           @click="currentMode = 'reversed'"
         >
-          距離固定 逆算選定 (NEW)
+          距離固定 逆算
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: currentMode === 'motor' }"
+          @click="currentMode = 'motor'"
+        >
+          電動機 電流計算
         </button>
       </div>
   
@@ -77,7 +85,7 @@
       </div>
   
       <!-- モード2: 距離固定 逆算選定 -->
-      <div v-else class="reversed-mode-wrapper">
+      <div v-else-if="currentMode === 'reversed'" class="reversed-mode-wrapper">
         <div class="form-card">
           <!-- 電圧・目標降下率 -->
           <div class="row-inputs">
@@ -232,6 +240,9 @@
           :is-continuous="isContinuous"
         />
       </div>
+  
+      <!-- モード3: 電動機 電流計算 -->
+      <MotorCalc v-else-if="currentMode === 'motor'" />
     </div>
   </template>
   
@@ -255,8 +266,9 @@
   import WireSizeSelect from '../components/WireSizeSelect.vue'
   import ResultCard from '../components/ResultCard.vue'
   import ReversedResult from '../components/ReversedResult.vue'
+  import MotorCalc from '../components/MotorCalc.vue'
   
-  const currentMode = ref<'normal' | 'reversed'>('normal')
+  const currentMode = ref<'normal' | 'reversed' | 'motor'>('normal')
   
   const voltage = ref<number>(100)
   const targetPercent = ref<number>(2.0)
@@ -321,7 +333,6 @@
     }
   }
   
-  // モーター選択時に「規約電流」と「容量別標準力率」を自動補正
   const applyMotorAmp = () => {
     const spec = MOTOR_SPECS.find((m) => m.kw === motorKw.value)
     if (spec) {
@@ -343,20 +354,21 @@
   
   .mode-tabs {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 16px;
   }
   
   .tab-btn {
     flex: 1;
-    padding: 10px 8px;
+    padding: 10px 4px;
     border-radius: 10px;
     border: 1px solid #475569;
     background-color: #0f172a;
     color: #94a3b8;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
   }
   
   .tab-btn.active {
