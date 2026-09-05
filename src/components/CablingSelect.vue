@@ -17,22 +17,31 @@ const selectedSystem = defineModel<string>({ required: true });
 
 <style scoped>
 .field-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
+
 .label {
   display: block;
-  font-size: 13px;
-  font-weight: bold;
-  margin-bottom: 6px;
-  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #f8fafc; /* くっきり明るい白 */
 }
+
 .select-input {
   width: 100%;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #475569;
   font-size: 15px;
-  background-color: #ffffff;
-  color: #0f172a; /* ← これを追加して文字色を強制指定 */
+  background-color: #334155;
+  color: #f8fafc;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.select-input:focus {
+  border-color: #38bdf8;
 }
 </style>

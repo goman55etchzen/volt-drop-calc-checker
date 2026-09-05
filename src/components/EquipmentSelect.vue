@@ -48,36 +48,51 @@ const breakerAmp = defineModel<number>('breakerAmp', { required: true });
 
 <style scoped>
 .field-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
+
 .label {
   display: block;
-  font-size: 13px;
-  font-weight: bold;
-  margin-bottom: 6px;
-  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #f8fafc;
 }
+
 .sub-label {
-  font-size: 11px;
-  color: #64748b;
-  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1; /* くっきり見えやすい明るさに改善 */
+  margin-bottom: 6px;
   display: block;
 }
+
 .select-input,
 .text-input {
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #475569;
   font-size: 15px;
+  background-color: #334155;
+  color: #f8fafc;
+  outline: none;
   box-sizing: border-box;
+  transition: border-color 0.2s;
 }
+
+.select-input:focus,
+.text-input:focus {
+  border-color: #38bdf8;
+}
+
 .mb-2 {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 </style>
