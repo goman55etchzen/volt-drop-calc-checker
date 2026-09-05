@@ -90,9 +90,9 @@
       <div class="info-card mt-12">
         <p class="info-title">💡 判定・公式メモ</p>
         <ul class="info-list">
-          <li><strong>定格電流式:</strong> $I = P / (\sqrt{3} \times V \times \cos\theta \times \eta)$</li>
+          <li><strong>定格電流式:</strong> I = P / (√3 × V × cosθ × η)</li>
           <li><strong>簡易目標:</strong> 200V時は出力(kW)の約4倍、400V時は約2倍が目安。</li>
-          <li><strong>内線規程:</strong> 電線許容電流は $I \le 50\text{A}$ で $1.25$ 倍、$I > 50\text{A}$ で $1.1$ 倍以上が必要。</li>
+          <li><strong>内線規程:</strong> 電線許容電流は 50A以下で1.25倍、50A超で1.1倍以上が必要。</li>
         </ul>
       </div>
     </div>
@@ -183,7 +183,8 @@
     margin-top: 4px;
   }
   
-  .form-card, .info-card {
+  .form-card,
+  .info-card {
     background-color: #0f172a;
     border-radius: 16px;
     padding: 16px;
@@ -197,7 +198,8 @@
     margin-bottom: 6px;
   }
   
-  .text-input, .select-input {
+  .text-input,
+  .select-input {
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
