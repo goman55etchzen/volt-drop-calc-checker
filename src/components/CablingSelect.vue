@@ -12,7 +12,6 @@
 <script setup lang="ts">
 import { SYSTEM_TYPES } from '../composables/useCabling';
 
-// defineModel を使うことで、親の v-model と安全に双方向同期できます
 const selectedSystem = defineModel<string>({ required: true });
 </script>
 
@@ -33,6 +32,7 @@ const selectedSystem = defineModel<string>({ required: true });
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-size: 15px;
-  background: #fff;
+  background-color: #ffffff;
+  color: #0f172a; /* ← これを追加して文字色を強制指定 */
 }
 </style>
