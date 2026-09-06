@@ -77,6 +77,7 @@
               v-model.number="targetPercent"
               type="number"
               step="0.1"
+              placeholder="例: 2.0"
               class="text-input"
             />
           </div>
@@ -116,6 +117,7 @@
               v-model.number="targetPercent"
               type="number"
               step="0.1"
+              placeholder="例: 2.0"
               class="text-input"
             />
           </div>
@@ -198,6 +200,7 @@
             <input
               v-model.number="oneWayDistance"
               type="number"
+              placeholder="例: 30"
               class="text-input"
             />
           </div>
@@ -208,6 +211,7 @@
             <input
               v-model.number="loadCurrent"
               type="number"
+              placeholder="例: 15"
               class="text-input"
               :readonly="loadType === 'motor'"
             />
@@ -220,11 +224,12 @@
 
           <!-- 消費電力入力 -->
           <div v-else class="input-group">
-            <label class="sub-label">消費電力 (W)</label>
+            <label class="sub-label">回路の合計消費電力 (W)</label>
             <input
               v-model.number="loadWatt"
               type="number"
               step="100"
+              placeholder="例: 1500 (コンセント機器合計)"
               class="text-input"
             />
           </div>
@@ -240,6 +245,7 @@
               step="0.01"
               min="0"
               max="1"
+              placeholder="例: 0.85"
               class="text-input"
               :disabled="ignorePowerFactor"
             />
@@ -496,6 +502,12 @@ const applyMotorAmp = () => {
   color: #f8fafc;
   font-size: 14px;
   box-sizing: border-box;
+}
+
+/* プレースホルダーのカラー調整 */
+.text-input::placeholder {
+  color: #64748b;
+  font-size: 12px;
 }
 
 .text-input:disabled {
