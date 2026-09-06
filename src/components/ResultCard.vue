@@ -16,7 +16,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ maxLen: number; isOverCurrent: boolean }>();
+import { ResultCardProps } from '../types/appDefinitions';
+
+defineProps<ResultCardProps>();
 </script>
 
 <style scoped>
@@ -28,13 +30,12 @@ defineProps<{ maxLen: number; isOverCurrent: boolean }>();
   color: #fff;
   padding: 16px 20px;
   border-radius: 16px;
-  border: 1px solid #0284c7; /* アクアブルーのアクセント枠線 */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.2); /* 存在感を高めるネオン発光効果 */
+  border: 1px solid #0284c7;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.2);
   transition: all 0.3s ease;
   margin-bottom: 20px;
 }
 
-/* 警告時のスタイリング */
 .result-sticky-card.warning {
   background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
   border-color: #ef4444;
@@ -80,9 +81,9 @@ defineProps<{ maxLen: number; isOverCurrent: boolean }>();
 }
 
 .num {
-  font-size: 38px; /* 数字をより大きく強調 */
+  font-size: 38px;
   font-weight: 900;
-  color: #38bdf8; /* 発色が良いライトブルー */
+  color: #38bdf8;
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
   line-height: 1;
 }

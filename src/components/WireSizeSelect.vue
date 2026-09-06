@@ -10,12 +10,10 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  selectedWireName: string
-  isOpen: boolean
-}>()
+import { WireSizeSelectProps, WireSizeSelectEmits } from '../types/appDefinitions';
 
-const emit = defineEmits(['open', 'close'])
+defineProps<WireSizeSelectProps>();
+const emit = defineEmits<WireSizeSelectEmits>();
 </script>
 
 <style scoped>

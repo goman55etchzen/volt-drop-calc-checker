@@ -17,15 +17,15 @@
 </template>
 
 <script setup lang="ts">
-import { CABLE_TYPES } from '../composables/useWire'
+import { CABLE_TYPES, WireTypeSelectProps, WireTypeSelectEmits } from '../types/appDefinitions';
 
-defineProps<{ modelValue: string }>()
-const emit = defineEmits(['update:modelValue', 'change'])
+defineProps<WireTypeSelectProps>();
+const emit = defineEmits<WireTypeSelectEmits>();
 
 const selectCable = (id: string) => {
-  emit('update:modelValue', id)
-  emit('change')
-}
+  emit('update:modelValue', id);
+  emit('change');
+};
 </script>
 
 <style scoped>
@@ -38,7 +38,7 @@ const selectCable = (id: string) => {
   font-size: 14px;
   font-weight: bold;
   margin-bottom: 8px;
-  color: #f8fafc; /* くっきり見える明るい白 */
+  color: #f8fafc;
 }
 
 .cable-grid {
@@ -48,22 +48,21 @@ const selectCable = (id: string) => {
 }
 
 .cable-card {
-  padding: 12px 10px; /* 余白を広げて重なりを防止 */
+  padding: 12px 10px;
   border: 1px solid #475569;
   border-radius: 10px;
-  background: #334155; /* ダーク背景に合わせた落ち着いたカード色 */
+  background: #334155;
   cursor: pointer;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 72px; /* 高さを確保 */
+  min-height: 72px;
   box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
-/* 選択時のスタイリング */
 .cable-card.active {
   border-color: #38bdf8;
   background: #0284c7;
@@ -74,7 +73,7 @@ const selectCable = (id: string) => {
   font-size: 13px;
   font-weight: bold;
   color: #f8fafc;
-  line-height: 1.3; /* 行間を確保 */
+  line-height: 1.3;
   margin-bottom: 4px;
 }
 
@@ -84,8 +83,8 @@ const selectCable = (id: string) => {
 
 .cable-desc {
   font-size: 11px;
-  color: #cbd5e1; /* くっきり見える薄グレー */
-  line-height: 1.4; /* 折り返し時の文字重なりを完全に防止 */
+  color: #cbd5e1;
+  line-height: 1.4;
 }
 
 .cable-card.active .cable-desc {

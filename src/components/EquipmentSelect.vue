@@ -35,9 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { InputMode } from '../composables/useEquipment';
+import { EquipmentInputMode } from '../types/appDefinitions';
 
-const inputMode = defineModel<InputMode>('inputMode', { required: true });
+const inputMode = defineModel<EquipmentInputMode>('inputMode', { required: true });
 const unitWatt = defineModel<number>('unitWatt', { required: true });
 const unitCount = defineModel<number>('unitCount', { required: true });
 const customDeviceAmp = defineModel<number>('customDeviceAmp', {
@@ -62,7 +62,7 @@ const breakerAmp = defineModel<number>('breakerAmp', { required: true });
 .sub-label {
   font-size: 12px;
   font-weight: 600;
-  color: #cbd5e1; /* くっきり見えやすい明るさに改善 */
+  color: #cbd5e1;
   margin-bottom: 6px;
   display: block;
 }

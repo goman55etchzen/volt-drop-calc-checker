@@ -2,7 +2,7 @@
   <div class="field-group">
     <label class="label">1. 配線方式</label>
     <select v-model="selectedSystem" class="select-input">
-      <option v-for="sys in SYSTEM_TYPES" :key="sys.id" :value="sys.id">
+      <option v-for="sys in SYSTEM_DEFINITIONS" :key="sys.id" :value="sys.id">
         {{ sys.label }}
       </option>
     </select>
@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { SYSTEM_TYPES } from '../composables/useCabling';
+import { SYSTEM_DEFINITIONS } from '../types/appDefinitions';
 
 const selectedSystem = defineModel<string>({ required: true });
 </script>
@@ -25,7 +25,7 @@ const selectedSystem = defineModel<string>({ required: true });
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 8px;
-  color: #f8fafc; /* くっきり明るい白 */
+  color: #f8fafc;
 }
 
 .select-input {
