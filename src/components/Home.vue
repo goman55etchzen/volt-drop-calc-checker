@@ -229,7 +229,7 @@
               v-model.number="loadWatt"
               type="number"
               step="100"
-              placeholder="例: 1500 (コンセント機器合計)"
+              placeholder="接続機器合計Ｗ"
               class="text-input"
             />
           </div>
