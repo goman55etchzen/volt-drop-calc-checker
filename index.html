@@ -1,13 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
+    <!-- ファビコン・アイコン設定 -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Vue</title>
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+
+    <!-- ビューポート（iOSノッチ対応・拡大ズーム抑制） -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+
+    <!-- Web App Manifest 読み込み -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- テーマカラー設定 (ダークモード背景色に合わせた #1e293b) -->
+    <meta name="theme-color" content="#1e293b" />
+
+    <!-- iOS (Safari) 向け PWA 表示設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="電圧降下計算" />
+
+    <!-- アプリ説明 (SEO・シェア用) -->
+    <meta
+      name="description"
+      content="配線方式、こう長、負荷電流から電圧降下および選定可能電線を即座に計算するWebアプリ"
+    />
+
+    <title>電圧降下・電線サイズ計算チェッカー</title>
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <!-- TypeScript構成に合わせたエントリーポイント -->
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
