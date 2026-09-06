@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { WireSizeSelectProps, WireSizeSelectEmits } from '../types/appDefinitions';
+import { WireSizeSelectProps, WireSizeSelectEmits } from '@/types/appDefinitions';
 
 defineProps<WireSizeSelectProps>();
 const emit = defineEmits<WireSizeSelectEmits>();

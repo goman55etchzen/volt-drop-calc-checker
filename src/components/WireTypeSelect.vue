@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { CABLE_TYPES, WireTypeSelectProps, WireTypeSelectEmits } from '../types/appDefinitions';
+import { CABLE_TYPES, WireTypeSelectProps, WireTypeSelectEmits } from '@/types/appDefinitions';
 
 defineProps<WireTypeSelectProps>();
 const emit = defineEmits<WireTypeSelectEmits>();

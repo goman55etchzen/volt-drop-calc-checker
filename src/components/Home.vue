@@ -304,20 +304,20 @@ import {
   MOTOR_SPECS,
   CABLE_TYPES,
   WIRE_SIZES
-} from '../types/appDefinitions'
+} from '@/types/appDefinitions'
 
-import { useCabling } from '../composables/useCabling'
-import { useEquipment } from '../composables/useEquipment'
-import { useWire } from '../composables/useWire'
-import { useWireSize } from '../composables/useWireSize'
+import { useCabling } from '@/composables/useCabling'
+import { useEquipment } from '@/composables/useEquipment'
+import { useWire } from '@/composables/useWire'
+import { useWireSize } from '@/composables/useWireSize'
 
-import CablingSelect from '../components/CablingSelect.vue'
-import EquipmentSelect from '../components/EquipmentSelect.vue'
-import WireTypeSelect from '../components/WireTypeSelect.vue'
-import WireSizeSelect from '../components/WireSizeSelect.vue'
-import ResultCard from '../components/ResultCard.vue'
-import ReversedResult from '../components/ReversedResult.vue'
-import MotorCalc from '../components/MotorCalc.vue'
+import CablingSelect from '@/components/CablingSelect.vue'
+import EquipmentSelect from '@/components/EquipmentSelect.vue'
+import WireTypeSelect from '@/components/WireTypeSelect.vue'
+import WireSizeSelect from '@/components/WireSizeSelect.vue'
+import ResultCard from '@/components/ResultCard.vue'
+import ReversedResult from '@/components/ReversedResult.vue'
+import MotorCalc from '@/components/MotorCalc.vue'
 
 // UIモード設定
 const currentMode = ref<AppMode>('normal')

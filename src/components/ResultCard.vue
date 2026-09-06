@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ResultCardProps } from '../types/appDefinitions';
+import { ResultCardProps } from '@/types/appDefinitions';
 
 defineProps<ResultCardProps>();
 </script>

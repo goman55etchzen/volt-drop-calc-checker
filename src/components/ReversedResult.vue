@@ -71,10 +71,10 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue'
-import { ReversedResultProps } from '../types/appDefinitions'
-import { useReversedCallc } from '../composables/useReversedCallc'
+import { ReversedResultProps } from '@/types/appDefinitions'
+import { useReversedCallc } from '@/composables/useReversedCallc'
 
-const props = defineProps<ReversedResultProps>()
+const props = defineProps<ReversedResultProps>();
 
 const {
   calculatedLoadCurrent,

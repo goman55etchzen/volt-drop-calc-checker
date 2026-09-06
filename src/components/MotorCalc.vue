@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMotorCalc } from '../composables/useMotorCalc';
+import { useMotorCalc } from '@/composables/useMotorCalc';
 
 const {
   outputKw,

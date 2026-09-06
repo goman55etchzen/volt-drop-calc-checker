@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { EquipmentInputMode } from '../types/appDefinitions';
+import { EquipmentInputMode } from '@/types/appDefinitions';
 
 const inputMode = defineModel<EquipmentInputMode>('inputMode', { required: true });
 const unitWatt = defineModel<number>('unitWatt', { required: true });
