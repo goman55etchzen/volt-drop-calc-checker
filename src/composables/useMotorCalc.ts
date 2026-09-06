@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import { BREAKER_SIZES } from '../types/appDefinitions';
+import { BREAKER_SIZES } from '@/types/appDefinitions';
 
 export function useMotorCalc() {
   const outputKw = ref<number>(5.5);

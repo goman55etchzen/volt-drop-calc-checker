@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { SYSTEM_DEFINITIONS, SystemType } from '../types/appDefinitions';
+import { SYSTEM_DEFINITIONS, SystemType } from '@/types/appDefinitions';
 
 export const SYSTEM_TYPES: SystemType[] = SYSTEM_DEFINITIONS;
 

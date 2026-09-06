@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { WIRE_SIZES } from '../types/appDefinitions';
+import { WIRE_SIZES } from '@/types/appDefinitions';
 
 export function useWireSize() {
   const selectedWireName = ref<string>('2.0mm');

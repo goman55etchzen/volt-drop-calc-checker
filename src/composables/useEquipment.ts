@@ -1,5 +1,5 @@
 import { ref, computed, Ref } from 'vue';
-import { EquipmentInputMode } from '../types/appDefinitions';
+import { EquipmentInputMode } from '@/types/appDefinitions';
 
 export function useEquipment(voltage: Ref<number>) {
   const inputMode = ref<EquipmentInputMode>('device_watt');

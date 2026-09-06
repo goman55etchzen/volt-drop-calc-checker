@@ -16,7 +16,7 @@ import {
   CABLE_SPECS,
   REDUCTION_FACTORS,
   BREAKER_SIZES
-} from './appDefinitions'
+} from '@/appDefinitions'
 
 export function useReversedCallc(
   voltage: Ref<number>,
