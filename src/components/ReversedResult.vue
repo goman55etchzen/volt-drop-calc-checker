@@ -1,5 +1,6 @@
 <template>
   <div class="reversed-result-container">
+    <!-- エラー・警告・情報メッセージ表示 -->
     <div v-if="calculationIssues.length" class="issues-card">
       <h3 class="issues-title">計算上の問題点・注意事項</h3>
       <div
@@ -18,6 +19,7 @@
       </div>
     </div>
 
+    <!-- 正常計算結果エリア -->
     <div v-if="!hasError" class="result-section">
       <div v-if="breakerStatus" class="result-card">
         <h4 class="card-title">送る側ブレーカー判定 (算出負荷: {{ calculatedLoadCurrent }} A)</h4>
@@ -68,18 +70,18 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue';
-import { ReversedResultProps } from '../types/appDefinitions';
-import { useReversedCallc } from '../composables/useReversedCallc';
+import { toRef } from 'vue'
+import { ReversedResultProps } from '../types/appDefinitions'
+import { useReversedCallc } from '../composables/useReversedCallc'
 
-const props = defineProps<ReversedResultProps>();
+const props = defineProps<ReversedResultProps>()
 
 const {
   calculatedLoadCurrent,
   calculationIssues,
   hasError,
   availableWires,
-  breakerStatus,
+  breakerStatus
 } = useReversedCallc(
   toRef(props, 'voltage'),
   toRef(props, 'targetPercent'),
@@ -95,7 +97,7 @@ const {
   toRef(props, 'motorKw'),
   toRef(props, 'installationType'),
   toRef(props, 'isContinuous')
-);
+)
 </script>
 
 <style scoped>
@@ -142,6 +144,19 @@ const {
   background-color: #0c4a6e;
   border: 1px solid #38bdf8;
   color: #bae6fd;
+}
+
+.issue-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.issue-msg {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .result-card,
