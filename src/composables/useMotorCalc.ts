@@ -1,5 +1,11 @@
 import { ref, computed } from 'vue';
-import { BREAKER_SIZES, EnvironmentType } from '@/types/appDefinitions';
+import {
+  BREAKER_SIZES,
+  EnvironmentType,
+  PowerFrequency,
+  MotorBreakerType,
+  MotorBreakerSelectionResult,
+} from '@/types/appDefinitions';
 import {
   calculateMotorGrounding,
   selectMotorELCB,
@@ -13,6 +19,10 @@ export function useMotorCalc() {
   const targetPowerFactor = ref<number>(0.95);
   const efficiency = ref<number>(0.85);
   const environment = ref<EnvironmentType>('normal');
+  const frequency = ref<PowerFrequency>(50);
+
+  // UIトグル用の状態管理 (auto | motor_breaker | mccb)
+  const breakerTypeMode = ref<MotorBreakerType>('auto');
 
   const calculatedAmp = computed(() => {
     const pWatt = outputKw.value * 1000;
@@ -36,6 +46,7 @@ export function useMotorCalc() {
     return Number((amp * 1.1).toFixed(2));
   });
 
+  // 既存互換用ブレーカー計算
   const breakerCapacity = computed(() => {
     const amp = calculatedAmp.value;
     const target = amp * 3.0;
@@ -48,6 +59,45 @@ export function useMotorCalc() {
     };
   });
 
+  // 詳細・切替ロジック対応ブレーカー選定結果
+  const breakerInfo = computed<MotorBreakerSelectionResult>(() => {
+    const kw = outputKw.value;
+    const amp = calculatedAmp.value;
+    const isOver15kW = kw > 15.0;
+
+    let selectedType: 'motor_breaker' | 'mccb' = 'motor_breaker';
+    if (isOver15kW) {
+      selectedType = 'mccb';
+    } else if (breakerTypeMode.value === 'auto') {
+      selectedType = 'motor_breaker';
+    } else {
+      selectedType = breakerTypeMode.value;
+    }
+
+    const target = amp * 3.0;
+    const recommendedAmp =
+      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
+
+    const requiresThermalRelay = selectedType === 'mccb';
+
+    let warningNote: string | undefined = undefined;
+    if (isOver15kW) {
+      warningNote =
+        '15kWを超える電動機のため、モーターブレーカーは使用できません。配線用遮断器（MCCB）とサーマルリレーを併用してください。';
+    } else if (selectedType === 'mccb') {
+      warningNote =
+        '配線用遮断器（MCCB）を使用する場合は、電動機保護のためサーマルリレー（電磁開閉器）の併設が必要です。';
+    }
+
+    return {
+      selectedType,
+      recommendedAmp,
+      requiresThermalRelay,
+      isOver15kW,
+      warningNote,
+    };
+  });
+
   const groundingInfo = computed(() =>
     calculateMotorGrounding(voltage.value, environment.value)
   );
@@ -57,7 +107,13 @@ export function useMotorCalc() {
   );
 
   const capacitorInfo = computed(() =>
-    calculatePhaseCapacitor(outputKw.value, powerFactor.value, targetPowerFactor.value, voltage.value)
+    calculatePhaseCapacitor(
+      outputKw.value,
+      powerFactor.value,
+      targetPowerFactor.value,
+      voltage.value,
+      frequency.value
+    )
   );
 
   const setPreset = (kw: number) => {
@@ -78,10 +134,13 @@ export function useMotorCalc() {
     targetPowerFactor,
     efficiency,
     environment,
+    frequency,
+    breakerTypeMode,
     calculatedAmp,
     simpleAmp,
     requiredWireAmp,
     breakerCapacity,
+    breakerInfo,
     groundingInfo,
     elcbInfo,
     capacitorInfo,

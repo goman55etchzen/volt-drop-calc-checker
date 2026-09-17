@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <div class="responsive-grid grid-2 mt-12">
+      <div class="responsive-grid grid-3 mt-12">
         <div class="input-group">
           <label class="sub-label">線間電圧 (V)</label>
           <select v-model.number="voltage" class="select-input">
@@ -38,6 +38,13 @@
             <option :value="220">220 V</option>
             <option :value="400">400 V</option>
             <option :value="440">440 V</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="sub-label">電源周波数</label>
+          <select v-model.number="frequency" class="select-input">
+            <option :value="50">50 Hz (東日本)</option>
+            <option :value="60">60 Hz (西日本)</option>
           </select>
         </div>
         <div class="input-group">
@@ -85,6 +92,35 @@
           />
         </div>
       </div>
+
+      <!-- ブレーカー種別切替トグル -->
+      <div class="input-group mt-12">
+        <label class="sub-label">保護遮断器 種別選択</label>
+        <div class="preset-chips">
+          <button
+            type="button"
+            :class="['chip-btn', breakerTypeMode === 'auto' ? 'active' : '']"
+            @click="breakerTypeMode = 'auto'"
+          >
+            自動判定 (15kW基準)
+          </button>
+          <button
+            type="button"
+            :class="['chip-btn', breakerTypeMode === 'motor_breaker' ? 'active' : '']"
+            :disabled="breakerInfo.isOver15kW"
+            @click="breakerTypeMode = 'motor_breaker'"
+          >
+            モーターブレーカー
+          </button>
+          <button
+            type="button"
+            :class="['chip-btn', breakerTypeMode === 'mccb' ? 'active' : '']"
+            @click="breakerTypeMode = 'mccb'"
+          >
+            配線用遮断器 (MCCB+サーマル)
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 2. 主結果カード (計算定格電流・配線) -->
@@ -107,9 +143,13 @@
           <span class="sub-value">{{ requiredWireAmp }} A</span>
         </div>
         <div class="sub-item">
-          <span class="sub-title">推奨配線用遮断器</span>
-          <span class="sub-value">{{ breakerCapacity.recommended }} A</span>
+          <span class="sub-title">推奨配線用遮断器 ({{ breakerInfo.selectedType === 'motor_breaker' ? 'MB' : 'MCCB' }})</span>
+          <span class="sub-value">{{ breakerInfo.recommendedAmp }} A</span>
         </div>
+      </div>
+
+      <div v-if="breakerInfo.warningNote" class="warning-box mt-8">
+        <p class="warning-text">⚠️ {{ breakerInfo.warningNote }}</p>
       </div>
     </div>
 
@@ -129,7 +169,7 @@
         <div class="grid-item">
           <span class="grid-label">推奨静電容量</span>
           <span class="grid-value highlight">{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF</span>
-          <span class="grid-sub">@ {{ voltage }}V</span>
+          <span class="grid-sub">@ {{ voltage }}V ({{ frequency }}Hz)</span>
         </div>
         <div class="grid-item">
           <span class="grid-label">備考</span>
@@ -209,10 +249,13 @@ const {
   targetPowerFactor,
   efficiency,
   environment,
+  frequency,
+  breakerTypeMode,
   calculatedAmp,
   simpleAmp,
   requiredWireAmp,
   breakerCapacity,
+  breakerInfo,
   groundingInfo,
   elcbInfo,
   capacitorInfo,
@@ -414,8 +457,13 @@ const {
   transition: all 0.2s ease;
 }
 
+.chip-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .chip-btn.active,
-.chip-btn:active {
+.chip-btn:active:not(:disabled) {
   background-color: #0284c7;
   color: #ffffff;
   border-color: #38bdf8;
