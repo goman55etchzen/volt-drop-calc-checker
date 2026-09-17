@@ -1,6 +1,93 @@
 <template>
   <div class="motor-calc-container">
-    <!-- 主結果カード (計算定格電流) -->
+    
+    <!-- 1. 入力フォームカード（最上部に配置） -->
+    <div class="form-card mb-12">
+      <div class="card-header">
+        <span class="card-title">⚙️ 電動機仕様・入力設定</span>
+      </div>
+
+      <div class="input-group">
+        <label class="sub-label">電動機定格出力 (kW)</label>
+        <input
+          v-model.number="outputKw"
+          type="number"
+          step="0.1"
+          min="0.1"
+          class="text-input"
+        />
+        <!-- プリセットボタン -->
+        <div class="preset-chips">
+          <button
+            v-for="kw in [0.75, 1.5, 2.2, 3.7, 5.5, 7.5, 11, 15]"
+            :key="kw"
+            type="button"
+            :class="['chip-btn', outputKw === kw ? 'active' : '']"
+            @click="setPreset(kw)"
+          >
+            {{ kw }}kW
+          </button>
+        </div>
+      </div>
+
+      <div class="responsive-grid grid-2 mt-12">
+        <div class="input-group">
+          <label class="sub-label">線間電圧 (V)</label>
+          <select v-model.number="voltage" class="select-input">
+            <option :value="200">200 V</option>
+            <option :value="220">220 V</option>
+            <option :value="400">400 V</option>
+            <option :value="440">440 V</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="sub-label">設置環境条件</label>
+          <select v-model="environment" class="select-input">
+            <option value="normal">一般乾燥場所</option>
+            <option value="enclosure">鉄箱・金属外箱内</option>
+            <option value="wet">水気・湿気のある場所</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="responsive-grid grid-3 mt-12">
+        <div class="input-group">
+          <label class="sub-label">現状力率 cosθ</label>
+          <input
+            v-model.number="powerFactor"
+            type="number"
+            step="0.01"
+            min="0.5"
+            max="1.0"
+            class="text-input"
+          />
+        </div>
+        <div class="input-group">
+          <label class="sub-label">目標力率 cosθ</label>
+          <input
+            v-model.number="targetPowerFactor"
+            type="number"
+            step="0.01"
+            min="0.8"
+            max="1.0"
+            class="text-input"
+          />
+        </div>
+        <div class="input-group">
+          <label class="sub-label">効率 η (エータ)</label>
+          <input
+            v-model.number="efficiency"
+            type="number"
+            step="0.01"
+            min="0.5"
+            max="1.0"
+            class="text-input"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 主結果カード (計算定格電流・配線) -->
     <div class="result-card">
       <div class="main-result">
         <span class="result-label">計算定格電流</span>
@@ -26,7 +113,7 @@
       </div>
     </div>
 
-    <!-- 🔋 進相コンデンサ (力率改善) カード -->
+    <!-- 3. 🔋 進相コンデンサ (力率改善) カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">🔋 進相コンデンサ (力率改善)</span>
@@ -35,22 +122,23 @@
 
       <div class="responsive-grid grid-3">
         <div class="grid-item">
-          <span class="grid-label">必要容量</span>
-          <span class="grid-value">{{ capacitorInfo.requiredKvar }} kvar</span>
-        </div>
-        <div class="grid-item">
-          <span class="grid-label">推奨標準容量</span>
+          <span class="grid-label">必要容量 / 推奨標準</span>
           <span class="grid-value highlight">{{ capacitorInfo.recommendedKvar }} kvar</span>
+          <span class="grid-sub">(必要計算値: {{ capacitorInfo.requiredKvar }} kvar)</span>
         </div>
         <div class="grid-item">
           <span class="grid-label">推奨静電容量</span>
-          <span class="grid-value">{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF</span>
+          <span class="grid-value highlight">{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF</span>
+          <span class="grid-sub">@ {{ voltage }}V</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">備考</span>
+          <p class="description-text">{{ capacitorInfo.dischargeResistorNote }}</p>
         </div>
       </div>
-      <p class="description-text mt-8">{{ capacitorInfo.dischargeResistorNote }}</p>
     </div>
 
-    <!-- 🛡️ 漏電遮断器 (ELCB) 選定カード -->
+    <!-- 4. 🛡️ 漏電遮断器 (ELCB) 選定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">🛡️ 漏電遮断器 (ELCB) 選定</span>
@@ -76,7 +164,7 @@
       <p class="description-text mt-8">{{ elcbInfo.description }}</p>
     </div>
 
-    <!-- ⚡ 接地工事・絶縁抵抗 判定カード -->
+    <!-- 5. ⚡ 接地工事・絶縁抵抗 判定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">⚡ 接地工事・絶縁抵抗 判定結果</span>
@@ -108,87 +196,6 @@
       </div>
     </div>
 
-    <!-- 入力フォームカード -->
-    <div class="form-card mt-12">
-      <div class="input-group">
-        <label class="sub-label">電動機定格出力 (kW)</label>
-        <input
-          v-model.number="outputKw"
-          type="number"
-          step="0.1"
-          min="0.1"
-          class="text-input"
-        />
-        <!-- プリセットボタン -->
-        <div class="preset-chips">
-          <button type="button" class="chip-btn" @click="setPreset(0.75)">0.75kW</button>
-          <button type="button" class="chip-btn" @click="setPreset(2.2)">2.2kW</button>
-          <button type="button" class="chip-btn" @click="setPreset(3.7)">3.7kW</button>
-          <button type="button" class="chip-btn" @click="setPreset(5.5)">5.5kW</button>
-          <button type="button" class="chip-btn" @click="setPreset(7.5)">7.5kW</button>
-          <button type="button" class="chip-btn" @click="setPreset(11)">11kW</button>
-        </div>
-      </div>
-
-      <div class="responsive-grid grid-2 mt-12">
-        <div class="input-group">
-          <label class="sub-label">線間電圧 (V)</label>
-          <select v-model.number="voltage" class="select-input">
-            <option :value="200">200 V</option>
-            <option :value="220">220 V</option>
-            <option :value="400">400 V</option>
-            <option :value="440">440 V</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label class="sub-label">設置環境条件</label>
-          <select v-model="environment" class="select-input">
-            <option value="normal">一般乾燥場所</option>
-            <option value="enclosure">鉄箱・金属外箱内</option>
-            <option value="wet">水気・湿気のある場所</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="responsive-grid grid-2 mt-12">
-        <div class="input-group">
-          <label class="sub-label">現状力率 cosθ</label>
-          <input
-            v-model.number="powerFactor"
-            type="number"
-            step="0.01"
-            min="0.5"
-            max="1.0"
-            class="text-input"
-          />
-        </div>
-        <div class="input-group">
-          <label class="sub-label">目標力率 cosθ</label>
-          <input
-            v-model.number="targetPowerFactor"
-            type="number"
-            step="0.01"
-            min="0.8"
-            max="1.0"
-            class="text-input"
-          />
-        </div>
-      </div>
-
-      <div class="responsive-grid grid-2 mt-12">
-        <div class="input-group">
-          <label class="sub-label">効率 η (エータ)</label>
-          <input
-            v-model.number="efficiency"
-            type="number"
-            step="0.01"
-            min="0.5"
-            max="1.0"
-            class="text-input"
-          />
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -404,20 +411,25 @@ const {
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
+  transition: all 0.2s ease;
 }
 
+.chip-btn.active,
 .chip-btn:active {
   background-color: #0284c7;
   color: #ffffff;
+  border-color: #38bdf8;
 }
 
+.mb-12 { margin-bottom: 12px; }
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 
 /* スマホ表示（幅480px以下）向けレスポンシブ */
 @media (max-width: 480px) {
   .sub-results,
-  .grid-3 {
+  .grid-3,
+  .grid-2 {
     grid-template-columns: 1fr;
   }
 

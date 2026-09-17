@@ -8,7 +8,7 @@ export type CalculationInputMode = 'amp' | 'watt';
 export type LoadType = 'general' | 'motor';
 export type InstallationType = 'conduit_3' | 'conduit_4' | 'ceiling_open' | 'staple_surface';
 
-/** ケーブル種別コード (小文字統一版) */
+/** ケーブル種別コード (小文字統一) */
 export type CableTypeCode = 
   | 'vv' 
   | 'vvr' 
@@ -31,6 +31,22 @@ export interface GroundingResult {
   groundWireDiameter: string;
   requiresELCB: boolean;
   notes: string[];
+}
+
+export interface ElcbSelectionResult {
+  recommendedAmp: number;
+  sensitivityCurrent: number;
+  operatingTime: string;
+  isMandatory: boolean;
+  description: string;
+}
+
+export interface CapacitorSelectionResult {
+  requiredKvar: number;
+  recommendedKvar: number;
+  recommendedMicroFarad: number;
+  improvedPowerFactor: number;
+  dischargeResistorNote: string;
 }
 
 // ==========================================

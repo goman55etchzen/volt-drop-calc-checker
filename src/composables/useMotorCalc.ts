@@ -57,7 +57,7 @@ export function useMotorCalc() {
   );
 
   const capacitorInfo = computed(() =>
-    calculatePhaseCapacitor(outputKw.value, powerFactor.value, targetPowerFactor.value)
+    calculatePhaseCapacitor(outputKw.value, powerFactor.value, targetPowerFactor.value, voltage.value)
   );
 
   const setPreset = (kw: number) => {

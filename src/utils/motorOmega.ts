@@ -1,4 +1,4 @@
-import { EnvironmentType, GroundingResult } from '@/types/appDefinitions';
+import { EnvironmentType, GroundingResult, CapacitorSelectionResult } from '@/types/appDefinitions';
 
 export interface ElcbSelectionResult {
   recommendedAmp: number;
@@ -6,13 +6,6 @@ export interface ElcbSelectionResult {
   operatingTime: string;
   isMandatory: boolean;
   description: string;
-}
-
-export interface CapacitorSelectionResult {
-  requiredKvar: number;
-  recommendedKvar: number;
-  improvedPowerFactor: number;
-  dischargeResistorNote: string;
 }
 
 /** 1. 接地・絶縁抵抗計算 */
@@ -91,12 +84,14 @@ export function selectMotorELCB(
 export function calculatePhaseCapacitor(
   kw: number,
   currentCos: number,
-  targetCos: number = 0.95
+  targetCos: number = 0.95,
+  voltage: number = 200
 ): CapacitorSelectionResult {
   if (currentCos >= targetCos || currentCos <= 0 || targetCos >= 1.0) {
     return {
       requiredKvar: 0,
       recommendedKvar: 0,
+      recommendedMicroFarad: 0,
       improvedPowerFactor: currentCos,
       dischargeResistorNote: '力率改善の必要はありません。',
     };
@@ -113,9 +108,17 @@ export function calculatePhaseCapacitor(
     STANDARD_CAPACITORS.find((c) => c >= requiredKvar) ||
     STANDARD_CAPACITORS[STANDARD_CAPACITORS.length - 1];
 
+  // 三相Delta結線における推奨静電容量 C [μF] 算出 (60Hz想定)
+  // C = (Q * 10^9) / (2 * π * f * V^2 * 3)
+  const freq = 60;
+  const recommendedMicroFarad = Math.round(
+    (recommendedKvar * 1000 * 1000000) / (2 * Math.PI * freq * Math.pow(voltage, 2) * 3)
+  );
+
   return {
     requiredKvar,
     recommendedKvar,
+    recommendedMicroFarad,
     improvedPowerFactor: targetCos,
     dischargeResistorNote:
       'コンデンサ開放時の残留電荷放電のため、自動放電装置付き（または放電抵抗内蔵形）を選定してください。高調波対策が必要な場合は直列リアクトル（6%）を併設します。',
