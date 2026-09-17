@@ -308,7 +308,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import {
   AppMode,
   CalculationInputMode,
@@ -316,9 +316,7 @@ import {
   InstallationType,
   CableTypeCode,
   SYSTEM_DEFINITIONS,
-  MOTOR_SPECS,
-  CABLE_TYPES,
-  WIRE_SIZES
+  MOTOR_SPECS
 } from '@/types/appDefinitions'
 
 import { useCabling } from '@/composables/useCabling'
@@ -341,38 +339,21 @@ const currentMode = ref<AppMode>('normal')
 const voltage = ref<number>(100)
 const targetPercent = ref<number>(2.0)
 
-// モード1 (許容配線長) 用コンポーザブル
-const { selectedSystemId } = useCabling()
+// 関連コンポーザブル初期化
 const { inputMode, unitWatt, unitCount, customDeviceAmp, breakerAmp, totalI } =
   useEquipment(voltage)
 const { selectedCableId } = useWire()
 const { selectedWireName, isSizePickerOpen, openSizePicker, closeSizePicker } =
   useWireSize()
 
-const currentSystem = computed(
-  () =>
-    SYSTEM_DEFINITIONS.find((s) => s.id === selectedSystemId.value) || SYSTEM_DEFINITIONS[0]
+// 配線長計算用コンポーザブル
+const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
+  voltage,
+  totalI,
+  selectedWireName,
+  selectedCableId,
+  targetPercent
 )
-const currentCable = computed(
-  () =>
-    CABLE_TYPES.find((c) => c.id === selectedCableId.value) || CABLE_TYPES[0]
-)
-const currentWire = computed(
-  () =>
-    WIRE_SIZES.find((w) => w.name === selectedWireName.value) || WIRE_SIZES[0]
-)
-
-const allowDropV = computed(() => voltage.value * (targetPercent.value / 100))
-const maxLen = computed(() => {
-  const k = currentSystem.value.k
-  const area = currentWire.value.area
-  const i = totalI.value
-  return k > 0 && i > 0 ? (allowDropV.value * 1000 * area) / (k * i) : 0
-})
-const maxLimit = computed(
-  () => currentCable.value.limits[currentWire.value.name] || 999
-)
-const isOverCurrent = computed(() => totalI.value > maxLimit.value)
 
 // モード2 (逆算選定) 用リアクティブ状態
 const selectedReversedSystemId = ref<string>('1P2W')
@@ -522,7 +503,7 @@ const applyMotorAmp = () => {
   border: 1px solid #475569;
   background-color: #334155;
   color: #f8fafc;
-  font-size: 16px; /* iOSのズーム防止のため16px推奨 */
+  font-size: 16px;
   box-sizing: border-box;
   outline: none;
 }
