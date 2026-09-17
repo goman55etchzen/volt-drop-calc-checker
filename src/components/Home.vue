@@ -149,19 +149,9 @@
           <div class="input-group">
             <label class="sub-label">電線種別</label>
             <select v-model="selectedCableType" class="select-input">
-              <optgroup
-                v-for="group in CABLE_TEMP_GROUPS"
-                :key="group.label"
-                :label="group.label"
-              >
-                <option
-                  v-for="cable in CABLE_TYPES.filter(c => group.items.includes(c.id))"
-                  :key="cable.id"
-                  :value="cable.id"
-                >
-                  {{ cable.name }}
-                </option>
-              </optgroup>
+              <option value="vv">VVF / VVR (60℃)</option>
+              <option value="iv">IV (60℃)</option>
+              <option value="cv">CV / CVT (90℃)</option>
             </select>
           </div>
         </div>
@@ -326,9 +316,7 @@ import {
   InstallationType,
   CableTypeCode,
   SYSTEM_DEFINITIONS,
-  MOTOR_SPECS,
-  CABLE_TYPES,
-  CABLE_TEMP_GROUPS
+  MOTOR_SPECS
 } from '@/types/appDefinitions'
 
 import { useCabling } from '@/composables/useCabling'

@@ -1,6 +1,6 @@
 <template>
   <div class="motor-calc-container">
-    <!-- 主結果カード -->
+    <!-- 主結果カード (計算定格電流) -->
     <div class="result-card">
       <div class="main-result">
         <span class="result-label">計算定格電流</span>
@@ -26,7 +26,31 @@
       </div>
     </div>
 
-    <!-- 漏電遮断器(ELCB) 選定カード -->
+    <!-- 🔋 進相コンデンサ (力率改善) カード -->
+    <div class="section-card mt-12">
+      <div class="card-header">
+        <span class="card-title">🔋 進相コンデンサ (力率改善)</span>
+        <span class="badge badge-success">目標力率 {{ (targetPowerFactor * 100).toFixed(0) }}%</span>
+      </div>
+
+      <div class="responsive-grid grid-3">
+        <div class="grid-item">
+          <span class="grid-label">必要容量</span>
+          <span class="grid-value">{{ capacitorInfo.requiredKvar }} kvar</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">推奨標準容量</span>
+          <span class="grid-value highlight">{{ capacitorInfo.recommendedKvar }} kvar</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">推奨静電容量</span>
+          <span class="grid-value">{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF</span>
+        </div>
+      </div>
+      <p class="description-text mt-8">{{ capacitorInfo.dischargeResistorNote }}</p>
+    </div>
+
+    <!-- 🛡️ 漏電遮断器 (ELCB) 選定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">🛡️ 漏電遮断器 (ELCB) 選定</span>
@@ -52,7 +76,7 @@
       <p class="description-text mt-8">{{ elcbInfo.description }}</p>
     </div>
 
-    <!-- 接地・絶縁抵抗 判定カード -->
+    <!-- ⚡ 接地工事・絶縁抵抗 判定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">⚡ 接地工事・絶縁抵抗 判定結果</span>
@@ -84,26 +108,6 @@
       </div>
     </div>
 
-    <!-- 進相コンデンサ 計算カード -->
-    <div class="section-card mt-12">
-      <div class="card-header">
-        <span class="card-title">🔋 進相コンデンサ (力率改善)</span>
-        <span class="badge badge-success">目標力率 95%</span>
-      </div>
-
-      <div class="responsive-grid grid-2">
-        <div class="grid-item">
-          <span class="grid-label">必要コンデンサ容量</span>
-          <span class="grid-value">{{ capacitorInfo.requiredKvar }} kvar</span>
-        </div>
-        <div class="grid-item">
-          <span class="grid-label">推奨JIS標準容量</span>
-          <span class="grid-value highlight">{{ capacitorInfo.recommendedKvar }} kvar</span>
-        </div>
-      </div>
-      <p class="description-text mt-8">{{ capacitorInfo.dischargeResistorNote }}</p>
-    </div>
-
     <!-- 入力フォームカード -->
     <div class="form-card mt-12">
       <div class="input-group">
@@ -115,7 +119,7 @@
           min="0.1"
           class="text-input"
         />
-        <!-- タッチしやすいチップボタン -->
+        <!-- プリセットボタン -->
         <div class="preset-chips">
           <button type="button" class="chip-btn" @click="setPreset(0.75)">0.75kW</button>
           <button type="button" class="chip-btn" @click="setPreset(2.2)">2.2kW</button>
@@ -148,9 +152,9 @@
 
       <div class="responsive-grid grid-2 mt-12">
         <div class="input-group">
-          <label class="sub-label">効率 η (エータ)</label>
+          <label class="sub-label">現状力率 cosθ</label>
           <input
-            v-model.number="efficiency"
+            v-model.number="powerFactor"
             type="number"
             step="0.01"
             min="0.5"
@@ -159,9 +163,23 @@
           />
         </div>
         <div class="input-group">
-          <label class="sub-label">現状力率 cosθ</label>
+          <label class="sub-label">目標力率 cosθ</label>
           <input
-            v-model.number="powerFactor"
+            v-model.number="targetPowerFactor"
+            type="number"
+            step="0.01"
+            min="0.8"
+            max="1.0"
+            class="text-input"
+          />
+        </div>
+      </div>
+
+      <div class="responsive-grid grid-2 mt-12">
+        <div class="input-group">
+          <label class="sub-label">効率 η (エータ)</label>
+          <input
+            v-model.number="efficiency"
             type="number"
             step="0.01"
             min="0.5"
@@ -175,12 +193,13 @@
 </template>
 
 <script setup lang="ts">
-import { useMotorCalc } from '@/composables/useMotorCalc';
+import { useMotorCalc } from '@/composables/useMotorCalc'
 
 const {
   outputKw,
   voltage,
   powerFactor,
+  targetPowerFactor,
   efficiency,
   environment,
   calculatedAmp,
@@ -191,7 +210,7 @@ const {
   elcbInfo,
   capacitorInfo,
   setPreset,
-} = useMotorCalc();
+} = useMotorCalc()
 </script>
 
 <style scoped>
@@ -357,7 +376,7 @@ const {
 .text-input,
 .select-input {
   width: 100%;
-  height: 44px; /* タッチしやすい高さ */
+  height: 44px;
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid #475569;
@@ -375,7 +394,7 @@ const {
 }
 
 .chip-btn {
-  min-height: 36px; /* タッチ領域確保 */
+  min-height: 36px;
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid #475569;
@@ -395,11 +414,11 @@ const {
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 
-/* スマホ表示（幅480px以下）向けレスポンシブメディアクエリ */
+/* スマホ表示（幅480px以下）向けレスポンシブ */
 @media (max-width: 480px) {
   .sub-results,
   .grid-3 {
-    grid-template-columns: 1fr; /* 1列に縦並び変更 */
+    grid-template-columns: 1fr;
   }
 
   .sub-item,

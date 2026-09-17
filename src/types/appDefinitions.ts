@@ -33,7 +33,6 @@ export interface GroundingResult {
   notes: string[];
 }
 
-
 // ==========================================
 // 2. Vue コンポーネント Props / Emits インターフェース
 // ==========================================
@@ -79,7 +78,6 @@ export interface ReversedResultProps {
   installationType: InstallationType;
   isContinuous: boolean;
 }
-
 
 // ==========================================
 // 3. 配線・計算用 データインターフェース
@@ -143,7 +141,6 @@ export interface CalculationIssue {
   title: string;
   message: string;
 }
-
 
 // ==========================================
 // 4. 定数・マスタデータ定義
