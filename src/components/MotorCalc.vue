@@ -1,7 +1,7 @@
 <template>
   <div class="motor-calc-container">
     
-    <!-- 1. 入力フォームカード（最上部に配置） -->
+    <!-- 入力フォームカード -->
     <div class="form-card mb-12">
       <div class="card-header">
         <span class="card-title">⚙️ 電動機仕様・入力設定</span>
@@ -16,7 +16,6 @@
           min="0.1"
           class="text-input"
         />
-        <!-- プリセットボタン -->
         <div class="preset-chips">
           <button
             v-for="kw in [0.75, 1.5, 2.2, 3.7, 5.5, 7.5, 11, 15]"
@@ -123,7 +122,7 @@
       </div>
     </div>
 
-    <!-- 2. 主結果カード (計算定格電流・配線) -->
+    <!-- 結果カード (定格電流・許容電流) -->
     <div class="result-card">
       <div class="main-result">
         <span class="result-label">計算定格電流</span>
@@ -143,7 +142,7 @@
           <span class="sub-value">{{ requiredWireAmp }} A</span>
         </div>
         <div class="sub-item">
-          <span class="sub-title">推奨配線用遮断器 ({{ breakerInfo.selectedType === 'motor_breaker' ? 'MB' : 'MCCB' }})</span>
+          <span class="sub-title">推奨遮断器容量 ({{ breakerInfo.selectedType === 'motor_breaker' ? 'MB' : 'MCCB' }})</span>
           <span class="sub-value">{{ breakerInfo.recommendedAmp }} A</span>
         </div>
       </div>
@@ -153,7 +152,7 @@
       </div>
     </div>
 
-    <!-- 3. 🔋 進相コンデンサ (力率改善) カード -->
+    <!-- 進相コンデンサ カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">🔋 進相コンデンサ (力率改善)</span>
@@ -164,7 +163,7 @@
         <div class="grid-item">
           <span class="grid-label">必要容量 / 推奨標準</span>
           <span class="grid-value highlight">{{ capacitorInfo.recommendedKvar }} kvar</span>
-          <span class="grid-sub">(必要計算値: {{ capacitorInfo.requiredKvar }} kvar)</span>
+          <span class="grid-sub">(計算必要値: {{ capacitorInfo.requiredKvar }} kvar)</span>
         </div>
         <div class="grid-item">
           <span class="grid-label">推奨静電容量</span>
@@ -178,7 +177,7 @@
       </div>
     </div>
 
-    <!-- 4. 🛡️ 漏電遮断器 (ELCB) 選定カード -->
+    <!-- 漏電遮断器 (ELCB) 選定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">🛡️ 漏電遮断器 (ELCB) 選定</span>
@@ -204,7 +203,7 @@
       <p class="description-text mt-8">{{ elcbInfo.description }}</p>
     </div>
 
-    <!-- 5. ⚡ 接地工事・絶縁抵抗 判定カード -->
+    <!-- 接地工事・絶縁抵抗 判定カード (新規 useOmega の結果を表示) -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">⚡ 接地工事・絶縁抵抗 判定結果</span>
@@ -240,7 +239,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMotorCalc } from '@/composables/useMotorCalc'
+import { useMotorCalc } from '@/composables/useMotorCalc';
 
 const {
   outputKw,
@@ -254,13 +253,12 @@ const {
   calculatedAmp,
   simpleAmp,
   requiredWireAmp,
-  breakerCapacity,
   breakerInfo,
   groundingInfo,
   elcbInfo,
   capacitorInfo,
   setPreset,
-} = useMotorCalc()
+} = useMotorCalc();
 </script>
 
 <style scoped>
@@ -269,7 +267,6 @@ const {
   box-sizing: border-box;
 }
 
-/* メイン結果カード */
 .result-card {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;
@@ -338,7 +335,6 @@ const {
   margin-top: 4px;
 }
 
-/* セクションカード */
 .section-card,
 .form-card {
   background-color: #0f172a;
@@ -360,7 +356,6 @@ const {
   color: #f8fafc;
 }
 
-/* バッジスタイル */
 .badge {
   padding: 4px 8px;
   border-radius: 6px;
@@ -372,7 +367,6 @@ const {
 .badge-info    { background-color: #334155; color: #38bdf8; }
 .badge-success { background-color: #15803d; color: #ffffff; }
 
-/* レスポンシブグリッドシステム */
 .responsive-grid {
   display: grid;
   gap: 8px;
@@ -382,7 +376,6 @@ const {
 }
 
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
 
 .grid-item {
   display: flex;
@@ -415,7 +408,6 @@ const {
   line-height: 1.4;
 }
 
-/* フォーム・モバイル最適化入力コントロール */
 .sub-label {
   font-size: 12px;
   font-weight: 600;
@@ -473,11 +465,9 @@ const {
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 
-/* スマホ表示（幅480px以下）向けレスポンシブ */
 @media (max-width: 480px) {
   .sub-results,
-  .grid-3,
-  .grid-2 {
+  .grid-3 {
     grid-template-columns: 1fr;
   }
 

@@ -6,13 +6,10 @@ import {
   MotorBreakerType,
   MotorBreakerSelectionResult,
 } from '@/types/appDefinitions';
-import {
-  calculateMotorGrounding,
-  selectMotorELCB,
-  calculatePhaseCapacitor,
-} from '@/utils/motorOmega';
+import { useOmega } from '@/composables/useOmega';
 
 export function useMotorCalc() {
+  // 入力パラメータ State
   const outputKw = ref<number>(5.5);
   const voltage = ref<number>(200);
   const powerFactor = ref<number>(0.85);
@@ -21,9 +18,10 @@ export function useMotorCalc() {
   const environment = ref<EnvironmentType>('normal');
   const frequency = ref<PowerFrequency>(50);
 
-  // UIトグル用の状態管理 (auto | motor_breaker | mccb)
+  // ブレーカー選択モード ('auto' | 'motor_breaker' | 'mccb')
   const breakerTypeMode = ref<MotorBreakerType>('auto');
 
+  // 定格電流計算 (In = P / (√3 * V * cosθ * η))
   const calculatedAmp = computed(() => {
     const pWatt = outputKw.value * 1000;
     const denominator = Math.sqrt(3) * voltage.value * powerFactor.value * efficiency.value;
@@ -31,6 +29,7 @@ export function useMotorCalc() {
     return Number((pWatt / denominator).toFixed(2));
   });
 
+  // 簡易目安電流
   const simpleAmp = computed(() => {
     if (voltage.value >= 400) {
       return Number((outputKw.value * 2).toFixed(1));
@@ -38,6 +37,7 @@ export function useMotorCalc() {
     return Number((outputKw.value * 4).toFixed(1));
   });
 
+  // 許容電流基準 (50A以下: 1.25倍 / 50A超: 1.1倍)
   const requiredWireAmp = computed(() => {
     const amp = calculatedAmp.value;
     if (amp <= 50) {
@@ -46,7 +46,7 @@ export function useMotorCalc() {
     return Number((amp * 1.1).toFixed(2));
   });
 
-  // 既存互換用ブレーカー計算
+  // 既存互換用ブレーカー計算 (定格×3倍を目安)
   const breakerCapacity = computed(() => {
     const amp = calculatedAmp.value;
     const target = amp * 3.0;
@@ -59,7 +59,7 @@ export function useMotorCalc() {
     };
   });
 
-  // 詳細・切替ロジック対応ブレーカー選定結果
+  // ブレーカー選定詳細ロジック (15kW超の自動MCCB切り替え対応)
   const breakerInfo = computed<MotorBreakerSelectionResult>(() => {
     const kw = outputKw.value;
     const amp = calculatedAmp.value;
@@ -98,22 +98,15 @@ export function useMotorCalc() {
     };
   });
 
-  const groundingInfo = computed(() =>
-    calculateMotorGrounding(voltage.value, environment.value)
-  );
-
-  const elcbInfo = computed(() =>
-    selectMotorELCB(calculatedAmp.value, environment.value, BREAKER_SIZES)
-  );
-
-  const capacitorInfo = computed(() =>
-    calculatePhaseCapacitor(
-      outputKw.value,
-      powerFactor.value,
-      targetPowerFactor.value,
-      voltage.value,
-      frequency.value
-    )
+  // 新規 useOmega を利用した計算呼び出し
+  const { groundingInfo, elcbInfo, capacitorInfo } = useOmega(
+    voltage,
+    environment,
+    calculatedAmp,
+    outputKw,
+    powerFactor,
+    targetPowerFactor,
+    frequency
   );
 
   const setPreset = (kw: number) => {
