@@ -149,9 +149,19 @@
           <div class="input-group">
             <label class="sub-label">電線種別</label>
             <select v-model="selectedCableType" class="select-input">
-              <option value="VV">VVF / VVR (60℃)</option>
-              <option value="IV">IV (60℃)</option>
-              <option value="CV">CV / CVT (90℃)</option>
+              <optgroup
+                v-for="group in CABLE_TEMP_GROUPS"
+                :key="group.label"
+                :label="group.label"
+              >
+                <option
+                  v-for="cable in CABLE_TYPES.filter(c => group.items.includes(c.id))"
+                  :key="cable.id"
+                  :value="cable.id"
+                >
+                  {{ cable.name }}
+                </option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -316,7 +326,9 @@ import {
   InstallationType,
   CableTypeCode,
   SYSTEM_DEFINITIONS,
-  MOTOR_SPECS
+  MOTOR_SPECS,
+  CABLE_TYPES,
+  CABLE_TEMP_GROUPS
 } from '@/types/appDefinitions'
 
 import { useCabling } from '@/composables/useCabling'
@@ -357,7 +369,7 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
 
 // モード2 (逆算選定) 用リアクティブ状態
 const selectedReversedSystemId = ref<string>('1P2W')
-const selectedCableType = ref<CableTypeCode>('VV')
+const selectedCableType = ref<CableTypeCode>('vv')
 const calcInputMode = ref<CalculationInputMode>('amp')
 const loadWatt = ref<number>(1500)
 const loadCurrent = ref<number>(15)

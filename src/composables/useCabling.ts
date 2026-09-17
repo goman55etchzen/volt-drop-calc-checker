@@ -43,9 +43,9 @@ export function useCabling(
     return k > 0 && i > 0 ? (allowDropV.value * 1000 * area) / (k * i) : 0;
   });
 
-  // 許容電流値
+  // 許容電流値 (キーが存在しない場合は安全側として 0A 扱い)
   const maxLimit = computed(
-    () => currentCable.value.limits[currentWire.value.name] || 999
+    () => currentCable.value.limits[currentWire.value.name] ?? 0
   );
 
   // 過電流判定

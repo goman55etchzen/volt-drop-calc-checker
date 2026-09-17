@@ -1,7 +1,7 @@
 import { ref } from 'vue';
-import { CABLE_TYPES } from '@/types/appDefinitions';
+import { CABLE_TYPES, CableTypeCode } from '@/types/appDefinitions';
 
 export function useWire() {
-  const selectedCableId = ref<string>('iv');
+  const selectedCableId = ref<CableTypeCode>('iv');
   return { selectedCableId, CABLE_TYPES };
 }
