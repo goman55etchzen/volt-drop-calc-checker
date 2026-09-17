@@ -34,7 +34,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true // StackBlitzやローカル開発時もService Worker動作を有効化
+        enabled: false // StackBlitzのエラー（SW未対応）を回避するため無効化
       }
     })
   ],
