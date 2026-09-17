@@ -1,5 +1,6 @@
 <template>
   <div class="motor-calc-container">
+    <!-- 主結果カード -->
     <div class="result-card">
       <div class="main-result">
         <span class="result-label">計算定格電流</span>
@@ -11,7 +12,7 @@
 
       <div class="sub-results">
         <div class="sub-item">
-          <span class="sub-title">簡易目安 (kW×{{ voltage === 400 ? 2 : 4 }})</span>
+          <span class="sub-title">簡易目安 (kW×{{ voltage >= 400 ? 2 : 4 }})</span>
           <span class="sub-value">約 {{ simpleAmp }} A</span>
         </div>
         <div class="sub-item">
@@ -25,6 +26,39 @@
       </div>
     </div>
 
+    <!-- 接地・絶縁抵抗 判定カード -->
+    <div class="grounding-card mt-12">
+      <div class="card-header">
+        <span class="card-title">⚡ 接地工事・絶縁抵抗 判定結果</span>
+        <span class="badge" :class="groundingInfo.groundType === 'C種接地工事' ? 'badge-c' : 'badge-d'">
+          {{ groundingInfo.groundType }}
+        </span>
+      </div>
+
+      <div class="grounding-grid">
+        <div class="grid-item">
+          <span class="grid-label">接地抵抗値</span>
+          <span class="grid-value">{{ groundingInfo.groundResistance }} Ω 以下</span>
+          <span class="grid-sub">(ELCB設置時 {{ groundingInfo.allowableResistanceWithElcb }}Ω)</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">必要絶縁抵抗値</span>
+          <span class="grid-value highlight">{{ groundingInfo.insulationResistance }} MΩ 以上</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">接地線最小太さ</span>
+          <span class="grid-value">{{ groundingInfo.groundWireDiameter }}</span>
+        </div>
+      </div>
+
+      <div v-if="groundingInfo.notes.length" class="grounding-notes mt-8">
+        <p v-for="(note, idx) in groundingInfo.notes" :key="idx" class="note-text">
+          ⚠️ {{ note }}
+        </p>
+      </div>
+    </div>
+
+    <!-- 入力フォーム -->
     <div class="form-card mt-12">
       <div class="input-group">
         <label class="sub-label">電動機定格出力 (kW)</label>
@@ -56,6 +90,17 @@
           </select>
         </div>
         <div class="input-group">
+          <label class="sub-label">設置環境条件</label>
+          <select v-model="environment" class="select-input">
+            <option value="normal">一般乾燥場所</option>
+            <option value="enclosure">鉄箱・金属外箱内</option>
+            <option value="wet">水気・湿気のある場所</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row-inputs mt-12">
+        <div class="input-group">
           <label class="sub-label">効率 η (エータ)</label>
           <input
             v-model.number="efficiency"
@@ -66,27 +111,28 @@
             class="text-input"
           />
         </div>
-      </div>
-
-      <div class="input-group mt-12">
-        <label class="sub-label">力率 cosθ</label>
-        <input
-          v-model.number="powerFactor"
-          type="number"
-          step="0.01"
-          min="0.5"
-          max="1.0"
-          class="text-input"
-        />
+        <div class="input-group">
+          <label class="sub-label">力率 cosθ</label>
+          <input
+            v-model.number="powerFactor"
+            type="number"
+            step="0.01"
+            min="0.5"
+            max="1.0"
+            class="text-input"
+          />
+        </div>
       </div>
     </div>
 
+    <!-- 公式・解説 -->
     <div class="info-card mt-12">
       <p class="info-title">💡 判定・公式メモ</p>
       <ul class="info-list">
         <li><strong>定格電流式:</strong> I = P / (√3 × V × cosθ × η)</li>
-        <li><strong>簡易目標:</strong> 200V時は出力(kW)の約4倍、400V時は約2倍が目安。</li>
-        <li><strong>内線規程:</strong> 電線許容電流は 50A以下で1.25倍、50A超で1.1倍以上が必要。</li>
+        <li><strong>接地工事:</strong> 300V以下はD種(100Ω以下)、300V超はC種(10Ω以下)。</li>
+        <li><strong>絶縁抵抗値:</strong> 300V以下は0.2MΩ以上、300V超は0.4MΩ以上。</li>
+        <li><strong>漏電遮断器:</strong> 0.5秒以内に動作するELCB設置時は接地抵抗500Ωまで緩和可。</li>
       </ul>
     </div>
   </div>
@@ -100,10 +146,12 @@ const {
   voltage,
   powerFactor,
   efficiency,
+  environment,
   calculatedAmp,
   simpleAmp,
   requiredWireAmp,
   breakerCapacity,
+  groundingInfo,
   setPreset,
 } = useMotorCalc();
 </script>
@@ -177,6 +225,92 @@ const {
   margin-top: 4px;
 }
 
+.grounding-card {
+  background: #0f172a;
+  border: 1px solid #38bdf8;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #f8fafc;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.badge-d {
+  background-color: #0284c7;
+  color: #ffffff;
+}
+
+.badge-c {
+  background-color: #e11d48;
+  color: #ffffff;
+}
+
+.grounding-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background-color: #1e293b;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.grid-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-label {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.grid-value {
+  font-size: 13px;
+  font-weight: bold;
+  color: #38bdf8;
+  margin-top: 2px;
+}
+
+.grid-value.highlight {
+  color: #4ade80;
+}
+
+.grid-sub {
+  font-size: 9px;
+  color: #64748b;
+}
+
+.grounding-notes {
+  background-color: #451a03;
+  border: 1px solid #b45309;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.note-text {
+  font-size: 11px;
+  color: #fde047;
+  margin: 0;
+  line-height: 1.4;
+}
+
 .form-card,
 .info-card {
   background-color: #0f172a;
@@ -226,6 +360,10 @@ const {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.mt-8 {
+  margin-top: 8px;
 }
 
 .mt-12 {

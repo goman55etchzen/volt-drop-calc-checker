@@ -1,11 +1,13 @@
 import { ref, computed } from 'vue';
-import { BREAKER_SIZES } from '@/types/appDefinitions';
+import { BREAKER_SIZES, EnvironmentType } from '@/types/appDefinitions';
+import { calculateMotorGrounding } from '@/utils/motorOmega';
 
 export function useMotorCalc() {
   const outputKw = ref<number>(5.5);
   const voltage = ref<number>(200);
   const powerFactor = ref<number>(0.85);
   const efficiency = ref<number>(0.85);
+  const environment = ref<EnvironmentType>('normal');
 
   const calculatedAmp = computed(() => {
     const pWatt = outputKw.value * 1000;
@@ -15,7 +17,7 @@ export function useMotorCalc() {
   });
 
   const simpleAmp = computed(() => {
-    if (voltage.value === 400) {
+    if (voltage.value >= 400) {
       return Number((outputKw.value * 2).toFixed(1));
     }
     return Number((outputKw.value * 4).toFixed(1));
@@ -32,13 +34,19 @@ export function useMotorCalc() {
   const breakerCapacity = computed(() => {
     const amp = calculatedAmp.value;
     const target = amp * 3.0;
-    const recommended = BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
+    const recommended =
+      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
 
     return {
       rawTarget: Number(target.toFixed(1)),
       recommended,
     };
   });
+
+  // motorOmega.ts の判定純粋関数を実行
+  const groundingInfo = computed(() =>
+    calculateMotorGrounding(voltage.value, environment.value)
+  );
 
   const setPreset = (kw: number) => {
     outputKw.value = kw;
@@ -56,10 +64,12 @@ export function useMotorCalc() {
     voltage,
     powerFactor,
     efficiency,
+    environment,
     calculatedAmp,
     simpleAmp,
     requiredWireAmp,
     breakerCapacity,
+    groundingInfo,
     setPreset,
   };
 }

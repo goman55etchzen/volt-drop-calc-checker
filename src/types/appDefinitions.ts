@@ -20,12 +20,25 @@ export type InstallationType = 'conduit_3' | 'conduit_4' | 'ceiling_open' | 'sta
 /** ケーブル種別コード */
 export type CableTypeCode = 'VV' | 'IV' | 'CV';
 
+/** 接地・環境条件型 (新規追加) */
+export type EnvironmentType = 'normal' | 'enclosure' | 'wet';
+
+/** 接地・絶縁抵抗判定結果型 (新規追加) */
+export interface GroundingResult {
+  groundType: 'D種接地工事' | 'C種接地工事';
+  groundResistance: number;
+  allowableResistanceWithElcb: number;
+  insulationResistance: number;
+  groundWireDiameter: string;
+  requiresELCB: boolean;
+  notes: string[];
+}
+
 
 // ==========================================
 // 2. Vue コンポーネント Props / Emits インターフェース
 // ==========================================
 
-/** WireSizeSelect.vue */
 export interface WireSizeSelectProps {
   selectedWireName: string;
   isOpen: boolean;
@@ -37,7 +50,6 @@ export interface WireSizeSelectEmits {
   (e: 'close'): void;
 }
 
-/** WireTypeSelect.vue */
 export interface WireTypeSelectProps {
   modelValue: string;
 }
@@ -47,13 +59,11 @@ export interface WireTypeSelectEmits {
   (e: 'change'): void;
 }
 
-/** ResultCard.vue */
 export interface ResultCardProps {
   maxLen: number;
   isOverCurrent: boolean;
 }
 
-/** ReversedResult.vue */
 export interface ReversedResultProps {
   voltage: number;
   targetPercent: number;
@@ -76,7 +86,6 @@ export interface ReversedResultProps {
 // 3. 配線・計算用 データインターフェース
 // ==========================================
 
-/** 電線種別（詳細） */
 export interface CableType {
   id: string;
   name: string;
@@ -84,30 +93,26 @@ export interface CableType {
   limits: Record<string, number>;
 }
 
-/** 電線サイズ */
 export interface WireSize {
   name: string;
   area: number;
   amp?: number;
 }
 
-/** 配線方式統合定義 */
 export interface SystemType {
   id: string;
   label: string;
   defaultVoltage: number;
-  k: number;       // 許容配線長計算用定数
-  kFactor: number; // 逆算用相数・配線方式倍率
+  k: number;
+  kFactor: number;
 }
 
-/** モータースペック */
 export interface MotorSpec {
   kw: number;
   amp: number;
   defaultCosTheta: number;
 }
 
-/** 電線スペック */
 export interface CableSpec {
   size: string;
   area: number;
@@ -116,7 +121,6 @@ export interface CableSpec {
   baseAllowAmp: Record<CableTypeCode, number>;
 }
 
-/** 逆算選定結果アイテム */
 export interface AvailableWireResult {
   wireName: string;
   area: number;
@@ -126,7 +130,6 @@ export interface AvailableWireResult {
   isOkForLoad: boolean;
 }
 
-/** 送る側ブレーカー判定結果 */
 export interface BreakerStatusResult {
   is20AOk: boolean;
   currentLoad: number;
@@ -134,7 +137,6 @@ export interface BreakerStatusResult {
   message: string;
 }
 
-/** 計算エラー・警告メッセージ */
 export interface CalculationIssue {
   level: 'error' | 'warning' | 'info';
   code: string;
@@ -147,7 +149,6 @@ export interface CalculationIssue {
 // 4. 定数・マスタデータ定義
 // ==========================================
 
-/** 電線サイズ一覧 (WireSizeSelect / useWireSize) */
 export const WIRE_SIZES: WireSize[] = [
   { name: '0.2 sq (2.5A)', area: 0.2, amp: 2.5 },
   { name: '0.3 sq (5A)', area: 0.3, amp: 5.0 },
@@ -167,7 +168,6 @@ export const WIRE_SIZES: WireSize[] = [
   { name: '22.0 sq', area: 22.0, amp: 80.0 }
 ];
 
-/** 電線種別一覧 (WireTypeSelect / useWire) */
 export const CABLE_TYPES: CableType[] = [
   {
     id: 'iv',
@@ -240,7 +240,6 @@ export const CABLE_TYPES: CableType[] = [
   }
 ];
 
-/** 配線方式統合マスタ (CablingSelect / Home / useCabling / useReversedCallc) */
 export const SYSTEM_DEFINITIONS: SystemType[] = [
   { id: '1P2W', label: '単相2線式 / 直流2線', defaultVoltage: 100, k: 35.6, kFactor: 2.0 },
   { id: '1P3W_100V', label: '単相3線式 (100V負荷)', defaultVoltage: 100, k: 17.8, kFactor: 1.0 },
@@ -248,7 +247,6 @@ export const SYSTEM_DEFINITIONS: SystemType[] = [
   { id: '3P3W', label: '三相3線式 (線間)', defaultVoltage: 200, k: 30.8, kFactor: 1.732 }
 ];
 
-/** 三相モーター規約スペック一覧 (MotorCalc / Home / useReversedCallc) */
 export const MOTOR_SPECS: MotorSpec[] = [
   { kw: 0.2,  amp: 1.8,  defaultCosTheta: 0.80 },
   { kw: 0.4,  amp: 3.2,  defaultCosTheta: 0.80 },
@@ -262,7 +260,6 @@ export const MOTOR_SPECS: MotorSpec[] = [
   { kw: 15.0, amp: 65.0, defaultCosTheta: 0.88 }
 ];
 
-/** 電線物理パラメータ＆許容電流スペック (useReversedCallc) */
 export const CABLE_SPECS: CableSpec[] = [
   { size: '0.2 sq (2.5A)', area: 0.2,  r: 89.5, x: 0.12, baseAllowAmp: { VV: 2.5, IV: 2.5, CV: 2.5 } },
   { size: '0.3 sq (5A)',   area: 0.3,  r: 60.0, x: 0.12, baseAllowAmp: { VV: 5.0, IV: 5.0, CV: 5.0 } },
@@ -282,7 +279,6 @@ export const CABLE_SPECS: CableSpec[] = [
   { size: '22.0 sq',       area: 22.0, r: 0.84, x: 0.089, baseAllowAmp: { VV: 80, IV: 115, CV: 150 } }
 ];
 
-/** 敷設方式電流低減係数 (useReversedCallc) */
 export const REDUCTION_FACTORS: Record<InstallationType, number> = {
   conduit_3: 0.70,
   conduit_4: 0.63,
@@ -290,5 +286,4 @@ export const REDUCTION_FACTORS: Record<InstallationType, number> = {
   staple_surface: 0.85
 };
 
-/** ブレーカー標準容量一覧 */
 export const BREAKER_SIZES = [15, 20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300];
