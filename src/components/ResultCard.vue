@@ -24,22 +24,22 @@ defineProps<ResultCardProps>();
 <style scoped>
 .result-sticky-card {
   position: sticky;
-  top: 12px;
+  top: 8px;
   z-index: 50;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #fff;
-  padding: 16px 20px;
-  border-radius: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
   border: 1px solid #0284c7;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.2);
   transition: all 0.3s ease;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .result-sticky-card.warning {
   background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
   border-color: #ef4444;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(239, 68, 68, 0.3);
 }
 
 .sticky-inner {
@@ -51,12 +51,12 @@ defineProps<ResultCardProps>();
 .sticky-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .status-badge {
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: 11px;
+  padding: 3px 8px;
   border-radius: 20px;
   background: #ef4444;
   color: #ffffff;
@@ -70,7 +70,7 @@ defineProps<ResultCardProps>();
 }
 
 .sub-text {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #cbd5e1;
 }
@@ -81,7 +81,7 @@ defineProps<ResultCardProps>();
 }
 
 .num {
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 900;
   color: #38bdf8;
   text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
@@ -94,7 +94,7 @@ defineProps<ResultCardProps>();
 }
 
 .unit {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   margin-left: 4px;
   color: #f8fafc;

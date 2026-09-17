@@ -108,21 +108,21 @@ const {
 .issues-card {
   background-color: #0f172a;
   border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 14px;
+  margin-bottom: 16px;
   border: 1px solid #334155;
 }
 
 .issues-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
   color: #f8fafc;
   margin-top: 0;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .issue-item {
-  padding: 10px 14px;
+  padding: 10px 12px;
   border-radius: 8px;
   margin-bottom: 8px;
   font-size: 13px;
@@ -163,22 +163,23 @@ const {
 .wire-table-card {
   background-color: #1e293b;
   border-radius: 12px;
-  padding: 16px;
+  padding: 14px;
   margin-bottom: 16px;
   border: 1px solid #334155;
 }
 
 .card-title {
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   font-size: 14px;
   color: #f8fafc;
 }
 
 .status-msg {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
   color: #4ade80;
+  line-height: 1.4;
 }
 
 .status-msg.msg-warn {
@@ -187,6 +188,7 @@ const {
 
 .table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wire-table {
@@ -198,7 +200,7 @@ const {
 
 .wire-table th,
 .wire-table td {
-  padding: 10px 8px;
+  padding: 12px 8px;
   text-align: left;
   border-bottom: 1px solid #334155;
   white-space: nowrap;
@@ -214,9 +216,9 @@ const {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
-  padding: 4px 10px;
+  padding: 6px 10px;
   border-radius: 6px;
   white-space: nowrap;
   line-height: 1;
@@ -236,7 +238,7 @@ const {
   background-color: #0f172a;
   border: 2px dashed #ef4444;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   text-align: center;
 }
 

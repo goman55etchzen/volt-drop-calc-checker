@@ -1,11 +1,16 @@
 import { ref, computed } from 'vue';
 import { BREAKER_SIZES, EnvironmentType } from '@/types/appDefinitions';
-import { calculateMotorGrounding } from '@/utils/motorOmega';
+import {
+  calculateMotorGrounding,
+  selectMotorELCB,
+  calculatePhaseCapacitor,
+} from '@/utils/motorOmega';
 
 export function useMotorCalc() {
   const outputKw = ref<number>(5.5);
   const voltage = ref<number>(200);
   const powerFactor = ref<number>(0.85);
+  const targetPowerFactor = ref<number>(0.95);
   const efficiency = ref<number>(0.85);
   const environment = ref<EnvironmentType>('normal');
 
@@ -43,9 +48,16 @@ export function useMotorCalc() {
     };
   });
 
-  // motorOmega.ts の判定純粋関数を実行
   const groundingInfo = computed(() =>
     calculateMotorGrounding(voltage.value, environment.value)
+  );
+
+  const elcbInfo = computed(() =>
+    selectMotorELCB(calculatedAmp.value, environment.value, BREAKER_SIZES)
+  );
+
+  const capacitorInfo = computed(() =>
+    calculatePhaseCapacitor(outputKw.value, powerFactor.value, targetPowerFactor.value)
   );
 
   const setPreset = (kw: number) => {
@@ -63,6 +75,7 @@ export function useMotorCalc() {
     outputKw,
     voltage,
     powerFactor,
+    targetPowerFactor,
     efficiency,
     environment,
     calculatedAmp,
@@ -70,6 +83,8 @@ export function useMotorCalc() {
     requiredWireAmp,
     breakerCapacity,
     groundingInfo,
+    elcbInfo,
+    capacitorInfo,
     setPreset,
   };
 }

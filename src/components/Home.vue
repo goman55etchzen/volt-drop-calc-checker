@@ -3,6 +3,7 @@
     <!-- 3モード切り替えタブ -->
     <div class="mode-tabs">
       <button
+        type="button"
         class="tab-btn"
         :class="{ active: currentMode === 'normal' }"
         @click="currentMode = 'normal'"
@@ -10,6 +11,7 @@
         許容配線長
       </button>
       <button
+        type="button"
         class="tab-btn"
         :class="{ active: currentMode === 'reversed' }"
         @click="currentMode = 'reversed'"
@@ -17,6 +19,7 @@
         距離固定 逆算
       </button>
       <button
+        type="button"
         class="tab-btn"
         :class="{ active: currentMode === 'motor' }"
         @click="currentMode = 'motor'"
@@ -76,6 +79,7 @@
             <input
               v-model.number="targetPercent"
               type="number"
+              inputmode="decimal"
               step="0.1"
               placeholder="例: 2.0"
               class="text-input"
@@ -116,6 +120,7 @@
             <input
               v-model.number="targetPercent"
               type="number"
+              inputmode="decimal"
               step="0.1"
               placeholder="例: 2.0"
               class="text-input"
@@ -200,6 +205,7 @@
             <input
               v-model.number="oneWayDistance"
               type="number"
+              inputmode="decimal"
               placeholder="例: 30"
               class="text-input"
             />
@@ -211,6 +217,7 @@
             <input
               v-model.number="loadCurrent"
               type="number"
+              inputmode="decimal"
               placeholder="例: 15"
               class="text-input"
               :readonly="loadType === 'motor'"
@@ -228,6 +235,7 @@
             <input
               v-model.number="loadWatt"
               type="number"
+              inputmode="numeric"
               step="100"
               placeholder="接続機器合計Ｗ"
               class="text-input"
@@ -242,6 +250,7 @@
             <input
               v-model.number="powerFactor"
               type="number"
+              inputmode="decimal"
               step="0.01"
               min="0"
               max="1"
@@ -264,11 +273,11 @@
         <!-- オプションチェックボックス -->
         <div class="checkbox-container mt-12">
           <label class="checkbox-label">
-            <input v-model="ignorePowerFactor" type="checkbox" />
+            <input v-model="ignorePowerFactor" type="checkbox" class="touch-checkbox" />
             <span>LED照明・純抵抗扱い (力率1.0・リアクタンス無視)</span>
           </label>
           <label v-if="loadType === 'general'" class="checkbox-label mt-8">
-            <input v-model="isContinuous" type="checkbox" />
+            <input v-model="isContinuous" type="checkbox" class="touch-checkbox" />
             <span>3時間以上の連続負荷 (1.25倍則適用)</span>
           </label>
         </div>
@@ -414,7 +423,7 @@ const applyMotorAmp = () => {
 .home-container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 12px 16px 32px 16px;
+  padding: 12px 12px 40px 12px;
   background-color: #1e293b;
   min-height: 100vh;
   box-sizing: border-box;
@@ -428,15 +437,21 @@ const applyMotorAmp = () => {
 
 .tab-btn {
   flex: 1;
-  padding: 10px 4px;
+  min-height: 44px;
+  padding: 8px 4px;
   border-radius: 10px;
   border: 1px solid #475569;
   background-color: #0f172a;
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tab-btn.active {
@@ -458,7 +473,7 @@ const applyMotorAmp = () => {
 }
 
 .sub-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #94a3b8;
   margin-bottom: 6px;
@@ -468,22 +483,28 @@ const applyMotorAmp = () => {
 .segmented-control {
   display: flex;
   background-color: #334155;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 3px;
   border: 1px solid #475569;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .volt-btn,
 .segment-btn {
   flex: 1;
-  padding: 8px 0;
+  min-height: 40px;
   border: none;
   background: transparent;
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: bold;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
 }
 
 .volt-btn.active,
@@ -495,19 +516,20 @@ const applyMotorAmp = () => {
 .text-input,
 .select-input {
   width: 100%;
+  min-height: 48px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #475569;
   background-color: #334155;
   color: #f8fafc;
-  font-size: 14px;
+  font-size: 16px; /* iOSのズーム防止のため16px推奨 */
   box-sizing: border-box;
+  outline: none;
 }
 
-/* プレースホルダーのカラー調整 */
 .text-input::placeholder {
   color: #64748b;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .text-input:disabled {
@@ -517,24 +539,34 @@ const applyMotorAmp = () => {
 
 .preset-chips {
   display: flex;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .chip-btn {
-  font-size: 10px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid #475569;
-  background-color: #1e293b;
+  flex: 1;
+  min-height: 38px;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #38bdf8;
+  background-color: #0c4a6e;
   color: #38bdf8;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .row-inputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
+}
+
+@media (max-width: 360px) {
+  .row-inputs {
+    grid-template-columns: 1fr;
+  }
 }
 
 .mt-8 {
@@ -553,9 +585,18 @@ const applyMotorAmp = () => {
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
   color: #cbd5e1;
   cursor: pointer;
+  padding: 4px 0;
+  touch-action: manipulation;
+}
+
+.touch-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #0284c7;
 }
 </style>

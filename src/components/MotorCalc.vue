@@ -16,26 +16,52 @@
           <span class="sub-value">約 {{ simpleAmp }} A</span>
         </div>
         <div class="sub-item">
-          <span class="sub-title">電線選定用 (1.25/1.1倍則)</span>
+          <span class="sub-title">電線選定 (1.25/1.1倍)</span>
           <span class="sub-value">{{ requiredWireAmp }} A</span>
         </div>
         <div class="sub-item">
-          <span class="sub-title">推奨ブレーカー (目安)</span>
+          <span class="sub-title">推奨配線用遮断器</span>
           <span class="sub-value">{{ breakerCapacity.recommended }} A</span>
         </div>
       </div>
     </div>
 
+    <!-- 漏電遮断器(ELCB) 選定カード -->
+    <div class="section-card mt-12">
+      <div class="card-header">
+        <span class="card-title">🛡️ 漏電遮断器 (ELCB) 選定</span>
+        <span class="badge" :class="elcbInfo.isMandatory ? 'badge-danger' : 'badge-info'">
+          {{ elcbInfo.isMandatory ? '設置必須' : '標準推奨' }}
+        </span>
+      </div>
+
+      <div class="responsive-grid grid-3">
+        <div class="grid-item">
+          <span class="grid-label">定格電流</span>
+          <span class="grid-value">{{ elcbInfo.recommendedAmp }} A</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">定格感度電流</span>
+          <span class="grid-value highlight">{{ elcbInfo.sensitivityCurrent }} mA</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">動作時間</span>
+          <span class="grid-value">{{ elcbInfo.operatingTime }}</span>
+        </div>
+      </div>
+      <p class="description-text mt-8">{{ elcbInfo.description }}</p>
+    </div>
+
     <!-- 接地・絶縁抵抗 判定カード -->
-    <div class="grounding-card mt-12">
+    <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">⚡ 接地工事・絶縁抵抗 判定結果</span>
-        <span class="badge" :class="groundingInfo.groundType === 'C種接地工事' ? 'badge-c' : 'badge-d'">
+        <span class="badge" :class="groundingInfo.groundType === 'C種接地工事' ? 'badge-danger' : 'badge-primary'">
           {{ groundingInfo.groundType }}
         </span>
       </div>
 
-      <div class="grounding-grid">
+      <div class="responsive-grid grid-3">
         <div class="grid-item">
           <span class="grid-label">接地抵抗値</span>
           <span class="grid-value">{{ groundingInfo.groundResistance }} Ω 以下</span>
@@ -51,14 +77,34 @@
         </div>
       </div>
 
-      <div v-if="groundingInfo.notes.length" class="grounding-notes mt-8">
-        <p v-for="(note, idx) in groundingInfo.notes" :key="idx" class="note-text">
+      <div v-if="groundingInfo.notes.length" class="warning-box mt-8">
+        <p v-for="(note, idx) in groundingInfo.notes" :key="idx" class="warning-text">
           ⚠️ {{ note }}
         </p>
       </div>
     </div>
 
-    <!-- 入力フォーム -->
+    <!-- 進相コンデンサ 計算カード -->
+    <div class="section-card mt-12">
+      <div class="card-header">
+        <span class="card-title">🔋 進相コンデンサ (力率改善)</span>
+        <span class="badge badge-success">目標力率 95%</span>
+      </div>
+
+      <div class="responsive-grid grid-2">
+        <div class="grid-item">
+          <span class="grid-label">必要コンデンサ容量</span>
+          <span class="grid-value">{{ capacitorInfo.requiredKvar }} kvar</span>
+        </div>
+        <div class="grid-item">
+          <span class="grid-label">推奨JIS標準容量</span>
+          <span class="grid-value highlight">{{ capacitorInfo.recommendedKvar }} kvar</span>
+        </div>
+      </div>
+      <p class="description-text mt-8">{{ capacitorInfo.dischargeResistorNote }}</p>
+    </div>
+
+    <!-- 入力フォームカード -->
     <div class="form-card mt-12">
       <div class="input-group">
         <label class="sub-label">電動機定格出力 (kW)</label>
@@ -69,6 +115,7 @@
           min="0.1"
           class="text-input"
         />
+        <!-- タッチしやすいチップボタン -->
         <div class="preset-chips">
           <button type="button" class="chip-btn" @click="setPreset(0.75)">0.75kW</button>
           <button type="button" class="chip-btn" @click="setPreset(2.2)">2.2kW</button>
@@ -79,7 +126,7 @@
         </div>
       </div>
 
-      <div class="row-inputs mt-12">
+      <div class="responsive-grid grid-2 mt-12">
         <div class="input-group">
           <label class="sub-label">線間電圧 (V)</label>
           <select v-model.number="voltage" class="select-input">
@@ -99,7 +146,7 @@
         </div>
       </div>
 
-      <div class="row-inputs mt-12">
+      <div class="responsive-grid grid-2 mt-12">
         <div class="input-group">
           <label class="sub-label">効率 η (エータ)</label>
           <input
@@ -112,7 +159,7 @@
           />
         </div>
         <div class="input-group">
-          <label class="sub-label">力率 cosθ</label>
+          <label class="sub-label">現状力率 cosθ</label>
           <input
             v-model.number="powerFactor"
             type="number"
@@ -123,17 +170,6 @@
           />
         </div>
       </div>
-    </div>
-
-    <!-- 公式・解説 -->
-    <div class="info-card mt-12">
-      <p class="info-title">💡 判定・公式メモ</p>
-      <ul class="info-list">
-        <li><strong>定格電流式:</strong> I = P / (√3 × V × cosθ × η)</li>
-        <li><strong>接地工事:</strong> 300V以下はD種(100Ω以下)、300V超はC種(10Ω以下)。</li>
-        <li><strong>絶縁抵抗値:</strong> 300V以下は0.2MΩ以上、300V超は0.4MΩ以上。</li>
-        <li><strong>漏電遮断器:</strong> 0.5秒以内に動作するELCB設置時は接地抵抗500Ωまで緩和可。</li>
-      </ul>
     </div>
   </div>
 </template>
@@ -152,11 +188,19 @@ const {
   requiredWireAmp,
   breakerCapacity,
   groundingInfo,
+  elcbInfo,
+  capacitorInfo,
   setPreset,
 } = useMotorCalc();
 </script>
 
 <style scoped>
+.motor-calc-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* メイン結果カード */
 .result-card {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;
@@ -225,9 +269,11 @@ const {
   margin-top: 4px;
 }
 
-.grounding-card {
-  background: #0f172a;
-  border: 1px solid #38bdf8;
+/* セクションカード */
+.section-card,
+.form-card {
+  background-color: #0f172a;
+  border: 1px solid #334155;
   border-radius: 16px;
   padding: 16px;
 }
@@ -245,80 +291,62 @@ const {
   color: #f8fafc;
 }
 
+/* バッジスタイル */
 .badge {
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: bold;
 }
+.badge-primary { background-color: #0284c7; color: #ffffff; }
+.badge-danger  { background-color: #e11d48; color: #ffffff; }
+.badge-info    { background-color: #334155; color: #38bdf8; }
+.badge-success { background-color: #15803d; color: #ffffff; }
 
-.badge-d {
-  background-color: #0284c7;
-  color: #ffffff;
-}
-
-.badge-c {
-  background-color: #e11d48;
-  color: #ffffff;
-}
-
-.grounding-grid {
+/* レスポンシブグリッドシステム */
+.responsive-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   background-color: #1e293b;
   padding: 10px;
   border-radius: 8px;
 }
 
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+
 .grid-item {
   display: flex;
   flex-direction: column;
 }
 
-.grid-label {
-  font-size: 10px;
+.grid-label { font-size: 10px; color: #94a3b8; }
+.grid-value { font-size: 13px; font-weight: bold; color: #38bdf8; margin-top: 2px; }
+.grid-value.highlight { color: #4ade80; }
+.grid-sub { font-size: 9px; color: #64748b; }
+
+.description-text {
+  font-size: 11px;
   color: #94a3b8;
+  line-height: 1.4;
+  margin: 0;
 }
 
-.grid-value {
-  font-size: 13px;
-  font-weight: bold;
-  color: #38bdf8;
-  margin-top: 2px;
-}
-
-.grid-value.highlight {
-  color: #4ade80;
-}
-
-.grid-sub {
-  font-size: 9px;
-  color: #64748b;
-}
-
-.grounding-notes {
+.warning-box {
   background-color: #451a03;
   border: 1px solid #b45309;
   border-radius: 8px;
   padding: 8px 12px;
 }
 
-.note-text {
+.warning-text {
   font-size: 11px;
   color: #fde047;
   margin: 0;
   line-height: 1.4;
 }
 
-.form-card,
-.info-card {
-  background-color: #0f172a;
-  border-radius: 16px;
-  padding: 16px;
-  border: 1px solid #334155;
-}
-
+/* フォーム・モバイル最適化入力コントロール */
 .sub-label {
   font-size: 12px;
   font-weight: 600;
@@ -329,7 +357,8 @@ const {
 .text-input,
 .select-input {
   width: 100%;
-  padding: 10px 12px;
+  height: 44px; /* タッチしやすい高さ */
+  padding: 0 12px;
   border-radius: 8px;
   border: 1px solid #475569;
   background-color: #334155;
@@ -346,42 +375,40 @@ const {
 }
 
 .chip-btn {
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  min-height: 36px; /* タッチ領域確保 */
+  padding: 6px 12px;
+  border-radius: 8px;
   border: 1px solid #475569;
   background-color: #1e293b;
   color: #38bdf8;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.row-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.mt-8 {
-  margin-top: 8px;
-}
-
-.mt-12 {
-  margin-top: 12px;
-}
-
-.info-title {
   font-size: 12px;
-  font-weight: bold;
-  color: #f8fafc;
-  margin-bottom: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
-.info-list {
-  padding-left: 16px;
-  margin: 0;
-  font-size: 11px;
-  color: #cbd5e1;
-  line-height: 1.6;
+.chip-btn:active {
+  background-color: #0284c7;
+  color: #ffffff;
+}
+
+.mt-8  { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+
+/* スマホ表示（幅480px以下）向けレスポンシブメディアクエリ */
+@media (max-width: 480px) {
+  .sub-results,
+  .grid-3 {
+    grid-template-columns: 1fr; /* 1列に縦並び変更 */
+  }
+
+  .sub-item,
+  .grid-item {
+    padding: 8px;
+  }
+
+  .result-value {
+    font-size: 32px;
+  }
 }
 </style>

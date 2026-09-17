@@ -30,10 +30,11 @@ const selectedSystem = defineModel<string>({ required: true });
 
 .select-input {
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid #475569;
-  font-size: 15px;
+  font-size: 16px;
   background-color: #334155;
   color: #f8fafc;
   outline: none;

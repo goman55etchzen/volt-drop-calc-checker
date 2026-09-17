@@ -1,7 +1,7 @@
 <template>
   <div class="field-group">
     <label class="label">2. 使用予定の設備・負荷（流れる電流の決定）</label>
-    <select v-model="inputMode" class="select-input mb-2">
+    <select v-model="inputMode" class="select-input mb-3">
       <option value="device_watt">電球 W数×台数 から算出</option>
       <option value="device_amp">設備電流 (A) を直接指定</option>
       <option value="breaker_limit">ブレーカー容量 から指定</option>
@@ -10,11 +10,21 @@
     <div v-if="inputMode === 'device_watt'" class="grid-2">
       <div>
         <label class="sub-label">1台あたりの消費電力(W)</label>
-        <input v-model.number="unitWatt" type="number" class="text-input" />
+        <input
+          v-model.number="unitWatt"
+          type="number"
+          inputmode="numeric"
+          class="text-input"
+        />
       </div>
       <div>
         <label class="sub-label">設置台数 (台)</label>
-        <input v-model.number="unitCount" type="number" class="text-input" />
+        <input
+          v-model.number="unitCount"
+          type="number"
+          inputmode="numeric"
+          class="text-input"
+        />
       </div>
     </div>
 
@@ -23,13 +33,19 @@
       <input
         v-model.number="customDeviceAmp"
         type="number"
+        inputmode="decimal"
         class="text-input"
       />
     </div>
 
     <div v-if="inputMode === 'breaker_limit'">
       <label class="sub-label">ブレーカー容量 (A)</label>
-      <input v-model.number="breakerAmp" type="number" class="text-input" />
+      <input
+        v-model.number="breakerAmp"
+        type="number"
+        inputmode="decimal"
+        class="text-input"
+      />
     </div>
   </div>
 </template>
@@ -60,7 +76,7 @@ const breakerAmp = defineModel<number>('breakerAmp', { required: true });
 }
 
 .sub-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #cbd5e1;
   margin-bottom: 6px;
@@ -70,10 +86,11 @@ const breakerAmp = defineModel<number>('breakerAmp', { required: true });
 .select-input,
 .text-input {
   width: 100%;
+  min-height: 48px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #475569;
-  font-size: 15px;
+  font-size: 16px;
   background-color: #334155;
   color: #f8fafc;
   outline: none;
@@ -86,13 +103,19 @@ const breakerAmp = defineModel<number>('breakerAmp', { required: true });
   border-color: #38bdf8;
 }
 
-.mb-2 {
-  margin-bottom: 10px;
+.mb-3 {
+  margin-bottom: 12px;
 }
 
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+@media (max-width: 360px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

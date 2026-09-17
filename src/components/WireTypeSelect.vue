@@ -48,9 +48,9 @@ const selectCable = (id: string) => {
 }
 
 .cable-card {
-  padding: 12px 10px;
+  padding: 12px 8px;
   border: 1px solid #475569;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #334155;
   cursor: pointer;
   text-align: center;
@@ -58,9 +58,11 @@ const selectCable = (id: string) => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 72px;
+  min-height: 76px;
   box-sizing: border-box;
   transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cable-card.active {
@@ -70,7 +72,7 @@ const selectCable = (id: string) => {
 }
 
 .cable-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: bold;
   color: #f8fafc;
   line-height: 1.3;
@@ -84,7 +86,7 @@ const selectCable = (id: string) => {
 .cable-desc {
   font-size: 11px;
   color: #cbd5e1;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .cable-card.active .cable-desc {
