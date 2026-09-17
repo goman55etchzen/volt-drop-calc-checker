@@ -41,8 +41,9 @@
               </tr>
             </thead>
             <tbody>
+              <!-- 1.6mm / 2.0sq 以上の標準表示行 -->
               <tr
-                v-for="w in availableWires"
+                v-for="w in mainAvailableWires"
                 :key="w.wireName"
                 :class="{ 'is-ok': w.isOkForLoad }"
               >
@@ -53,6 +54,35 @@
                   <span class="badge" :class="w.isOkForLoad ? 'badge-ok' : 'badge-ng'">
                     {{ w.isOkForLoad ? '⭕ 適合' : '❌ 不可' }}
                   </span>
+                </td>
+              </tr>
+
+              <!-- 1.25sq 以下の細線アコーディオン行 -->
+              <tr v-if="smallAvailableWires.length">
+                <td colspan="4" class="accordion-cell">
+                  <details class="small-wire-accordion">
+                    <summary class="accordion-summary">
+                      細線サイズ（1.25sq 以下）を表示する ({{ smallAvailableWires.length }}件)
+                    </summary>
+                    <table class="wire-table inner-table">
+                      <tbody>
+                        <tr
+                          v-for="w in smallAvailableWires"
+                          :key="w.wireName"
+                          :class="{ 'is-ok': w.isOkForLoad }"
+                        >
+                          <td class="font-bold">{{ w.wireName }}</td>
+                          <td>{{ w.maxAmpereByDrop }} A</td>
+                          <td>{{ w.allowAmpereByHeat }} A</td>
+                          <td>
+                            <span class="badge" :class="w.isOkForLoad ? 'badge-ok' : 'badge-ng'">
+                              {{ w.isOkForLoad ? '⭕ 適合' : '❌ 不可' }}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </details>
                 </td>
               </tr>
             </tbody>
@@ -70,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
+import { toRef, computed } from 'vue'
 import { ReversedResultProps } from '@/types/appDefinitions'
 import { useReversedCallc } from '@/composables/useReversedCallc'
 
@@ -98,6 +128,21 @@ const {
   toRef(props, 'installationType'),
   toRef(props, 'isContinuous')
 )
+
+// area（断面積）プロパティを用いた堅牢な細線判定 (1.25sq以下)
+const isSmallWire = (area: number): boolean => {
+  return area <= 1.25
+}
+
+// 通常表示する電線（1.6mm / 2.0sq 以上）
+const mainAvailableWires = computed(() => {
+  return availableWires.value.filter(w => !isSmallWire(w.area))
+})
+
+// アコーディオン内に隠す電線（1.25sq 以下）
+const smallAvailableWires = computed(() => {
+  return availableWires.value.filter(w => isSmallWire(w.area))
+})
 </script>
 
 <style scoped>
@@ -247,5 +292,38 @@ const {
   color: #fca5a5;
   font-size: 13px;
   font-weight: bold;
+}
+
+/* アコーディオン用スタイル */
+.accordion-cell {
+  padding: 0 !important;
+}
+
+.small-wire-accordion {
+  background-color: #0f172a;
+  border-top: 1px solid #334155;
+}
+
+.accordion-summary {
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #38bdf8;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.accordion-summary:hover {
+  background-color: #1e293b;
+}
+
+.inner-table {
+  width: 100%;
+  border-top: 1px solid #334155;
+}
+
+.inner-table td {
+  border-bottom: 1px solid #1e293b;
 }
 </style>
