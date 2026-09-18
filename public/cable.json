@@ -1,0 +1,19 @@
+[
+    {
+      "id": "nic-200v-30uf",
+      "group_id": "3p-200v-30uf",
+      "mfr": "ニチコン",
+      "part_number": "BY201300TC1",
+      "phase": "3P",
+      "voltage": 200,
+      "capacity_uf": 30,
+      "kvar_50hz": 0.38,
+      "kvar_60hz": 0.45,
+      "current_50hz": 1.09,
+      "current_60hz": 1.31,
+      "dimensions": { "w": 68, "d": 62, "h": 89 },
+      "terminal": "引出端子",
+      "mount": "DIN/面取付",
+      "weight_kg": 0.25
+    }
+]

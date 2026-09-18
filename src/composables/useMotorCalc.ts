@@ -1,5 +1,5 @@
 // composables/useMotorCalc.ts
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import {
   BREAKER_SIZES,
   EnvironmentType,
@@ -9,6 +9,11 @@ import {
 } from '@/types/appDefinitions';
 import { processDirectMotorCalc } from '@/utils/directMotorCalc';
 import { processInverterMotorCalc } from '@/utils/inverterMotorCalc';
+import {
+  CapacitorProduct,
+  fetchCapacitorCatalog,
+  findClosestCapacitorGroup,
+} from '@/utils/capacitor';
 
 export type DriveMode = 'direct' | 'inverter';
 
@@ -27,6 +32,14 @@ export function useMotorCalc() {
 
   // ブレーカー選択モード ('auto' | 'motor_breaker' | 'mccb')
   const breakerTypeMode = ref<MotorBreakerType>('auto');
+
+  // カタログデータ状態
+  const capacitorCatalog = ref<CapacitorProduct[]>([]);
+
+  // 初期ロード
+  onMounted(async () => {
+    capacitorCatalog.value = await fetchCapacitorCatalog();
+  });
 
   // インバータ駆動時はモーターブレーカーが使用不可となるため、mccbに自動同期
   watch(driveMode, (newMode) => {
@@ -61,6 +74,17 @@ export function useMotorCalc() {
   const groundingInfo = computed(() => currentCalcResult.value.groundingInfo);
   const elcbInfo = computed(() => currentCalcResult.value.elcbInfo);
   const capacitorInfo = computed(() => currentCalcResult.value.capacitorInfo);
+
+  // 計算されたμF・電圧に合致する各社製品を抽出
+  const matchedCapacitors = computed(() => {
+    if (driveMode.value === 'inverter') return [];
+    return findClosestCapacitorGroup(
+      capacitorCatalog.value,
+      voltage.value,
+      frequency.value, // ★ 周波数を渡す
+      capacitorInfo.value.recommendedMicroFarad
+    );
+  });
 
   // ブレーカー選定情報
   const breakerInfo = computed<MotorBreakerSelectionResult>(() => {
@@ -148,6 +172,7 @@ export function useMotorCalc() {
     groundingInfo,
     elcbInfo,
     capacitorInfo,
+    matchedCapacitors,
     setPreset,
   };
 }

@@ -1,0 +1,53 @@
+[
+    {
+      "id": "nic-200v-20uf",
+      "group_id": "3p-200v-20uf",
+      "mfr": "ニチコン",
+      "part_number": "BY201200TC1",
+      "phase": "3P",
+      "voltage": 200,
+      "capacity_uf": 20,
+      "kvar_50hz": 0.25,
+      "kvar_60hz": 0.30,
+      "current_50hz": 0.72,
+      "current_60hz": 0.87,
+      "dimensions": { "w": 68, "d": 62, "h": 89 },
+      "terminal": "引出端子",
+      "mount": "DIN/面取付",
+      "weight_kg": 0.22
+    },
+    {
+      "id": "sho-200v-20uf",
+      "group_id": "3p-200v-20uf",
+      "mfr": "松栄電器",
+      "part_number": "SZA-20T",
+      "phase": "3P",
+      "voltage": 200,
+      "capacity_uf": 20,
+      "kvar_50hz": 0.25,
+      "kvar_60hz": 0.30,
+      "current_50hz": 0.72,
+      "current_60hz": 0.87,
+      "dimensions": { "w": 70, "d": 60, "h": 90 },
+      "terminal": "リード線",
+      "mount": "面取付",
+      "weight_kg": 0.23
+    },
+    {
+      "id": "shi-200v-20uf",
+      "group_id": "3p-200v-20uf",
+      "mfr": "指月電機製作所",
+      "part_number": "FF2020TL",
+      "phase": "3P",
+      "voltage": 200,
+      "capacity_uf": 20,
+      "kvar_50hz": 0.25,
+      "kvar_60hz": 0.30,
+      "current_50hz": 0.72,
+      "current_60hz": 0.87,
+      "dimensions": { "w": 65, "d": 65, "h": 88 },
+      "terminal": "引出端子",
+      "mount": "DIN/面取付",
+      "weight_kg": 0.21
+    }
+  ]

@@ -205,8 +205,36 @@
           <p class="description-text">{{ capacitorInfo.dischargeResistorNote }}</p>
         </div>
       </div>
-    </div>
 
+      <!-- 適合メーカー同等品・外形寸法一覧 -->
+      <div v-if="driveMode !== 'inverter' && matchedCapacitors.length > 0" class="catalog-match-box mt-12">
+        <div class="sub-label mb-8">適合メーカー同等品・外形寸法一覧</div>
+        <div class="catalog-table-wrapper">
+          <table class="catalog-table">
+            <thead>
+              <tr>
+                <th>メーカー</th>
+                <th>型番</th>
+                <th>容量</th>
+                <th>外形寸法 (W×D×H mm)</th>
+                <th>端子</th>
+                <th>取付</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in matchedCapacitors" :key="item.id">
+                <td class="mfr-name">{{ item.mfr }}</td>
+                <td class="part-no">{{ item.part_number }}</td>
+                <td>{{ item.capacity_uf }} μF</td>
+                <td>{{ item.dimensions.w }} × {{ item.dimensions.d }} × {{ item.dimensions.h }}</td>
+                <td>{{ item.terminal }}</td>
+                <td>{{ item.mount }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
     <!-- 漏電遮断器 (ELCB) 選定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
@@ -288,6 +316,7 @@ const {
   groundingInfo,
   elcbInfo,
   capacitorInfo,
+  matchedCapacitors,
   setPreset,
 } = useMotorCalc();
 </script>
@@ -548,5 +577,48 @@ const {
   .result-value {
     font-size: 34px;
   }
+  .catalog-match-box {
+  background-color: #1e293b;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #334155;
+}
+
+.catalog-table-wrapper {
+  overflow-x: auto;
+}
+
+.catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.catalog-table th {
+  background-color: #0f172a;
+  color: #cbd5e1;
+  padding: 8px 10px;
+  border-bottom: 1px solid #475569;
+  white-space: nowrap;
+}
+
+.catalog-table td {
+  padding: 10px;
+  border-bottom: 1px solid #334155;
+  color: #f8fafc;
+  white-space: nowrap;
+}
+
+.catalog-table .mfr-name {
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.catalog-table .part-no {
+  font-family: monospace;
+  font-weight: bold;
+  color: #4ade80;
+}
 }
 </style>
