@@ -1,4 +1,4 @@
-<!-- MotorCalc_6.vue -->
+<!-- MotorCalc.vue -->
 <template>
   <div class="motor-calc-container">
     
@@ -93,6 +93,27 @@
         </div>
       </div>
 
+      <!-- 駆動方式 選択トグル（新規追加） -->
+      <div class="input-group mt-12">
+        <label class="sub-label">駆動方式選択</label>
+        <div class="preset-chips">
+          <button
+            type="button"
+            :class="['chip-btn', driveMode === 'direct' ? 'active' : '']"
+            @click="driveMode = 'direct'"
+          >
+            商用電源直結 (通常)
+          </button>
+          <button
+            type="button"
+            :class="['chip-btn', driveMode === 'inverter' ? 'active' : '']"
+            @click="driveMode = 'inverter'"
+          >
+            インバータ駆動
+          </button>
+        </div>
+      </div>
+
       <!-- ブレーカー種別切替トグル -->
       <div class="input-group mt-12">
         <label class="sub-label">保護遮断器 種別選択</label>
@@ -100,6 +121,7 @@
           <button
             type="button"
             :class="['chip-btn', breakerTypeMode === 'auto' ? 'active' : '']"
+            :disabled="driveMode === 'inverter'"
             @click="breakerTypeMode = 'auto'"
           >
             自動判定 (15kW基準)
@@ -107,7 +129,7 @@
           <button
             type="button"
             :class="['chip-btn', breakerTypeMode === 'motor_breaker' ? 'active' : '']"
-            :disabled="breakerInfo.isOver15kW"
+            :disabled="breakerInfo.isOver15kW || driveMode === 'inverter'"
             @click="breakerTypeMode = 'motor_breaker'"
           >
             モーターブレーカー
@@ -117,7 +139,7 @@
             :class="['chip-btn', breakerTypeMode === 'mccb' ? 'active' : '']"
             @click="breakerTypeMode = 'mccb'"
           >
-            配線用遮断器 (MCCB+サーマル)
+            配線用遮断器 (MCCB)
           </button>
         </div>
       </div>
@@ -126,7 +148,9 @@
     <!-- 結果カード (定格電流・許容電流) -->
     <div class="result-card">
       <div class="main-result">
-        <span class="result-label">計算定格電流</span>
+        <span class="result-label">
+          {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '計算定格電流' }}
+        </span>
         <div class="result-value-group">
           <span class="result-value">{{ calculatedAmp }}</span>
           <span class="result-unit">A</span>
@@ -157,7 +181,12 @@
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">🔋 進相コンデンサ (力率改善)</span>
-        <span class="badge badge-success">目標力率 {{ (targetPowerFactor * 100).toFixed(0) }}%</span>
+        <span class="badge badge-success" v-if="driveMode !== 'inverter'">
+          目標力率 {{ (targetPowerFactor * 100).toFixed(0) }}%
+        </span>
+        <span class="badge badge-danger" v-else>
+          二次側接続禁止
+        </span>
       </div>
 
       <div class="responsive-grid grid-3">
@@ -250,6 +279,7 @@ const {
   efficiency,
   environment,
   frequency,
+  driveMode,
   breakerTypeMode,
   calculatedAmp,
   simpleAmp,

@@ -100,12 +100,54 @@
 </template>
 
 <script setup lang="ts">
-import { toRef, computed } from 'vue'
-import { ReversedResultProps } from '@/types/appDefinitions'
+import { toRefs, computed } from 'vue'
+import {
+  CalculationInputMode,
+  CableTypeCode,
+  LoadType,
+  InstallationType
+} from '@/types/appDefinitions'
 import { useReversedCallc } from '@/composables/useReversedCallc'
 
-const props = defineProps<ReversedResultProps>();
+// Vue SFCコンパイラの型解析制限を回避するため、Propsの型定義をコンポーネント内で直接宣言
+interface Props {
+  voltage: number
+  targetPercent: number
+  inputMode: CalculationInputMode
+  loadWatt: number
+  loadCurrent: number
+  oneWayDistance: number
+  selectedSystemId: string
+  selectedCableType: CableTypeCode
+  powerFactor: number
+  ignorePowerFactor: boolean
+  loadType: LoadType
+  motorKw: number
+  installationType: InstallationType
+  isContinuous: boolean
+}
 
+const props = defineProps<Props>()
+
+// toRefs を使って props を分解し、useReversedCallc の型定義へ安全に渡す
+const {
+  voltage,
+  targetPercent,
+  inputMode,
+  loadWatt,
+  loadCurrent,
+  oneWayDistance,
+  selectedSystemId,
+  selectedCableType,
+  powerFactor,
+  ignorePowerFactor,
+  loadType,
+  motorKw,
+  installationType,
+  isContinuous
+} = toRefs(props)
+
+// Composable 呼び出し
 const {
   calculatedLoadCurrent,
   calculationIssues,
@@ -113,23 +155,23 @@ const {
   availableWires,
   breakerStatus
 } = useReversedCallc(
-  toRef(props, 'voltage'),
-  toRef(props, 'targetPercent'),
-  toRef(props, 'inputMode'),
-  toRef(props, 'loadWatt'),
-  toRef(props, 'loadCurrent'),
-  toRef(props, 'oneWayDistance'),
-  toRef(props, 'selectedSystemId'),
-  toRef(props, 'selectedCableType'),
-  toRef(props, 'powerFactor'),
-  toRef(props, 'ignorePowerFactor'),
-  toRef(props, 'loadType'),
-  toRef(props, 'motorKw'),
-  toRef(props, 'installationType'),
-  toRef(props, 'isContinuous')
+  voltage,
+  targetPercent,
+  inputMode,
+  loadWatt,
+  loadCurrent,
+  oneWayDistance,
+  selectedSystemId,
+  selectedCableType,
+  powerFactor,
+  ignorePowerFactor,
+  loadType,
+  motorKw,
+  installationType,
+  isContinuous
 )
 
-// area（断面積）プロパティを用いた堅牢な細線判定 (1.25sq以下)
+// area（断面積）プロパティを用いた細線判定 (1.25sq以下)
 const isSmallWire = (area: number): boolean => {
   return area <= 1.25
 }
@@ -144,7 +186,6 @@ const smallAvailableWires = computed(() => {
   return availableWires.value.filter(w => isSmallWire(w.area))
 })
 </script>
-
 <style scoped>
 .reversed-result-container {
   margin-top: 16px;

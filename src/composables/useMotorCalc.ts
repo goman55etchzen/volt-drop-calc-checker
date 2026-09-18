@@ -1,5 +1,5 @@
-// useMotorCalc.ts
-import { ref, computed } from 'vue';
+// composables/useMotorCalc.ts
+import { ref, computed, watch } from 'vue';
 import {
   BREAKER_SIZES,
   EnvironmentType,
@@ -7,7 +7,10 @@ import {
   MotorBreakerType,
   MotorBreakerSelectionResult,
 } from '@/types/appDefinitions';
-import { useOmega } from '@/composables/useOmega';
+import { processDirectMotorCalc } from '@/utils/directMotorCalc';
+import { processInverterMotorCalc } from '@/utils/inverterMotorCalc';
+
+export type DriveMode = 'direct' | 'inverter';
 
 export function useMotorCalc() {
   // 入力パラメータ State
@@ -19,49 +22,52 @@ export function useMotorCalc() {
   const environment = ref<EnvironmentType>('normal');
   const frequency = ref<PowerFrequency>(50);
 
+  // 駆動モード ('direct': 商用電源直結, 'inverter': インバータ駆動)
+  const driveMode = ref<DriveMode>('direct');
+
   // ブレーカー選択モード ('auto' | 'motor_breaker' | 'mccb')
   const breakerTypeMode = ref<MotorBreakerType>('auto');
 
-  // 定格電流計算 (In = P / (√3 * V * cosθ * η))
-  const calculatedAmp = computed(() => {
-    const pWatt = outputKw.value * 1000;
-    const denominator = Math.sqrt(3) * voltage.value * powerFactor.value * efficiency.value;
-    if (denominator <= 0) return 0;
-    return Number((pWatt / denominator).toFixed(2));
-  });
-
-  // 簡易目安電流
-  const simpleAmp = computed(() => {
-    if (voltage.value >= 400) {
-      return Number((outputKw.value * 2).toFixed(1));
+  // インバータ駆動時はモーターブレーカーが使用不可となるため、mccbに自動同期
+  watch(driveMode, (newMode) => {
+    if (newMode === 'inverter') {
+      breakerTypeMode.value = 'mccb';
     }
-    return Number((outputKw.value * 4).toFixed(1));
   });
 
-  // 許容電流基準 (50A以下: 1.25倍 / 50A超: 1.1倍)
-  const requiredWireAmp = computed(() => {
-    const amp = calculatedAmp.value;
-    if (amp <= 50) {
-      return Number((amp * 1.25).toFixed(2));
-    }
-    return Number((amp * 1.1).toFixed(2));
-  });
-
-  // 既存互換用ブレーカー計算 (定格×3倍を目安)
-  const breakerCapacity = computed(() => {
-    const amp = calculatedAmp.value;
-    const target = amp * 3.0;
-    const recommended =
-      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
-
-    return {
-      rawTarget: Number(target.toFixed(1)),
-      recommended,
+  // モード別計算ロジックの統合呼び出し
+  const currentCalcResult = computed(() => {
+    const params = {
+      outputKw: outputKw.value,
+      voltage: voltage.value,
+      powerFactor: powerFactor.value,
+      targetPowerFactor: targetPowerFactor.value,
+      efficiency: efficiency.value,
+      environment: environment.value,
+      frequency: frequency.value,
+      breakerTypeMode: breakerTypeMode.value,
     };
+
+    if (driveMode.value === 'inverter') {
+      return processInverterMotorCalc(params);
+    }
+    return processDirectMotorCalc(params);
   });
 
-  // ブレーカー選定詳細ロジック (15kW超の自動MCCB切り替え対応)
+  // 算出プロパティ
+  const calculatedAmp = computed(() => currentCalcResult.value.calculatedAmp);
+  const simpleAmp = computed(() => currentCalcResult.value.simpleAmp);
+  const requiredWireAmp = computed(() => currentCalcResult.value.requiredWireAmp);
+  const groundingInfo = computed(() => currentCalcResult.value.groundingInfo);
+  const elcbInfo = computed(() => currentCalcResult.value.elcbInfo);
+  const capacitorInfo = computed(() => currentCalcResult.value.capacitorInfo);
+
+  // ブレーカー選定情報
   const breakerInfo = computed<MotorBreakerSelectionResult>(() => {
+    if (driveMode.value === 'inverter') {
+      return currentCalcResult.value.breakerInfo;
+    }
+
     const kw = outputKw.value;
     const amp = calculatedAmp.value;
     const isOver15kW = kw > 15.0;
@@ -99,18 +105,20 @@ export function useMotorCalc() {
     };
   });
 
-  // useOmega を利用した計算呼び出し (引数の型と順序を整合)
-  const { groundingInfo, elcbInfo, capacitorInfo } = useOmega(
-    voltage,
-    environment,
-    calculatedAmp,
-    outputKw,
-    powerFactor,
-    targetPowerFactor,
-    frequency,
-    efficiency
-  );
+  // 既存互換用ブレーカー容量計算
+  const breakerCapacity = computed(() => {
+    const amp = calculatedAmp.value;
+    const target = amp * 3.0;
+    const recommended =
+      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
 
+    return {
+      rawTarget: Number(target.toFixed(1)),
+      recommended,
+    };
+  });
+
+  // プリセット設定
   const setPreset = (kw: number) => {
     outputKw.value = kw;
     if (kw <= 2.2) {
@@ -130,6 +138,7 @@ export function useMotorCalc() {
     efficiency,
     environment,
     frequency,
+    driveMode,
     breakerTypeMode,
     calculatedAmp,
     simpleAmp,

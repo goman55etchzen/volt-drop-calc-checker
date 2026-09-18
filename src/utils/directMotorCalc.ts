@@ -13,7 +13,7 @@ import {
     calculateMotorGrounding,
     selectMotorELCB,
     calculatePhaseCapacitor,
-  } from '@/composables/motorOmega_6';
+  } from '@/utils/motorOmega';
   
   /**
    * 非インバータ（商用電源直結）電動機計算の入力パラメータ型定義
