@@ -394,7 +394,9 @@ export const REDUCTION_FACTORS: Record<InstallationType, number> = {
 export const BREAKER_SIZES = [15, 20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300];
 
 /** 三相3線式 (3P3W) 用の標準遮断器・漏電遮断器定格電流サイズ */
-export const THREE_PHASE_BREAKER_SIZES = [20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300];
+export const THREE_PHASE_BREAKER_SIZES = [
+  20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300, 400
+];
 
 /** 低圧進相コンデンサ取付容量基準 (第1表 200V三相誘導電動機) */
 export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [

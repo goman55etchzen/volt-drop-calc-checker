@@ -1,4 +1,3 @@
-<!-- MotorCalc.vue -->
 <template>
   <div class="motor-calc-container">
     
@@ -8,6 +7,7 @@
         <span class="card-title">⚙️ 電動機仕様・入力設定</span>
       </div>
 
+      <!-- 出力 (kW) 選択 -->
       <div class="input-group">
         <label class="sub-label">電動機定格出力 (kW)</label>
         <input
@@ -30,6 +30,7 @@
         </div>
       </div>
 
+      <!-- 電圧・周波数・環境条件 -->
       <div class="responsive-grid grid-3 mt-12">
         <div class="input-group">
           <label class="sub-label">線間電圧 (V)</label>
@@ -57,6 +58,7 @@
         </div>
       </div>
 
+      <!-- 力率・効率 -->
       <div class="responsive-grid grid-3 mt-12">
         <div class="input-group">
           <label class="sub-label">現状力率 cosθ</label>
@@ -93,7 +95,38 @@
         </div>
       </div>
 
-      <!-- 駆動方式 選択トグル（新規追加） -->
+      <!-- 多台数・他負荷設定（新規統合） -->
+      <div class="responsive-grid grid-3 mt-12">
+        <div class="input-group">
+          <label class="sub-label">電動機台数</label>
+          <input
+            v-model.number="motorCount"
+            type="number"
+            min="1"
+            step="1"
+            class="text-input"
+          />
+        </div>
+        <div class="input-group">
+          <label class="sub-label">その他一般負荷 Ir (A)</label>
+          <input
+            v-model.number="otherLoadAmp"
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="0"
+            class="text-input"
+          />
+        </div>
+        <div class="input-group">
+          <label class="sub-label">合算定格電流 (Im×台数 + Ir)</label>
+          <div class="text-input-readonly">
+            {{ totalLoadAmp.toFixed(2) }} A
+          </div>
+        </div>
+      </div>
+
+      <!-- 駆動方式 選択トグル -->
       <div class="input-group mt-12">
         <label class="sub-label">駆動方式選択</label>
         <div class="preset-chips">
@@ -129,7 +162,7 @@
           <button
             type="button"
             :class="['chip-btn', breakerTypeMode === 'motor_breaker' ? 'active' : '']"
-            :disabled="breakerInfo.isOver15kW || driveMode === 'inverter'"
+            :disabled="breakerInfo.isOver15kW || driveMode === 'inverter' || motorCount > 1 || otherLoadAmp > 0"
             @click="breakerTypeMode = 'motor_breaker'"
           >
             モーターブレーカー
@@ -149,7 +182,7 @@
     <div class="result-card">
       <div class="main-result">
         <span class="result-label">
-          {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '計算定格電流' }}
+          {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
         </span>
         <div class="result-value-group">
           <span class="result-value">{{ calculatedAmp }}</span>
@@ -235,6 +268,7 @@
         </div>
       </div>
     </div>
+
     <!-- 漏電遮断器 (ELCB) 選定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
@@ -309,8 +343,11 @@ const {
   frequency,
   driveMode,
   breakerTypeMode,
+  motorCount,
+  otherLoadAmp,
   calculatedAmp,
   simpleAmp,
+  totalLoadAmp,
   requiredWireAmp,
   breakerInfo,
   groundingInfo,
@@ -507,6 +544,21 @@ const {
   box-sizing: border-box;
 }
 
+.text-input-readonly {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background-color: #1e293b;
+  color: #38bdf8;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
 .preset-chips {
   display: flex;
   flex-wrap: wrap;
@@ -540,44 +592,7 @@ const {
   border-color: #38bdf8;
 }
 
-.mb-12 { margin-bottom: 12px; }
-.mt-8  { margin-top: 8px; }
-.mt-12 { margin-top: 12px; }
-
-@media (max-width: 640px) {
-  .sub-results {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .grid-3 {
-    grid-template-columns: 1fr;
-  }
-
-  .sub-item {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 14px;
-  }
-
-  .sub-value {
-    margin-top: 0;
-    font-size: 15px;
-  }
-
-  .grid-item {
-    padding: 4px 0;
-  }
-
-  .grid-value {
-    font-size: 16px;
-  }
-
-  .result-value {
-    font-size: 34px;
-  }
-  .catalog-match-box {
+.catalog-match-box {
   background-color: #1e293b;
   border-radius: 8px;
   padding: 12px;
@@ -620,5 +635,44 @@ const {
   font-weight: bold;
   color: #4ade80;
 }
+
+.mb-8  { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mt-8  { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+
+@media (max-width: 640px) {
+  .sub-results {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .sub-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+  }
+
+  .sub-value {
+    margin-top: 0;
+    font-size: 15px;
+  }
+
+  .grid-item {
+    padding: 4px 0;
+  }
+
+  .grid-value {
+    font-size: 16px;
+  }
+
+  .result-value {
+    font-size: 34px;
+  }
 }
 </style>
