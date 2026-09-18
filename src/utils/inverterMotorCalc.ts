@@ -83,8 +83,7 @@ import {
   
   /**
    * 4. 配線用遮断器 (MCCB) 容量の計算
-   * インバータ駆動時は始動電流が抑制されるため、直入始動用の3倍則（3.0倍）ではなく
-   * インバータ容量・過負荷耐力を考慮した1.3〜1.5倍（ここでは基準1.4倍）で選定します。
+   * インバータ容量・過負荷耐力を考慮した1.4倍基準で選定
    */
   export function calculateInverterBreakerCapacity(calculatedAmp: number): {
     rawTarget: number;
@@ -103,11 +102,12 @@ import {
   
   /**
    * 5. モーター遮断器 / MCCB 選定ロジック
-   * インバータ一次側には一般に配線用遮断器（MCCB）を設置します。
+   * インバータ一次側には配線用遮断器（MCCB）を標準選定
    */
   export function selectInverterMotorBreaker(
     outputKw: number,
-    calculatedAmp: number
+    calculatedAmp: number,
+    _breakerTypeMode?: MotorBreakerType
   ): MotorBreakerSelectionResult {
     const isOver15kW = outputKw > 15.0;
     const { recommended } = calculateInverterBreakerCapacity(calculatedAmp);
@@ -124,7 +124,7 @@ import {
   
   /**
    * 6. インバータ用漏電遮断器 (ELCB) の選定
-   * 高周波漏れ電流による誤動作を防止するため、高周波対応形（インバータ用ELCB）が必須です。
+   * 高周波漏れ電流による誤動作を防止するため、高周波対応形（インバータ用ELCB）が必須
    */
   export function selectInverterELCB(
     calculatedAmp: number,
@@ -150,7 +150,7 @@ import {
   
   /**
    * 7. 進相コンデンサ警告処理
-   * インバータの二次側（出力側）に進相コンデンサを接続すると高周波による過熱・破壊の原因となるため接続禁止です。
+   * インバータの二次側（出力側）に進相コンデンサを接続することは禁止
    */
   export function calculateInverterPhaseCapacitor(): CapacitorSelectionResult {
     return {
@@ -176,6 +176,7 @@ import {
       powerFactor,
       efficiency,
       environment,
+      breakerTypeMode = 'auto',
     } = params;
   
     // 1. 各種電流計算
@@ -185,7 +186,7 @@ import {
   
     // 2. 遮断器選定
     const breakerCapacity = calculateInverterBreakerCapacity(calculatedAmp);
-    const breakerInfo = selectInverterMotorBreaker(outputKw, calculatedAmp);
+    const breakerInfo = selectInverterMotorBreaker(outputKw, calculatedAmp, breakerTypeMode);
   
     // 3. 接地・ELCB・コンデンサ判定
     const groundingInfo = calculateMotorGrounding(voltage, environment);

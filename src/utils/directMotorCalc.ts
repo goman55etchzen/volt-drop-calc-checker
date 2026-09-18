@@ -1,4 +1,4 @@
-// directMotorCalc.ts
+// utils/directMotorCalc.ts
 import {
   THREE_PHASE_BREAKER_SIZES,
   EnvironmentType,
@@ -168,7 +168,7 @@ export function processDirectMotorCalc(params: DirectMotorCalcParams): DirectMot
   const breakerCapacity = calculateDirectBreakerCapacity(calculatedAmp);
   const breakerInfo = selectDirectMotorBreaker(outputKw, calculatedAmp, breakerTypeMode);
 
-  // 3. 接地工事・漏電遮断器・進相コンデンサ計算 (ユーティリティ関数呼び出し)
+  // 3. 接地工事・漏電遮断器・進相コンデンサ計算
   const groundingInfo = calculateMotorGrounding(voltage, environment);
   const elcbInfo = selectMotorELCB(calculatedAmp, environment, THREE_PHASE_BREAKER_SIZES);
   const capacitorInfo = calculatePhaseCapacitor(

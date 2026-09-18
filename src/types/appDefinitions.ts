@@ -1,4 +1,4 @@
-// appDefinitions.ts
+// src/types/appDefinitions.ts
 
 // ==========================================
 // 1. アプリ状態・UIイベント型定義
@@ -10,7 +10,6 @@ export type CalculationInputMode = 'amp' | 'watt';
 export type LoadType = 'general' | 'motor';
 export type InstallationType = 'conduit_3' | 'conduit_4' | 'ceiling_open' | 'staple_surface';
 
-/** ケーブル種別コード (小文字統一) */
 export type CableTypeCode = 
   | 'vv' 
   | 'vvr' 
@@ -60,7 +59,7 @@ export interface CapacitorSelectionResult {
   recommendedMicroFarad?: number;
   improvedPowerFactor?: number;
   dischargeResistorNote: string;
-  isTableStandard?: boolean; // 第1表基準による選定かどうかのフラグ
+  isTableStandard?: boolean;
 }
 
 // ==========================================
@@ -393,12 +392,10 @@ export const REDUCTION_FACTORS: Record<InstallationType, number> = {
 
 export const BREAKER_SIZES = [15, 20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300];
 
-/** 三相3線式 (3P3W) 用の標準遮断器・漏電遮断器定格電流サイズ */
 export const THREE_PHASE_BREAKER_SIZES = [
   20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300, 400
 ];
 
-/** 低圧進相コンデンサ取付容量基準 (第1表 200V三相誘導電動機) */
 export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
   { kw: 0.2,  uf50Hz: 15,  kvar50Hz: 0.19, uf60Hz: 10,  kvar60Hz: 0.15 },
   { kw: 0.4,  uf50Hz: 20,  kvar50Hz: 0.25, uf60Hz: 15,  kvar60Hz: 0.23 },

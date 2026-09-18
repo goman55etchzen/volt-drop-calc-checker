@@ -1,3 +1,4 @@
+<!-- src/components/MotorCalc.vue -->
 <template>
   <div class="motor-calc-container">
     
@@ -95,7 +96,7 @@
         </div>
       </div>
 
-      <!-- 多台数・他負荷設定（新規統合） -->
+      <!-- 多台数・他負荷設定 -->
       <div class="responsive-grid grid-3 mt-12">
         <div class="input-group">
           <label class="sub-label">電動機台数</label>
@@ -197,7 +198,7 @@
         </div>
         <div class="sub-item">
           <span class="sub-title">電線選定 (1.25/1.1倍)</span>
-          <span class="sub-value">{{ requiredWireAmp }} A</span>
+          <span class="sub-value">{{ requiredWireAmp.toFixed(1) }} A</span>
         </div>
         <div class="sub-item">
           <span class="sub-title">推奨遮断器容量 ({{ breakerInfo.selectedType === 'motor_breaker' ? 'MB' : 'MCCB' }})</span>
