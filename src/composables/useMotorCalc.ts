@@ -44,12 +44,14 @@ export function useMotorCalc() {
     capacitorCatalog.value = await fetchCapacitorCatalog();
   });
 
+  // 駆動モード変更時の自動切替（インバータ時はMCCB固定）
   watch(driveMode, (newMode) => {
     if (newMode === 'inverter') {
       breakerTypeMode.value = 'mccb';
     }
   });
 
+  // 基礎計算（直結 vs インバータ）
   const currentCalcResult = computed(() => {
     const params = {
       outputKw: outputKw.value,
@@ -70,8 +72,27 @@ export function useMotorCalc() {
 
   const calculatedAmp = computed(() => currentCalcResult.value.calculatedAmp);
   const simpleAmp = computed(() => currentCalcResult.value.simpleAmp);
-  const requiredWireAmp = computed(() => currentCalcResult.value.requiredWireAmp);
 
+  // 幹線電線の最小許容電流（多台数・他負荷対応）
+  const requiredWireAmp = computed(() => {
+    // 1台のみかつ他負荷なしの場合は基礎計算結果を使用
+    if (motorCount.value === 1 && otherLoadAmp.value === 0) {
+      return currentCalcResult.value.requiredWireAmp;
+    }
+
+    // 多台数・他負荷の幹線計算式
+    // Im = 電動機全定格電流の和, Ir = その他負荷電流
+    const sumIm = calculatedAmp.value * motorCount.value;
+    const sumIr = otherLoadAmp.value;
+
+    if (sumIm <= 50) {
+      return sumIm * 1.25 + sumIr;
+    } else {
+      return sumIm * 1.1 + sumIr;
+    }
+  });
+
+  // 合算負荷電流
   const totalLoadAmp = computed(() => {
     return calculatedAmp.value * motorCount.value + otherLoadAmp.value;
   });
@@ -79,6 +100,7 @@ export function useMotorCalc() {
   const groundingInfo = computed(() => currentCalcResult.value.groundingInfo);
   const capacitorInfo = computed(() => currentCalcResult.value.capacitorInfo);
 
+  // 適合コンデンサ検索
   const matchedCapacitors = computed(() => {
     if (driveMode.value === 'inverter') return [];
     return findClosestCapacitorGroup(
@@ -89,7 +111,7 @@ export function useMotorCalc() {
     );
   });
 
-  // 過電流遮断器選定（utilsに統合）
+  // 配線用遮断器 / モーターブレーカー選定（電線許容電流 wireAllowAmp を引数に追加）
   const breakerInfo = computed<MotorBreakerSelectionResult>(() => {
     if (driveMode.value === 'inverter') {
       return currentCalcResult.value.breakerInfo;
@@ -100,34 +122,38 @@ export function useMotorCalc() {
       singleAmp: calculatedAmp.value,
       motorCount: motorCount.value,
       otherLoadAmp: otherLoadAmp.value,
+      wireAllowAmp: requiredWireAmp.value,
       breakerTypeMode: breakerTypeMode.value,
       driveMode: driveMode.value,
     });
   });
 
-  // 漏電遮断器選定（utilsに統合）
+  // 漏電遮断器選定（電線許容電流 wireAllowAmp を引数に追加）
   const elcbInfo = computed(() => {
     return selectElcb({
       outputKw: outputKw.value,
       singleAmp: calculatedAmp.value,
       motorCount: motorCount.value,
       otherLoadAmp: otherLoadAmp.value,
+      wireAllowAmp: requiredWireAmp.value,
       breakerTypeMode: breakerTypeMode.value,
       driveMode: driveMode.value,
       environment: environment.value,
     });
   });
 
+  // ブレーカー容量計算サマリ
   const breakerCapacity = computed(() => {
-    const target = calculatedAmp.value * motorCount.value * 3.0 + otherLoadAmp.value;
+    const rawTarget = calculatedAmp.value * motorCount.value * 3.0 + otherLoadAmp.value;
     const recommended = breakerInfo.value.recommendedAmp;
 
     return {
-      rawTarget: Number(target.toFixed(1)),
+      rawTarget: Number(rawTarget.toFixed(1)),
       recommended,
     };
   });
 
+  // プリセット設定（kW変更時の標準力率自動アサイン）
   const setPreset = (kw: number) => {
     outputKw.value = kw;
     if (kw <= 2.2) {

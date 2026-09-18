@@ -1,3 +1,4 @@
+// useElb.ts
 import { computed, Ref } from 'vue';
 import {
   EnvironmentType,
@@ -7,50 +8,76 @@ import {
 
 /**
  * 漏電遮断器（ELCB）の選定・判定ロジックを行うComposable
+ * 内線規程 3705-8（幹線の過電流保護）および第148条に準拠
  *
- * @param calculatedAmp 計算された計算電流 (A)
+ * @param motorAmp 電動機の定格電流の合計 ∑IM (A)
+ * @param otherLoadAmp その他の電気使用機械器具の定格電流の合計 ∑IL (A)
+ * @param wireAllowAmp 幹線電線の許容電流 IW (A)
  * @param environment 設置環境 ('normal' | 'enclosure' | 'wet')
  */
 export function useElb(
-  calculatedAmp: Ref<number>,
+  motorAmp: Ref<number>,
+  otherLoadAmp: Ref<number>,
+  wireAllowAmp: Ref<number>,
   environment: Ref<EnvironmentType>
 ) {
   /**
    * 漏電遮断器（ELCB）選定結果の算出
    */
   const elcbInfo = computed<ElcbSelectionResult>(() => {
-    const amp = calculatedAmp.value || 0;
+    const im = motorAmp.value || 0;
+    const il = otherLoadAmp.value || 0;
+    const iw = wireAllowAmp.value || 0;
     const env = environment.value;
 
-    // 1. 定格電流（フレーム）の選定
-    // 計算電流の1.25倍以上の最小遮断器サイズを選定（三相用 20A〜）
-    const targetAmp = amp * 1.25;
-    const recommendedAmp =
-      THREE_PHASE_BREAKER_SIZES.find((size) => size >= targetAmp) ?? 
-      THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
+    // --- 内線規程 3705-8 幹線過電流遮断器容量の計算 ---
+    // 1. 電動機合計電流による倍率設定 (50A以下: 3.0倍 / 50A超: 2.75倍)
+    const motorFactor = im <= 50 ? 3.0 : 2.75;
+    const limitByLoad = motorFactor * im + il;
 
-    // 2. 設置環境に応じた義務・感度電流判定
-    // 水気・湿気場所（wet）の場合は設置が法的に必須（高感度形 15mA 以下）
+    // 2. 幹線許容電流による上限制限 (2.5 * IW)
+    const limitByWire = iw > 0 ? 2.5 * iw : Infinity;
+
+    // 許容される過電流遮断器の上限値 (両条件の最小値)
+    const maxAllowedAmp = Math.min(limitByLoad, limitByWire);
+
+    // 3. 定格サイズの選定 (最小30A)
+    // 負荷電流を確実にカバーし、かつ規定上限値(maxAllowedAmp)を超えないサイズを選定
+    // (※上限計算値が標準サイズと一致しない場合は、1サイズ上位の標準定格を選択)
+    const MIN_BREAKER_SIZE = 30;
+    let recommendedAmp = THREE_PHASE_BREAKER_SIZES.find((size) => size >= limitByLoad) 
+      ?? THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
+
+    // 幹線許容電流制限(2.5*IW)を超える場合は上限以下に抑える
+    if (iw > 0 && recommendedAmp > limitByWire) {
+      const validSizes = THREE_PHASE_BREAKER_SIZES.filter((size) => size <= limitByWire);
+      recommendedAmp = validSizes.length > 0 
+        ? validSizes[validSizes.length - 1] 
+        : MIN_BREAKER_SIZE;
+    }
+
+    if (recommendedAmp < MIN_BREAKER_SIZE) {
+      recommendedAmp = MIN_BREAKER_SIZE;
+    }
+
+    // --- 設置環境に応じた義務・感度電流判定 ---
     const isMandatory = env === 'wet';
-    const sensitivityCurrent = isMandatory ? 15 : 30; // mA
+    const sensitivityCurrent = isMandatory ? 15 : (recommendedAmp > 50 ? 100 : 30); // mA
     const operatingTime = '0.1秒以内（高速形）';
 
-    // 3. 定格感度電流に応じたD種接地抵抗の目標上限値計算 (安全電圧 24V 基準)
-    // 15mA -> 24 / 0.015 = 1600Ω (内線規程等の規定上限 1000Ω)
-    // 30mA -> 24 / 0.030 = 800Ω  (内線規程等の規定上限 500Ω)
-    const maxGroundResistance = sensitivityCurrent === 15 ? 1000 : 500;
+    // 定格感度電流に応じた接地抵抗の目標上限値計算
+    const maxGroundResistance = sensitivityCurrent === 15 ? 1000 : (sensitivityCurrent === 30 ? 500 : 150);
 
-    // 4. 解説文の生成
+    // --- 解説文の生成 ---
     let description = '';
+    const totalLoad = im + il;
+
     if (isMandatory) {
-      description =
-        '水気・湿気のある場所または移動形機器の回路です。定格感度電流15mA以下・動作時間0.1秒以内の高感度高速形漏電遮断器の設置が義務付けられています。';
+      description = `水気・湿気のある場所の回路です（負荷合計: ${totalLoad.toFixed(1)}A）。内線規程3705-8準拠（制限目標: ${limitByLoad.toFixed(1)}A）で定格電流${recommendedAmp}A、感度15mA以下の高感度高速形ELCBの設置が必須です。`;
     } else if (env === 'enclosure') {
-      description =
-        '金属製外箱等に収納される機器の回路です。感電防止のため、定格感度電流30mA以下の高速形（0.1秒以内）を選定してください。';
+      description = `金属外箱収納回路です（負荷合計: ${totalLoad.toFixed(1)}A）。内線規程3705-8準拠により定格電流${recommendedAmp}A、感度${sensitivityCurrent}mAの高速形ELCBを選定しています。`;
     } else {
-      description =
-        '一般的な屋内回路の感電保護用として、定格感度電流30mA以下・動作時間0.1秒以内の高感度高速形を選定してください。';
+      description = `内線規程3705-8（3×∑IM＋∑IL ≤ ${limitByLoad.toFixed(1)}A）に基づき、定格電流${recommendedAmp}A（感度${sensitivityCurrent}mA）のELCBを選定しています。`;
     }
 
     return {

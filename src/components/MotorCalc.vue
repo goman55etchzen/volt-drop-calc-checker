@@ -31,33 +31,13 @@
         </div>
       </div>
 
-      <!-- 電圧・周波数・環境条件 -->
-      <div class="responsive-grid grid-3 mt-12">
-        <div class="input-group">
-          <label class="sub-label">線間電圧 (V)</label>
-          <select v-model.number="voltage" class="select-input">
-            <option :value="200">200 V</option>
-            <option :value="220">220 V</option>
-            <option :value="400">400 V</option>
-            <option :value="440">440 V</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label class="sub-label">電源周波数</label>
-          <select v-model.number="frequency" class="select-input">
-            <option :value="50">50 Hz (東日本)</option>
-            <option :value="60">60 Hz (西日本)</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label class="sub-label">設置環境条件</label>
-          <select v-model="environment" class="select-input">
-            <option value="normal">一般乾燥場所</option>
-            <option value="enclosure">鉄箱・金属外箱内</option>
-            <option value="wet">水気・湿気のある場所</option>
-          </select>
-        </div>
-      </div>
+      <!-- 電圧・周波数・環境条件 (コンポーネント化してスッキリ分離) -->
+      <Selected1
+        v-model:voltage="voltage"
+        v-model:frequency="frequency"
+        v-model:environment="environment"
+        class="mt-12"
+      />
 
       <!-- 力率・効率 -->
       <div class="responsive-grid grid-3 mt-12">
@@ -148,35 +128,15 @@
         </div>
       </div>
 
-      <!-- ブレーカー種別切替トグル -->
-      <div class="input-group mt-12">
-        <label class="sub-label">保護遮断器 種別選択</label>
-        <div class="preset-chips">
-          <button
-            type="button"
-            :class="['chip-btn', breakerTypeMode === 'auto' ? 'active' : '']"
-            :disabled="driveMode === 'inverter'"
-            @click="breakerTypeMode = 'auto'"
-          >
-            自動判定 (15kW基準)
-          </button>
-          <button
-            type="button"
-            :class="['chip-btn', breakerTypeMode === 'motor_breaker' ? 'active' : '']"
-            :disabled="breakerInfo.isOver15kW || driveMode === 'inverter' || motorCount > 1 || otherLoadAmp > 0"
-            @click="breakerTypeMode = 'motor_breaker'"
-          >
-            モーターブレーカー
-          </button>
-          <button
-            type="button"
-            :class="['chip-btn', breakerTypeMode === 'mccb' ? 'active' : '']"
-            @click="breakerTypeMode = 'mccb'"
-          >
-            配線用遮断器 (MCCB)
-          </button>
-        </div>
-      </div>
+      <!-- 保護遮断器 種別選択（BreakerSelect コンポーネント） -->
+      <BreakerSelect
+        v-model="breakerTypeMode"
+        :drive-mode="driveMode"
+        :is-over15-k-w="breakerInfo.isOver15kW"
+        :motor-count="motorCount"
+        :other-load-amp="otherLoadAmp"
+        class="mt-12"
+      />
     </div>
 
     <!-- 結果カード (定格電流・許容電流) -->
@@ -194,10 +154,10 @@
       <div class="sub-results">
         <div class="sub-item">
           <span class="sub-title">簡易目安 (kW×{{ voltage >= 400 ? 2 : 4 }})</span>
-          <span class="sub-value">約 {{ simpleAmp }} A</span>
+          <span class="result-value-group">約 {{ simpleAmp }} A</span>
         </div>
         <div class="sub-item">
-          <span class="sub-title">電線選定 (1.25/1.1倍)</span>
+          <span class="sub-title">幹線電線最小許容電流</span>
           <span class="sub-value">{{ requiredWireAmp.toFixed(1) }} A</span>
         </div>
         <div class="sub-item">
@@ -333,6 +293,8 @@
 
 <script setup lang="ts">
 import { useMotorCalc } from '@/composables/useMotorCalc';
+import BreakerSelect from '@/components/BreakerSelect.vue';
+import Selected1 from '@/components/selected1.vue'; // インポート追加
 
 const {
   outputKw,
@@ -360,6 +322,7 @@ const {
 </script>
 
 <style scoped>
+/* スタイルはそのまま維持 */
 .motor-calc-container {
   width: 100%;
   box-sizing: border-box;

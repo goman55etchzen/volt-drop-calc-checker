@@ -62,6 +62,18 @@ export interface CapacitorSelectionResult {
   isTableStandard?: boolean;
 }
 
+// 遮断器選定 引数インターフェース
+export interface SelectBreakerParams {
+  outputKw: number;
+  singleAmp: number;
+  motorCount: number;
+  otherLoadAmp: number;
+  wireAllowAmp?: number;
+  breakerTypeMode: MotorBreakerType;
+  driveMode: 'direct' | 'inverter';
+  environment?: EnvironmentType;
+}
+
 // ==========================================
 // 2. Vue コンポーネント Props / Emits インターフェース
 // ==========================================
