@@ -284,7 +284,7 @@ const {
 }
 
 .result-label {
-  font-size: 12px;
+  font-size: 13px; /* 12px -> 13px に拡大 */
   color: #38bdf8;
   font-weight: bold;
 }
@@ -292,17 +292,18 @@ const {
 .result-value-group {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 6px;
 }
 
 .result-value {
-  font-size: 36px;
+  font-size: 38px; /* スマホでも見やすい強調サイズ */
   font-weight: 800;
   color: #f8fafc;
+  line-height: 1.1;
 }
 
 .result-unit {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   color: #94a3b8;
 }
@@ -318,18 +319,20 @@ const {
 .sub-item {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   background-color: #0f172a;
-  padding: 8px 4px;
+  padding: 10px 6px; /* パディング調整 */
   border-radius: 8px;
 }
 
 .sub-title {
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: 11px; /* 10px -> 11px */
+  color: #cbd5e1;
+  line-height: 1.3rem;
 }
 
 .sub-value {
-  font-size: 13px;
+  font-size: 14px; /* 13px -> 14px */
   font-weight: bold;
   color: #38bdf8;
   margin-top: 4px;
@@ -348,19 +351,21 @@ const {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 8px;
 }
 
 .card-title {
-  font-size: 13px;
+  font-size: 14px; /* 13px -> 14px */
   font-weight: bold;
   color: #f8fafc;
 }
 
 .badge {
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px; /* 11px -> 12px */
   font-weight: bold;
+  white-space: nowrap;
 }
 .badge-primary { background-color: #0284c7; color: #ffffff; }
 .badge-danger  { background-color: #e11d48; color: #ffffff; }
@@ -369,9 +374,9 @@ const {
 
 .responsive-grid {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   background-color: #1e293b;
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
 }
 
@@ -382,15 +387,28 @@ const {
   flex-direction: column;
 }
 
-.grid-label { font-size: 10px; color: #94a3b8; }
-.grid-value { font-size: 13px; font-weight: bold; color: #38bdf8; margin-top: 2px; }
+.grid-label { 
+  font-size: 11px; /* 10px -> 11px */
+  color: #cbd5e1;  /* コントラスト改善 */
+  font-weight: 500;
+}
+.grid-value { 
+  font-size: 15px; /* 13px -> 15px */
+  font-weight: bold; 
+  color: #38bdf8; 
+  margin-top: 2px; 
+}
 .grid-value.highlight { color: #4ade80; }
-.grid-sub { font-size: 9px; color: #64748b; }
+.grid-sub { 
+  font-size: 11px; /* 9px -> 11px */
+  color: #94a3b8;  /* 視認性改善 */
+  margin-top: 2px;
+}
 
 .description-text {
-  font-size: 11px;
-  color: #94a3b8;
-  line-height: 1.4;
+  font-size: 12px; /* 11px -> 12px */
+  color: #cbd5e1;
+  line-height: 1.5;
   margin: 0;
 }
 
@@ -398,51 +416,52 @@ const {
   background-color: #451a03;
   border: 1px solid #b45309;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 10px 12px;
 }
 
 .warning-text {
-  font-size: 11px;
+  font-size: 12px; /* 11px -> 12px */
   color: #fde047;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .sub-label {
-  font-size: 12px;
+  display: block;
+  font-size: 13px; /* 12px -> 13px */
   font-weight: 600;
-  color: #94a3b8;
+  color: #cbd5e1;
   margin-bottom: 6px;
 }
 
 .text-input,
 .select-input {
   width: 100%;
-  height: 44px;
+  height: 48px; /* タップしやすいよう44px -> 48pxへ拡大 */
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid #475569;
   background-color: #334155;
-  color: #f8fafc;
-  font-size: 14px;
+  color: #ffffff;
+  font-size: 16px; /* iOS等の自動ズームを防止するため16px指定 */
   box-sizing: border-box;
 }
 
 .preset-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   margin-top: 8px;
 }
 
 .chip-btn {
-  min-height: 36px;
-  padding: 6px 12px;
+  min-height: 40px; /* タップエリアの拡大 */
+  padding: 8px 14px;
   border-radius: 8px;
   border: 1px solid #475569;
   background-color: #1e293b;
   color: #38bdf8;
-  font-size: 12px;
+  font-size: 13px; /* 12px -> 13px */
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
@@ -465,19 +484,39 @@ const {
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 
-@media (max-width: 480px) {
-  .sub-results,
-  .grid-3 {
-    grid-template-columns: 1fr;
+/* スマホ表示向け（ブレイクポイント: 640px以下） */
+@media (max-width: 640px) {
+  .sub-results {
+    grid-template-columns: 1fr; /* 1列に落ちた際のレイアウト調整 */
+    gap: 8px;
   }
 
-  .sub-item,
+  .grid-3 {
+    grid-template-columns: 1fr; /* スマホでは縦並びにして視認性を確保 */
+  }
+
+  .sub-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+  }
+
+  .sub-value {
+    margin-top: 0;
+    font-size: 15px;
+  }
+
   .grid-item {
-    padding: 8px;
+    padding: 4px 0;
+  }
+
+  .grid-value {
+    font-size: 16px;
   }
 
   .result-value {
-    font-size: 32px;
+    font-size: 34px;
   }
 }
 </style>
