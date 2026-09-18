@@ -1,3 +1,4 @@
+// useMotorCalc.ts
 import { ref, computed } from 'vue';
 import {
   BREAKER_SIZES,
@@ -98,7 +99,7 @@ export function useMotorCalc() {
     };
   });
 
-  // 新規 useOmega を利用した計算呼び出し
+  // useOmega を利用した計算呼び出し (引数の型と順序を整合)
   const { groundingInfo, elcbInfo, capacitorInfo } = useOmega(
     voltage,
     environment,
@@ -106,7 +107,8 @@ export function useMotorCalc() {
     outputKw,
     powerFactor,
     targetPowerFactor,
-    frequency
+    frequency,
+    efficiency
   );
 
   const setPreset = (kw: number) => {

@@ -1,3 +1,4 @@
+<!-- MotorCalc_6.vue -->
 <template>
   <div class="motor-calc-container">
     
@@ -203,7 +204,7 @@
       <p class="description-text mt-8">{{ elcbInfo.description }}</p>
     </div>
 
-    <!-- 接地工事・絶縁抵抗 判定カード (新規 useOmega の結果を表示) -->
+    <!-- 接地工事・絶縁抵抗 判定カード -->
     <div class="section-card mt-12">
       <div class="card-header">
         <span class="card-title">⚡ 接地工事・絶縁抵抗 判定結果</span>
@@ -284,7 +285,7 @@ const {
 }
 
 .result-label {
-  font-size: 13px; /* 12px -> 13px に拡大 */
+  font-size: 13px;
   color: #38bdf8;
   font-weight: bold;
 }
@@ -296,7 +297,7 @@ const {
 }
 
 .result-value {
-  font-size: 38px; /* スマホでも見やすい強調サイズ */
+  font-size: 38px;
   font-weight: 800;
   color: #f8fafc;
   line-height: 1.1;
@@ -321,18 +322,18 @@ const {
   flex-direction: column;
   justify-content: center;
   background-color: #0f172a;
-  padding: 10px 6px; /* パディング調整 */
+  padding: 10px 6px;
   border-radius: 8px;
 }
 
 .sub-title {
-  font-size: 11px; /* 10px -> 11px */
+  font-size: 11px;
   color: #cbd5e1;
   line-height: 1.3rem;
 }
 
 .sub-value {
-  font-size: 14px; /* 13px -> 14px */
+  font-size: 14px;
   font-weight: bold;
   color: #38bdf8;
   margin-top: 4px;
@@ -355,7 +356,7 @@ const {
 }
 
 .card-title {
-  font-size: 14px; /* 13px -> 14px */
+  font-size: 14px;
   font-weight: bold;
   color: #f8fafc;
 }
@@ -363,7 +364,7 @@ const {
 .badge {
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 12px; /* 11px -> 12px */
+  font-size: 12px;
   font-weight: bold;
   white-space: nowrap;
 }
@@ -388,25 +389,25 @@ const {
 }
 
 .grid-label { 
-  font-size: 11px; /* 10px -> 11px */
-  color: #cbd5e1;  /* コントラスト改善 */
+  font-size: 11px;
+  color: #cbd5e1;
   font-weight: 500;
 }
 .grid-value { 
-  font-size: 15px; /* 13px -> 15px */
+  font-size: 15px;
   font-weight: bold; 
   color: #38bdf8; 
   margin-top: 2px; 
 }
 .grid-value.highlight { color: #4ade80; }
 .grid-sub { 
-  font-size: 11px; /* 9px -> 11px */
-  color: #94a3b8;  /* 視認性改善 */
+  font-size: 11px;
+  color: #94a3b8;
   margin-top: 2px;
 }
 
 .description-text {
-  font-size: 12px; /* 11px -> 12px */
+  font-size: 12px;
   color: #cbd5e1;
   line-height: 1.5;
   margin: 0;
@@ -420,7 +421,7 @@ const {
 }
 
 .warning-text {
-  font-size: 12px; /* 11px -> 12px */
+  font-size: 12px;
   color: #fde047;
   margin: 0;
   line-height: 1.5;
@@ -428,7 +429,7 @@ const {
 
 .sub-label {
   display: block;
-  font-size: 13px; /* 12px -> 13px */
+  font-size: 13px;
   font-weight: 600;
   color: #cbd5e1;
   margin-bottom: 6px;
@@ -437,13 +438,13 @@ const {
 .text-input,
 .select-input {
   width: 100%;
-  height: 48px; /* タップしやすいよう44px -> 48pxへ拡大 */
+  height: 48px;
   padding: 0 12px;
   border-radius: 8px;
   border: 1px solid #475569;
   background-color: #334155;
   color: #ffffff;
-  font-size: 16px; /* iOS等の自動ズームを防止するため16px指定 */
+  font-size: 16px;
   box-sizing: border-box;
 }
 
@@ -455,13 +456,13 @@ const {
 }
 
 .chip-btn {
-  min-height: 40px; /* タップエリアの拡大 */
+  min-height: 40px;
   padding: 8px 14px;
   border-radius: 8px;
   border: 1px solid #475569;
   background-color: #1e293b;
   color: #38bdf8;
-  font-size: 13px; /* 12px -> 13px */
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
@@ -484,15 +485,14 @@ const {
 .mt-8  { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 
-/* スマホ表示向け（ブレイクポイント: 640px以下） */
 @media (max-width: 640px) {
   .sub-results {
-    grid-template-columns: 1fr; /* 1列に落ちた際のレイアウト調整 */
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 
   .grid-3 {
-    grid-template-columns: 1fr; /* スマホでは縦並びにして視認性を確保 */
+    grid-template-columns: 1fr;
   }
 
   .sub-item {

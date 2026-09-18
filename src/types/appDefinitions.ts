@@ -1,3 +1,5 @@
+// appDefinitions_6.ts
+
 // ==========================================
 // 1. アプリ状態・UIイベント型定義
 // ==========================================
@@ -55,10 +57,10 @@ export interface ElcbSelectionResult {
 export interface CapacitorSelectionResult {
   requiredKvar: number;
   recommendedKvar: number;
-  recommendedMicroFarad: number;
-  improvedPowerFactor: number;
+  recommendedMicroFarad?: number;
+  improvedPowerFactor?: number;
   dischargeResistorNote: string;
-  isTableStandard: boolean; // 第1表基準による選定かどうかのフラグ
+  isTableStandard?: boolean; // 第1表基準による選定かどうかのフラグ
 }
 
 // ==========================================
