@@ -1,6 +1,6 @@
 // utils/inverterMotorCalc.ts
 import {
-    BREAKER_SIZES,
+    THREE_PHASE_BREAKER_SIZES,
     EnvironmentType,
     PowerFrequency,
     MotorBreakerType,
@@ -92,7 +92,8 @@ import {
   } {
     const target = calculatedAmp * 1.4;
     const recommended =
-      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
+      THREE_PHASE_BREAKER_SIZES.find((s) => s >= target) ||
+      THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
   
     return {
       rawTarget: Number(target.toFixed(1)),
@@ -188,7 +189,7 @@ import {
   
     // 3. 接地・ELCB・コンデンサ判定
     const groundingInfo = calculateMotorGrounding(voltage, environment);
-    const elcbInfo = selectInverterELCB(calculatedAmp, environment, BREAKER_SIZES);
+    const elcbInfo = selectInverterELCB(calculatedAmp, environment, THREE_PHASE_BREAKER_SIZES);
     const capacitorInfo = calculateInverterPhaseCapacitor();
   
     return {

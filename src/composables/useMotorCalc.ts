@@ -1,7 +1,7 @@
 // composables/useMotorCalc.ts
 import { ref, computed, watch, onMounted } from 'vue';
 import {
-  BREAKER_SIZES,
+  THREE_PHASE_BREAKER_SIZES,
   EnvironmentType,
   PowerFrequency,
   MotorBreakerType,
@@ -81,7 +81,7 @@ export function useMotorCalc() {
     return findClosestCapacitorGroup(
       capacitorCatalog.value,
       voltage.value,
-      frequency.value, // ★ 周波数を渡す
+      frequency.value,
       capacitorInfo.value.recommendedMicroFarad
     );
   });
@@ -105,9 +105,11 @@ export function useMotorCalc() {
       selectedType = breakerTypeMode.value;
     }
 
+    // 三相3線式用の遮断器定格サイズから選定 (最小20A〜)
     const target = amp * 3.0;
     const recommendedAmp =
-      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
+      THREE_PHASE_BREAKER_SIZES.find((s) => s >= target) ||
+      THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
 
     const requiresThermalRelay = selectedType === 'mccb';
 
@@ -134,7 +136,8 @@ export function useMotorCalc() {
     const amp = calculatedAmp.value;
     const target = amp * 3.0;
     const recommended =
-      BREAKER_SIZES.find((s) => s >= target) || BREAKER_SIZES[BREAKER_SIZES.length - 1];
+      THREE_PHASE_BREAKER_SIZES.find((s) => s >= target) ||
+      THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
 
     return {
       rawTarget: Number(target.toFixed(1)),

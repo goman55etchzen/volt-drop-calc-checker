@@ -2,7 +2,7 @@ import { computed, Ref } from 'vue';
 import {
   EnvironmentType,
   ElcbSelectionResult,
-  BREAKER_SIZES
+  THREE_PHASE_BREAKER_SIZES
 } from './appDefinitions';
 
 /**
@@ -23,10 +23,11 @@ export function useElb(
     const env = environment.value;
 
     // 1. 定格電流（フレーム）の選定
-    // 計算電流の1.25倍以上の最小遮断器サイズを選定（上限は配列の最大値）
+    // 計算電流の1.25倍以上の最小遮断器サイズを選定（三相用 20A〜）
     const targetAmp = amp * 1.25;
     const recommendedAmp =
-      BREAKER_SIZES.find((size) => size >= targetAmp) ?? BREAKER_SIZES[BREAKER_SIZES.length - 1];
+      THREE_PHASE_BREAKER_SIZES.find((size) => size >= targetAmp) ?? 
+      THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
 
     // 2. 設置環境に応じた義務・感度電流判定
     // 水気・湿気場所（wet）の場合は設置が法的に必須（高感度形 15mA 以下）
