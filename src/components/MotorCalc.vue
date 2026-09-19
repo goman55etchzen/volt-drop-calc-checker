@@ -38,8 +38,8 @@
         </div>
       </div>
 
-      <!-- 電動機台数・その他一般負荷・合算定格電流 -->
-      <div class="responsive-grid grid-3 mt-12">
+      <!-- 電動機台数・その他一般負荷 (2カラム) -->
+      <div class="responsive-grid grid-2 mt-12">
         
         <!-- 電動機台数 (無限ループ・ドラム式対応) -->
         <div class="input-group">
@@ -105,15 +105,6 @@
           </div>
         </div>
 
-        <!-- 合算定格電流（滑らかなリアルタイム表示） -->
-        <div class="input-group">
-          <label class="sub-label">合算定格電流 (Im×台数 + Ir)</label>
-          <div class="text-input-readonly realtime-display">
-            {{ displayTotalLoadAmp.toFixed(2) }} <span class="text-sm font-normal text-slate-400 ml-1">A</span>
-          </div>
-          <div class="text-xs text-slate-400 mt-2"></div>
-        </div>
-
       </div>
 
       <!-- 電圧・周波数・環境条件 (独立トグル付きSelected1コンポーネント) -->
@@ -123,43 +114,6 @@
         v-model:environment="environment"
         class="mt-12"
       />
-
-      <!-- 力率・効率 -->
-      <div class="responsive-grid grid-3 mt-12">
-        <div class="input-group">
-          <label class="sub-label">現状力率 cosθ</label>
-          <input
-            v-model.number="powerFactor"
-            type="number"
-            step="0.01"
-            min="0.5"
-            max="1.0"
-            class="text-input"
-          />
-        </div>
-        <div class="input-group">
-          <label class="sub-label">目標力率 cosθ</label>
-          <input
-            v-model.number="targetPowerFactor"
-            type="number"
-            step="0.01"
-            min="0.8"
-            max="1.0"
-            class="text-input"
-          />
-        </div>
-        <div class="input-group">
-          <label class="sub-label">効率 η (エータ)</label>
-          <input
-            v-model.number="efficiency"
-            type="number"
-            step="0.01"
-            min="0.5"
-            max="1.0"
-            class="text-input"
-          />
-        </div>
-      </div>
 
       <!-- 駆動方式 選択トグル -->
       <div class="input-group mt-12">
@@ -342,15 +296,34 @@
       </div>
     </div>
 
+    <!-- 合算定格電流スライドインカード（独立コンポーネント） -->
+    <IrSectionCard
+      v-model:isOpen="isTotalAmpOpen"
+      :display-total-load-amp="displayTotalLoadAmp"
+      :calculated-amp="calculatedAmp"
+      :motor-count="motorCount"
+      :other-load-amp="otherLoadAmp"
+    />
+
+    <!-- 力率・効率 詳細設定スライドインカード（独立コンポーネント） -->
+    <CapacitorSectionCard
+      v-model:isOpen="isPowerFactorOpen"
+      v-model:powerFactor="powerFactor"
+      v-model:targetPowerFactor="targetPowerFactor"
+      v-model:efficiency="efficiency"
+    />
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useDrum } from '@/composables/useDrum';
 import BreakerSelect from '@/components/BreakerSelect.vue';
 import Selected1 from '@/components/selected1.vue';
+import IrSectionCard from '@/components/IrSectionCard.vue';
+import CapacitorSectionCard from '@/components/CapacitorSectionCard.vue';
 
 const {
   outputKw,
@@ -375,11 +348,14 @@ const {
   matchedCapacitors,
 } = useMotorCalc();
 
+// --- スライドカードの開閉状態 ---
+const isTotalAmpOpen = ref(false);
+const isPowerFactorOpen = ref(false);
+
 // --- 1. 電動機台数ドラム・無限ループ連携 ---
 const motorCountOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const motorCountDrum = useDrum(motorCountOptions, motorCount.value);
 
-// ドラムの選択状態を useMotorCalc 側の motorCount に同期
 watch(motorCountDrum.selectedValue, (newVal) => {
   motorCount.value = newVal;
 });
@@ -393,12 +369,10 @@ watch(motorCount, (newVal) => {
 const loadInputMode = ref<'A' | 'W'>('A');
 const rawLoadValue = ref<number>(0);
 
-// 入力値とモードに応じて otherLoadAmp（A換算値）を算出して更新
 watch([rawLoadValue, loadInputMode, voltage], ([val, mode]) => {
   if (mode === 'A') {
     otherLoadAmp.value = val || 0;
   } else {
-    // W/kW入力時の簡易換算 (例: 三相200V系 P = √3 * V * I * cosθ より逆算、力率0.8仮定)
     const v = voltage.value || 200;
     const powerWatts = val || 0;
     const currentA = powerWatts / (1.732 * v * 0.8);
@@ -428,12 +402,12 @@ watch(totalLoadAmp, (newVal) => {
 </script>
 
 <style scoped>
+/* スタイル定義は既存を継続 */
 .motor-calc-container {
   width: 100%;
   box-sizing: border-box;
 }
 
-/* ドラム式横スクロール・スワイパーのスタイル */
 .drum-swiper-container {
   width: 100%;
   overflow-x: auto;
@@ -493,7 +467,6 @@ watch(totalLoadAmp, (newVal) => {
   color: #cbd5e1;
 }
 
-/* 電動機台数用コンパクト・ドラム */
 .drum-compact-container {
   display: flex;
   gap: 4px;
@@ -549,11 +522,6 @@ watch(totalLoadAmp, (newVal) => {
   border-color: #38bdf8;
 }
 
-.realtime-display {
-  transition: color 0.2s ease;
-}
-
-/* 既存のスタイル維持 */
 .result-card {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;
@@ -667,7 +635,9 @@ watch(totalLoadAmp, (newVal) => {
   border-radius: 8px;
 }
 
-
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
 
 .grid-item {
   display: flex;
@@ -731,21 +701,6 @@ watch(totalLoadAmp, (newVal) => {
   background-color: #334155;
   color: #ffffff;
   font-size: 16px;
-  box-sizing: border-box;
-}
-
-.text-input-readonly {
-  width: 100%;
-  min-height: 48px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #475569;
-  background-color: #1e293b;
-  color: #38bdf8;
-  font-size: 16px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
   box-sizing: border-box;
 }
 
@@ -837,9 +792,13 @@ watch(totalLoadAmp, (newVal) => {
     gap: 8px;
   }
 
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
   .grid-3 {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-}
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
 
   .sub-item {
     flex-direction: row;
