@@ -111,7 +111,7 @@
           <div class="text-input-readonly realtime-display">
             {{ displayTotalLoadAmp.toFixed(2) }} <span class="text-sm font-normal text-slate-400 ml-1">A</span>
           </div>
-          <div class="text-xs text-slate-400 mt-2">※滑らかに追従します</div>
+          <div class="text-xs text-slate-400 mt-2"></div>
         </div>
 
       </div>
@@ -667,7 +667,7 @@ watch(totalLoadAmp, (newVal) => {
   border-radius: 8px;
 }
 
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
+
 
 .grid-item {
   display: flex;
@@ -838,8 +838,8 @@ watch(totalLoadAmp, (newVal) => {
   }
 
   .grid-3 {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
 
   .sub-item {
     flex-direction: row;
