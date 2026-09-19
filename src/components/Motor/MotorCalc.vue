@@ -320,10 +320,10 @@
 import { ref, watch } from 'vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useDrum } from '@/composables/useDrum';
-import BreakerSelect from '@/components/BreakerSelect.vue';
-import Selected1 from '@/components/selected1.vue';
-import IrSectionCard from '@/components/IrSectionCard.vue';
-import CapacitorSectionCard from '@/components/CapacitorSectionCard.vue';
+import BreakerSelect from '@/components/Motor/BreakerSelect.vue';
+import Selected1 from '@/components/Motor/selected1.vue';
+import IrSectionCard from '@/components/Motor/IrSectionCard.vue';
+import CapacitorSectionCard from '@/components/Motor/CapacitorSectionCard.vue';
 
 const {
   outputKw,
