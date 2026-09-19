@@ -11,11 +11,12 @@
       <!-- 電動機定格出力 (kW) : ドラム式スムーズスワイパー -->
       <div class="input-group">
         <label class="sub-label">電動機定格出力 (kW)</label>
-        <div class="drum-swiper-container">
+        <div class="drum-swiper-container" ref="drumContainerRef">
           <div class="drum-track">
             <div
               v-for="kw in [0.2, 0.4, 0.75, 1.5, 2.2, 3.7, 5.5, 7.5, 11, 15, 18.5, 22, 30, 37, 45, 55]"
               :key="kw"
+              :ref="(el) => setKwItemRef(el, kw)"
               class="drum-item"
               :class="{ active: outputKw === kw }"
               @click="outputKw = kw"
@@ -191,36 +192,48 @@
         </span>
       </div>
 
+      <!-- 総合値と個別・台数を完全に区別したグリッド配置 -->
       <div class="responsive-grid grid-3">
-        <div class="grid-item">
-          <span class="grid-label">必要容量 / 推奨標準</span>
-          <span class="grid-value highlight">{{ capacitorInfo.recommendedKvar }} kvar</span>
-          <span class="grid-sub">(計算必要値: {{ capacitorInfo.requiredKvar }} kvar)</span>
+        
+        <!-- 1. 総合値エリア（システム全体の総容量） -->
+        <div class="grid-item highlight-box-total">
+          <span class="grid-label">⚡ 総合値（システム総容量）</span>
+          <span class="grid-value text-cyan">
+            {{ (Number(capacitorInfo.recommendedKvar) * motorCount).toFixed(2) }} <span class="text-sm font-normal">kvar</span>
+          </span>
+          <span class="grid-sub">（総必要計算値: {{ (Number(capacitorInfo.requiredKvar) * motorCount).toFixed(2) }} kvar）</span>
         </div>
-        <div class="grid-item">
-  　　　　<span class="grid-label">推奨静電容量・必要台数</span>
-  　　　　<span class="grid-value highlight">
-    　　　{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF 
-    　　　<span class="text-sm font-normal text-white">（{{ capacitorInfo.motorCount }}台 必要）</span>
-  　　　　</span>
-  <span class="grid-sub">@ {{ voltage }}V ({{ frequency }}Hz) ※各モータ毎に1台</span>
-</div>
-        <div class="grid-item">
-          <span class="grid-label">備考</span>
-          <p class="description-text">{{ capacitorInfo.dischargeResistorNote }}</p>
+
+        <!-- 2. 個別・必要台数エリア -->
+        <div class="grid-item highlight-box-unit">
+          <span class="grid-label">📐 各モータあたりの個別仕様</span>
+          <span class="grid-value text-green">
+            {{ capacitorInfo.recommendedMicroFarad ?? '-' }} <span class="text-sm font-normal">μF / 台</span>
+          </span>
+          <span class="grid-sub">推奨台数: <strong class="text-white underline">{{ capacitorInfo.motorCount }} 台</strong> （各モータ毎に1台）</span>
         </div>
+
+        <!-- 3. 備考・注意事項 -->
+        <div class="grid-item">
+          <span class="grid-label">📝 接続・設置備考</span>
+          <p class="description-text mt-1">{{ capacitorInfo.dischargeResistorNote }}</p>
+        </div>
+
       </div>
 
       <!-- 適合メーカー同等品・外形寸法一覧 -->
       <div v-if="driveMode !== 'inverter' && matchedCapacitors.length > 0" class="catalog-match-box mt-12">
-        <div class="sub-label mb-8">適合メーカー同等品・外形寸法一覧</div>
+        <div class="sub-label mb-8">
+          🔍 適合メーカー同等品・外形寸法一覧 
+          <span class="text-xs text-slate-400 font-normal">（※1台あたり {{ capacitorInfo.recommendedMicroFarad }} μF 品を選定）</span>
+        </div>
         <div class="catalog-table-wrapper">
           <table class="catalog-table">
             <thead>
               <tr>
                 <th>メーカー</th>
                 <th>型番</th>
-                <th>容量</th>
+                <th>容量 (1台分)</th>
                 <th>外形寸法 (W×D×H mm)</th>
                 <th>端子</th>
                 <th>取付</th>
@@ -320,7 +333,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useDrum } from '@/composables/useDrum';
 import BreakerSelect from '@/components/Motor/BreakerSelect.vue';
@@ -350,6 +363,34 @@ const {
   capacitorInfo,
   matchedCapacitors,
 } = useMotorCalc();
+
+// --- 初期カーソル位置を 2.2 kW に指定 ---
+if (outputKw.value === 5.5) { // デフォルトがもし5.5等であれば 2.2 に初期化
+  outputKw.value = 2.2;
+}
+
+// --- 横スクロール要素の参照管理用 ---
+const drumContainerRef = ref<HTMLElement | null>(null);
+const kwItemRefs = new Map<number, HTMLElement>();
+
+const setKwItemRef = (el: any, kw: number) => {
+  if (el) {
+    kwItemRefs.set(kw, el);
+  }
+};
+
+// 起動時（マウント時）に初期選択位置へ自動スクロール
+onMounted(async () => {
+  await nextTick();
+  const targetEl = kwItemRefs.get(outputKw.value);
+  if (targetEl && drumContainerRef.value) {
+    targetEl.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+  }
+});
 
 // --- スライドカードの開閉状態 ---
 const isTotalAmpOpen = ref(false);
@@ -664,6 +705,24 @@ watch(totalLoadAmp, (newVal) => {
   color: #94a3b8;
   margin-top: 2px;
 }
+
+/* 総合値と個別仕様を色分けして視覚的に区別するスタイル */
+.highlight-box-total {
+  background-color: rgba(2, 132, 199, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.highlight-box-unit {
+  background-color: rgba(21, 128, 61, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.text-cyan { color: #38bdf8 !important; }
+.text-green { color: #4ade80 !important; }
 
 .description-text {
   font-size: 12px;

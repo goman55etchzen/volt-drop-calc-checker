@@ -96,7 +96,7 @@ defineEmits<{
 .side-trigger-btn-pf {
   position: fixed;
   right: 0;
-  top: 62%;
+  top: 55%;
   transform: translateY(-50%);
   z-index: 40;
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
@@ -104,7 +104,7 @@ defineEmits<{
   border: 1px solid #38bdf8;
   border-right: none;
   border-radius: 8px 0 0 8px;
-  padding: 12px 6px;
+  padding: 12px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;

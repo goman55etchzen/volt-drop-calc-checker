@@ -77,9 +77,9 @@ defineEmits<{
 .side-trigger-btn {
   position: fixed;
   right: 0;
-  top: 50%;
+  top: 35%;
   transform: translateY(-50%);
-  z-index: 40;
+  z-index: 1000;
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
   border: 1px solid #38bdf8;
