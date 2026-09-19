@@ -312,18 +312,14 @@
       </div>
     </div>
 
-    <!-- 合算定格電流スライドインカード（独立コンポーネント） -->
-    <IrSectionCard
-      v-model:isOpen="isTotalAmpOpen"
+    <!-- まとめて再構成された Notice コンポーネント -->
+    <Notice
+      v-model:isTotalAmpOpen="isTotalAmpOpen"
       :display-total-load-amp="displayTotalLoadAmp"
       :calculated-amp="calculatedAmp"
       :motor-count="motorCount"
       :other-load-amp="otherLoadAmp"
-    />
-
-    <!-- 力率・効率 詳細設定スライドインカード（独立コンポーネント） -->
-    <CapacitorSectionCard
-      v-model:isOpen="isPowerFactorOpen"
+      v-model:isPowerFactorOpen="isPowerFactorOpen"
       v-model:powerFactor="powerFactor"
       v-model:targetPowerFactor="targetPowerFactor"
       v-model:efficiency="efficiency"
@@ -338,8 +334,7 @@ import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useDrum } from '@/composables/useDrum';
 import BreakerSelect from '@/components/Motor/BreakerSelect.vue';
 import Selected1 from '@/components/Motor/selected1.vue';
-import IrSectionCard from '@/components/Motor/IrSectionCard.vue';
-import CapacitorSectionCard from '@/components/Motor/CapacitorSectionCard.vue';
+import Notice from '@/components/common/Notice.vue';
 
 const {
   outputKw,
@@ -365,7 +360,7 @@ const {
 } = useMotorCalc();
 
 // --- 初期カーソル位置を 2.2 kW に指定 ---
-if (outputKw.value === 5.5) { // デフォルトがもし5.5等であれば 2.2 に初期化
+if (outputKw.value === 5.5) { 
   outputKw.value = 2.2;
 }
 
