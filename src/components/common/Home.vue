@@ -111,12 +111,12 @@ import { useWire } from '@/composables/useWire'
 import { useWireSize } from '@/composables/useWireSize'
 
 import CablingSelect from '@/components/cable/CablingSelect.vue'
-import EquipmentSelect from '@/components/EquipmentSelect.vue'
+import EquipmentSelect from '@/components/Motor/EquipmentSelect.vue'
 import WireTypeSelect from '@/components/cable/WireTypeSelect.vue'
 import WireSizeSelect from '@/components/cable/WireSizeSelect.vue'
 import ResultCard from '@/components/ResultCard.vue'
 import ReversedMode from '@/components/ReversedInputForm.vue'
-import MotorCalc from '@/components/MotorCalc.vue'
+import MotorCalc from '@/components/Motor/MotorCalc.vue'
 
 // UIモード設定
 const currentMode = ref<AppMode>('normal')
