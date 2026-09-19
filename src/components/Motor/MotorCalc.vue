@@ -198,10 +198,13 @@
           <span class="grid-sub">(計算必要値: {{ capacitorInfo.requiredKvar }} kvar)</span>
         </div>
         <div class="grid-item">
-          <span class="grid-label">推奨静電容量</span>
-          <span class="grid-value highlight">{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF</span>
-          <span class="grid-sub">@ {{ voltage }}V ({{ frequency }}Hz)</span>
-        </div>
+  　　　　<span class="grid-label">推奨静電容量・必要台数</span>
+  　　　　<span class="grid-value highlight">
+    　　　{{ capacitorInfo.recommendedMicroFarad ?? '-' }} μF 
+    　　　<span class="text-sm font-normal text-white">（{{ capacitorInfo.motorCount }}台 必要）</span>
+  　　　　</span>
+  <span class="grid-sub">@ {{ voltage }}V ({{ frequency }}Hz) ※各モータ毎に1台</span>
+</div>
         <div class="grid-item">
           <span class="grid-label">備考</span>
           <p class="description-text">{{ capacitorInfo.dischargeResistorNote }}</p>

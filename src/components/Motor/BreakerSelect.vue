@@ -64,7 +64,6 @@
     return (
       props.isOver15kW ||
       props.driveMode === 'inverter' ||
-      props.motorCount > 1 ||
       props.otherLoadAmp > 0
     );
   });

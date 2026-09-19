@@ -75,13 +75,10 @@ export function useMotorCalc() {
 
   // 幹線電線の最小許容電流（多台数・他負荷対応）
   const requiredWireAmp = computed(() => {
-    // 1台のみかつ他負荷なしの場合は基礎計算結果を使用
     if (motorCount.value === 1 && otherLoadAmp.value === 0) {
       return currentCalcResult.value.requiredWireAmp;
     }
 
-    // 多台数・他負荷の幹線計算式
-    // Im = 電動機全定格電流の和, Ir = その他負荷電流
     const sumIm = calculatedAmp.value * motorCount.value;
     const sumIr = otherLoadAmp.value;
 
@@ -98,9 +95,21 @@ export function useMotorCalc() {
   });
 
   const groundingInfo = computed(() => currentCalcResult.value.groundingInfo);
-  const capacitorInfo = computed(() => currentCalcResult.value.capacitorInfo);
 
-  // 適合コンデンサ検索
+  // 【追加】進相コンデンサ情報（1台あたりの容量を維持しつつ、必要台数情報を付与）
+  const capacitorInfo = computed(() => {
+    const base = currentCalcResult.value.capacitorInfo;
+    const count = motorCount.value;
+    return {
+      ...base,
+      motorCount: count, // モーター台数分のコンデンサが必要
+      description: count > 1
+        ? `${base.description} （※${count}台の電動機それぞれに個別で1台ずつ設置：計${count}台必要）`
+        : base.description
+    };
+  });
+
+  // 適合コンデンサ検索（1台あたりの必要容量でマッチング）
   const matchedCapacitors = computed(() => {
     if (driveMode.value === 'inverter') return [];
     return findClosestCapacitorGroup(
@@ -111,7 +120,7 @@ export function useMotorCalc() {
     );
   });
 
-  // 配線用遮断器 / モーターブレーカー選定（電線許容電流 wireAllowAmp を引数に追加）
+  // 配線用遮断器 / モーターブレーカー選定
   const breakerInfo = computed<MotorBreakerSelectionResult>(() => {
     if (driveMode.value === 'inverter') {
       return currentCalcResult.value.breakerInfo;
@@ -128,7 +137,7 @@ export function useMotorCalc() {
     });
   });
 
-  // 漏電遮断器選定（電線許容電流 wireAllowAmp を引数に追加）
+  // 漏電遮断器選定
   const elcbInfo = computed(() => {
     return selectElcb({
       outputKw: outputKw.value,
@@ -150,10 +159,11 @@ export function useMotorCalc() {
     return {
       rawTarget: Number(rawTarget.toFixed(1)),
       recommended,
+      motorCount: motorCount.value,
     };
   });
 
-  // プリセット設定（kW変更時の標準力率自動アサイン）
+  // プリセット設定
   const setPreset = (kw: number) => {
     outputKw.value = kw;
     if (kw <= 2.2) {
