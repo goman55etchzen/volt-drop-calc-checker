@@ -27,9 +27,11 @@
 import {
   CABLE_TYPES,
   CABLE_TEMP_GROUPS,
+} from '@/types/appDefinitions';
+import {
   WireTypeSelectProps,
   WireTypeSelectEmits
-} from '@/types/appDefinitions';
+} from '@/types/base';
 
 defineProps<WireTypeSelectProps>();
 const emit = defineEmits<WireTypeSelectEmits>();

@@ -8,30 +8,115 @@
         <span class="card-title">⚙️ 電動機仕様・入力設定</span>
       </div>
 
-      <!-- 出力 (kW) 選択 -->
+      <!-- 電動機定格出力 (kW) : ドラム式スムーズスワイパー -->
       <div class="input-group">
         <label class="sub-label">電動機定格出力 (kW)</label>
-        <input
-          v-model.number="outputKw"
-          type="number"
-          step="0.1"
-          min="0.1"
-          class="text-input"
-        />
-        <div class="preset-chips">
-          <button
-            v-for="kw in [0.75, 1.5, 2.2, 3.7, 5.5, 7.5, 11, 15]"
-            :key="kw"
-            type="button"
-            :class="['chip-btn', outputKw === kw ? 'active' : '']"
-            @click="setPreset(kw)"
-          >
-            {{ kw }}kW
-          </button>
+        <div class="drum-swiper-container">
+          <div class="drum-track">
+            <div
+              v-for="kw in [0.2, 0.4, 0.75, 1.5, 2.2, 3.7, 5.5, 7.5, 11, 15, 18.5, 22, 30, 37, 45, 55]"
+              :key="kw"
+              class="drum-item"
+              :class="{ active: outputKw === kw }"
+              @click="outputKw = kw"
+            >
+              <span class="drum-value">{{ kw }}</span>
+              <span class="drum-unit">kW</span>
+            </div>
+          </div>
+        </div>
+        <!-- 微調整用数値ダイレクト入力も併設 -->
+        <div class="mt-8 flex items-center gap-8">
+          <input
+            v-model.number="outputKw"
+            type="number"
+            step="0.1"
+            min="0.1"
+            class="text-input"
+            placeholder="直接入力も可能"
+          />
         </div>
       </div>
 
-      <!-- 電圧・周波数・環境条件 (コンポーネント化してスッキリ分離) -->
+      <!-- 電動機台数・その他一般負荷・合算定格電流 -->
+      <div class="responsive-grid grid-3 mt-12">
+        
+        <!-- 電動機台数 (無限ループ・ドラム式対応) -->
+        <div class="input-group">
+          <div class="flex justify-between items-center mb-1">
+            <label class="sub-label mb-0">電動機台数</label>
+            <div class="flex gap-1">
+              <button type="button" class="drum-arrow-btn" @click="motorCountDrum.prev()">◀</button>
+              <button type="button" class="drum-arrow-btn" @click="motorCountDrum.next()">▶</button>
+            </div>
+          </div>
+          <div class="drum-compact-container">
+            <div
+              v-for="cnt in motorCountOptions"
+              :key="cnt"
+              class="drum-compact-item"
+              :class="{ active: motorCount === cnt }"
+              @click="motorCount = cnt"
+            >
+              {{ cnt }}台
+            </div>
+          </div>
+          <input
+            v-model.number="motorCount"
+            type="number"
+            min="1"
+            step="1"
+            class="text-input mt-2"
+            placeholder="直接入力"
+          />
+        </div>
+
+        <!-- その他一般負荷 Ir (A または W/kW 換算対応) -->
+        <div class="input-group">
+          <div class="flex justify-between items-center mb-1">
+            <label class="sub-label mb-0">その他一般負荷 Ir</label>
+            <div class="flex gap-1 text-xs">
+              <button 
+                type="button" 
+                class="mode-switch-btn" 
+                :class="{ active: loadInputMode === 'A' }" 
+                @click="loadInputMode = 'A'"
+              >A</button>
+              <button 
+                type="button" 
+                class="mode-switch-btn" 
+                :class="{ active: loadInputMode === 'W' }" 
+                @click="loadInputMode = 'W'"
+              >W/kW</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              v-model.number="rawLoadValue"
+              type="number"
+              min="0"
+              step="0.1"
+              :placeholder="loadInputMode === 'A' ? '0 A' : '0 W (or kW)'"
+              class="text-input"
+            />
+          </div>
+          <div class="text-xs text-sky-400 mt-2">
+            換算値: <span class="font-bold">{{ otherLoadAmp.toFixed(1) }} A</span>
+          </div>
+        </div>
+
+        <!-- 合算定格電流（滑らかなリアルタイム表示） -->
+        <div class="input-group">
+          <label class="sub-label">合算定格電流 (Im×台数 + Ir)</label>
+          <div class="text-input-readonly realtime-display">
+            {{ displayTotalLoadAmp.toFixed(2) }} <span class="text-sm font-normal text-slate-400 ml-1">A</span>
+          </div>
+          <div class="text-xs text-slate-400 mt-2">※滑らかに追従します</div>
+        </div>
+
+      </div>
+
+      <!-- 電圧・周波数・環境条件 (独立トグル付きSelected1コンポーネント) -->
       <Selected1
         v-model:voltage="voltage"
         v-model:frequency="frequency"
@@ -73,37 +158,6 @@
             max="1.0"
             class="text-input"
           />
-        </div>
-      </div>
-
-      <!-- 多台数・他負荷設定 -->
-      <div class="responsive-grid grid-3 mt-12">
-        <div class="input-group">
-          <label class="sub-label">電動機台数</label>
-          <input
-            v-model.number="motorCount"
-            type="number"
-            min="1"
-            step="1"
-            class="text-input"
-          />
-        </div>
-        <div class="input-group">
-          <label class="sub-label">その他一般負荷 Ir (A)</label>
-          <input
-            v-model.number="otherLoadAmp"
-            type="number"
-            min="0"
-            step="0.1"
-            placeholder="0"
-            class="text-input"
-          />
-        </div>
-        <div class="input-group">
-          <label class="sub-label">合算定格電流 (Im×台数 + Ir)</label>
-          <div class="text-input-readonly">
-            {{ totalLoadAmp.toFixed(2) }} A
-          </div>
         </div>
       </div>
 
@@ -292,9 +346,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
+import { useDrum } from '@/composables/useDrum';
 import BreakerSelect from '@/components/BreakerSelect.vue';
-import Selected1 from '@/components/selected1.vue'; // インポート追加
+import Selected1 from '@/components/selected1.vue';
 
 const {
   outputKw,
@@ -317,17 +373,187 @@ const {
   elcbInfo,
   capacitorInfo,
   matchedCapacitors,
-  setPreset,
 } = useMotorCalc();
+
+// --- 1. 電動機台数ドラム・無限ループ連携 ---
+const motorCountOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const motorCountDrum = useDrum(motorCountOptions, motorCount.value);
+
+// ドラムの選択状態を useMotorCalc 側の motorCount に同期
+watch(motorCountDrum.selectedValue, (newVal) => {
+  motorCount.value = newVal;
+});
+watch(motorCount, (newVal) => {
+  if (motorCountOptions.includes(newVal)) {
+    motorCountDrum.selectValue(newVal);
+  }
+});
+
+// --- 2. その他一般負荷の W / A 換算ロジック ---
+const loadInputMode = ref<'A' | 'W'>('A');
+const rawLoadValue = ref<number>(0);
+
+// 入力値とモードに応じて otherLoadAmp（A換算値）を算出して更新
+watch([rawLoadValue, loadInputMode, voltage], ([val, mode]) => {
+  if (mode === 'A') {
+    otherLoadAmp.value = val || 0;
+  } else {
+    // W/kW入力時の簡易換算 (例: 三相200V系 P = √3 * V * I * cosθ より逆算、力率0.8仮定)
+    const v = voltage.value || 200;
+    const powerWatts = val || 0;
+    const currentA = powerWatts / (1.732 * v * 0.8);
+    otherLoadAmp.value = Number(currentA.toFixed(2));
+  }
+});
+
+// --- 3. 合算定格電流の滑らかなリアルタイム表示アニメーション ---
+const displayTotalLoadAmp = ref(totalLoadAmp.value);
+watch(totalLoadAmp, (newVal) => {
+  const startVal = displayTotalLoadAmp.value;
+  const diff = newVal - startVal;
+  const duration = 250; // ms
+  const startTime = performance.now();
+
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - startTime;
+    if (elapsed < duration) {
+      displayTotalLoadAmp.value = Number((startVal + diff * (elapsed / duration)).toFixed(2));
+      requestAnimationFrame(animate);
+    } else {
+      displayTotalLoadAmp.value = newVal;
+    }
+  };
+  requestAnimationFrame(animate);
+});
 </script>
 
 <style scoped>
-/* スタイルはそのまま維持 */
 .motor-calc-container {
   width: 100%;
   box-sizing: border-box;
 }
 
+/* ドラム式横スクロール・スワイパーのスタイル */
+.drum-swiper-container {
+  width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 #1e293b;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drum-swiper-container::-webkit-scrollbar {
+  height: 6px;
+}
+.drum-swiper-container::-webkit-scrollbar-thumb {
+  background-color: #38bdf8;
+  border-radius: 3px;
+}
+
+.drum-track {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.drum-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 56px;
+  background-color: #334155;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.drum-item.active {
+  background-color: #0284c7;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+  transform: scale(1.03);
+}
+
+.drum-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.drum-unit {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+/* 電動機台数用コンパクト・ドラム */
+.drum-compact-container {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  background-color: #1e293b;
+  padding: 4px;
+  border: 1px solid #475569;
+  border-radius: 6px;
+}
+.drum-compact-item {
+  flex: 1;
+  text-align: center;
+  padding: 6px 2px;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #334155;
+  color: #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+.drum-compact-item.active {
+  background-color: #0284c7;
+  color: #ffffff;
+}
+
+.drum-arrow-btn {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #38bdf8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.drum-arrow-btn:active {
+  background: #0284c7;
+  color: #fff;
+}
+
+.mode-switch-btn {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.mode-switch-btn.active {
+  background: #0284c7;
+  color: #fff;
+  border-color: #38bdf8;
+}
+
+.realtime-display {
+  transition: color 0.2s ease;
+}
+
+/* 既存のスタイル維持 */
 .result-card {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;

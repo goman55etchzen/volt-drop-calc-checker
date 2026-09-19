@@ -1,7 +1,7 @@
 // src/types/appDefinitions.ts
 
 // ==========================================
-// 1. アプリ状態・UIイベント型定義
+// 1. アプリ状態・ロジック型定義
 // ==========================================
 
 export type AppMode = 'normal' | 'reversed' | 'motor';
@@ -62,7 +62,6 @@ export interface CapacitorSelectionResult {
   isTableStandard?: boolean;
 }
 
-// 遮断器選定 引数インターフェース
 export interface SelectBreakerParams {
   outputKw: number;
   singleAmp: number;
@@ -75,53 +74,7 @@ export interface SelectBreakerParams {
 }
 
 // ==========================================
-// 2. Vue コンポーネント Props / Emits インターフェース
-// ==========================================
-
-export interface WireSizeSelectProps {
-  selectedWireName: string;
-  isOpen: boolean;
-}
-
-export interface WireSizeSelectEmits {
-  (e: 'update:selectedWireName', name: string): void;
-  (e: 'open'): void;
-  (e: 'close'): void;
-}
-
-export interface WireTypeSelectProps {
-  modelValue: string;
-}
-
-export interface WireTypeSelectEmits {
-  (e: 'update:modelValue', value: string): void;
-  (e: 'change'): void;
-}
-
-export interface ResultCardProps {
-  maxLen: number;
-  isOverCurrent: boolean;
-}
-
-export interface ReversedResultProps {
-  voltage: number;
-  targetPercent: number;
-  inputMode: CalculationInputMode;
-  loadWatt: number;
-  loadCurrent: number;
-  oneWayDistance: number;
-  selectedSystemId: string;
-  selectedCableType: CableTypeCode;
-  powerFactor: number;
-  ignorePowerFactor: boolean;
-  loadType: LoadType;
-  motorKw: number;
-  installationType: InstallationType;
-  isContinuous: boolean;
-}
-
-// ==========================================
-// 3. 配線・計算用 データインターフェース
+// 2. 配線・計算用 データインターフェース
 // ==========================================
 
 export interface CableType {
@@ -192,9 +145,8 @@ export interface CapacitorTableEntry {
 }
 
 // ==========================================
-// 4. 定数・マスタデータ定義
+// 3. 定数・マスタデータ定義
 // ==========================================
-
 export const WIRE_SIZES: WireSize[] = [
   { name: '0.2 sq (2.5A)', area: 0.2, amp: 2.5 },
   { name: '0.3 sq (5A)', area: 0.3, amp: 5.0 },
@@ -338,22 +290,10 @@ export const CABLE_TYPES: CableType[] = [
 ];
 
 export const CABLE_TEMP_GROUPS = [
-  {
-    label: '60℃ (低熱・標準室内配線)',
-    items: ['vv', 'vvr', 'iv']
-  },
-  {
-    label: '75℃ (中熱・エコ・耐熱)',
-    items: ['em_eef', 'em_ief', 'hiv']
-  },
-  {
-    label: '90℃ (高耐熱・大容量幹配線)',
-    items: ['cv', 'cvt']
-  },
-  {
-    label: '屋外空中架空 (放熱良好)',
-    items: ['ow', 'dv']
-  }
+  { label: '60℃ (低熱・標準室内配線)', items: ['vv', 'vvr', 'iv'] },
+  { label: '75℃ (中熱・エコ・耐熱)', items: ['em_eef', 'em_ief', 'hiv'] },
+  { label: '90℃ (高耐熱・大容量幹配線)', items: ['cv', 'cvt'] },
+  { label: '屋外空中架空 (放熱良好)', items: ['ow', 'dv'] }
 ];
 
 export const SYSTEM_DEFINITIONS: SystemType[] = [

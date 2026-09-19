@@ -35,8 +35,8 @@
 </template>
 
 <script setup lang="ts">
-import { WIRE_SIZES, WireSizeSelectProps, WireSizeSelectEmits } from '@/types/appDefinitions';
-
+import { WireSizeSelectProps, WireSizeSelectEmits } from '@/types/base';
+import { WIRE_SIZES } from '@/types/appDefinitions';
 defineProps<WireSizeSelectProps>();
 const emit = defineEmits<WireSizeSelectEmits>();
 
