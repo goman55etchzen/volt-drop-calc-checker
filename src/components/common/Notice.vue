@@ -3,8 +3,8 @@
   <div class="notice-cards-wrapper space-y-4">
     
     <!-- メイン結果表示カード（単体計算定格電流 / 計算一次定格電流） -->
-    <div class="result-card-dark">
-      <div class="main-result">
+  <!-- <div class="result-card-dark">
+        <div class="main-result">
         <span class="result-label">
           {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
         </span>
@@ -13,7 +13,7 @@
           <span class="result-unit">A</span>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- 1. 保護遮断器 (ブレーカ) カテゴリカード -->
     <BreakerSelect :breaker-info="breakerInfo" />
@@ -36,9 +36,9 @@
       </div>
     </div>
 
-    <!-- 既存のサイドスライドトリガー（合算電流・力率詳細設定用ドロワー） -->
-    <IrSectionCard
-      v-model:isOpen="isTotalAmpOpenProxy"
+    <!-- 既存のサイドスライドトリガー（合算電流・力率詳細設定用ドロワー）-->
+    <!-- <IrSectionCard
+      v-model:isshow="isTotalAmpOpenProxy"
       :display-total-load-amp="displayTotalLoadAmp"
       :calculated-amp="calculatedAmp"
       :motor-count="motorCount"
@@ -46,11 +46,11 @@
     />
 
     <CapacitorSectionCard
-      v-model:isOpen="isPowerFactorOpenProxy"
+      v-model:isshow="isPowerFactorOpenProxy"
       v-model:powerFactor="powerFactorProxy"
       v-model:targetPowerFactor="targetPowerFactorProxy"
       v-model:efficiency="efficiencyProxy"
-    />
+    /> -->
   </div>
 </template>
 
