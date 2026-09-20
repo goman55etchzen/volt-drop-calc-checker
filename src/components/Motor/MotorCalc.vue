@@ -116,53 +116,28 @@
         <p class="mt-4 text-sm text-slate-500">「周波数」「相・電圧」「出力 (kW)」を選択すると定格電流が計算されます。</p>
       </div>
 
-      <!-- 2. 基本情報が揃った時点の計算結果 (1台あたりの定格電流) -->
-      <div v-if="canCalculateBasic" class="result-card-dark mb-4">
-        <div class="main-result">
-          <span class="result-label">単体計算定格電流 (1台あたり)</span>
-          <div class="result-value-group">
-            <span class="result-value">{{ mc.calculatedAmp.value || 0 }}</span>
-            <span class="result-unit">A</span>
-          </div>
-        </div>
-        <div class="sub-results mt-4">
-          <div class="sub-item">
-            <span class="sub-title">電圧 / 出力</span>
-            <span class="sub-value">{{ mc.voltage.value }}V / {{ formData.motorKw }}kW</span>
-          </div>
-          <div class="sub-item">
-            <span class="sub-title">台数</span>
-            <span class="sub-value">{{ formData.quantity || 1 }} 台</span>
-          </div>
-        </div>
-      </div>
+      <!-- 2. 右側の算出結果はNotice.vueに一元化 -->
+      <Notice
+        v-else
+        :drive-mode="formData.driveMode"
+        :calculated-amp="mc.calculatedAmp.value"
+        :display-total-load-amp="mc.totalLoadAmp.value"
+        :motor-count="formData.quantity || 1"
+        :other-load-amp="formData.otherLoadIr || 0"
+        :voltage="mc.voltage.value"
+        :motor-kw="formData.motorKw || 0"
+        :show-details="canCalculateFull"
+        v-model:powerFactor="mc.powerFactor.value"
+        v-model:targetPowerFactor="mc.targetPowerFactor.value"
+        v-model:efficiency="mc.efficiency.value"
+        :breaker-info="mc.breakerInfo.value"
+        :elcb-info="mc.elcbInfo.value"
+        :recommended-installation="recommendedInstallation"
+        :recommended-capacitors="recommendedCapacitors"
+        :thermal-info="thermalInfo"
+      />
 
-      <!-- 3. 全条件完了時のフル選定結果 (ブレーカー・サーマル・コンデンサ等) -->
-      <div v-if="canCalculateFull" class="final-result-container">
-        <Notice 
-          v-model:isTotalAmpOpen="isTotalAmpOpen"
-          v-model:isPowerFactorOpen="isPowerFactorOpen"
-          :drive-mode="formData.driveMode"
-          :calculated-amp="mc.calculatedAmp.value"
-          :display-total-load-amp="mc.totalLoadAmp.value"
-          :motor-count="formData.quantity || 1"
-          :other-load-amp="formData.otherLoadIr || 0"
-          v-model:powerFactor="mc.powerFactor.value"
-          v-model:targetPowerFactor="mc.targetPowerFactor.value"
-          v-model:efficiency="mc.efficiency.value"
-          :breaker-info="mc.breakerInfo.value"
-          :elcb-info="mc.elcbInfo.value"
-          :recommended-installation="recommendedInstallation"
-          :recommended-capacitors="recommendedCapacitors"
-        />
-
-        <Thermal :thermalInfo="thermalInfo" class="mt-3" />
-
-        <Notice v-if="formData.driveMode === 'inverter'" type="warning" class="mt-3">
-          インバータ一次側遮断器です。始動電流が抑制されるため商用直結（3倍則）より容量が小さくなります。
-        </Notice>
-      </div>
-      <div v-else-if="canCalculateBasic" class="info-card mt-3">
+      <div v-if="canCalculateBasic && !canCalculateFull" class="info-card mt-3">
         <p class="text-xs text-slate-400">※「環境条件」「駆動方式」「保護遮断器種別」を選択すると詳細な機器選定結果が表示されます。</p>
       </div>
     </div>
@@ -173,7 +148,6 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import SelectEnvironment from '@/components/Motor/SelectEnvironment.vue';
 import Notice from '@/components/common/Notice.vue';
-import Thermal from '@/components/Motor/Thermal.vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useThermal } from '@/composables/useThermal';
 import { localDb } from '@/utils/localDb';
@@ -394,66 +368,7 @@ const recommendedCapacitors = computed(() => {
   box-shadow: none;
 }
 
-/* 結果表示カード */
-.result-card-dark {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border: 2px solid #38bdf8;
-  border-radius: 16px;
-  padding: 20px;
-  color: #ffffff;
-}
-.main-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.result-label {
-  font-size: 14px;
-  color: #38bdf8;
-  font-weight: bold;
-}
-.result-value-group {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-top: 8px;
-}
-.result-value {
-  font-size: 42px;
-  font-weight: 800;
-  color: #f8fafc;
-  line-height: 1;
-}
-.result-unit {
-  font-size: 20px;
-  font-weight: bold;
-  color: #94a3b8;
-}
-.sub-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-  text-align: center;
-}
-.sub-item {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background-color: #0f172a;
-  padding: 12px 8px;
-  border-radius: 8px;
-}
-.sub-title {
-  font-size: 11px;
-  color: #cbd5e1;
-  margin-bottom: 4px;
-}
-.sub-value {
-  font-size: 15px;
-  font-weight: bold;
-  color: #f8fafc;
-}
+
 .empty-state { 
   text-align: center; 
   padding: 3rem 1rem; 

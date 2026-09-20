@@ -1,75 +1,81 @@
 <!-- src/components/common/Notice.vue -->
 <template>
-  <div class="notice-cards-wrapper space-y-4">
-    
-    <!-- メイン結果表示カード（単体計算定格電流 / 計算一次定格電流） -->
-  <!-- <div class="result-card-dark">
-        <div class="main-result">
+  <div class="notice-cards-wrapper">
+    <!-- 1. メイン算出結果カード -->
+    <div class="result-card-dark">
+      <div class="main-result">
         <span class="result-label">
           {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
         </span>
         <div class="result-value-group">
-          <span class="result-value">{{ calculatedAmp }}</span>
+          <span class="result-value">{{ calculatedAmp || 0 }}</span>
           <span class="result-unit">A</span>
         </div>
       </div>
-    </div> -->
 
-    <!-- 1. 保護遮断器 (ブレーカ) カテゴリカード -->
-    <BreakerSelect :breaker-info="breakerInfo" />
-
-    <!-- 2. 漏電遮断器 (ELCB) & 設置工事 カテゴリカード -->
-    <ElbSelectionCard
-      :elcb-info="elcbInfo" 
-      :recommended-installation="recommendedInstallation" 
-    />
-
-    <!-- 警告・注意ノート（組み込んだ通知ボックス構造） -->
-    <div v-if="breakerInfo?.warningNote" class="notice-box warning">
-      <div class="notice-icon">
-        <span>⚠️</span>
-      </div>
-      <div class="notice-content">
-        <p class="notice-text">
-          {{ breakerInfo.warningNote }}
-        </p>
+      <div class="sub-results">
+        <div class="sub-item">
+          <span class="sub-title">電圧 / 出力</span>
+          <span class="sub-value">{{ voltage }}V / {{ motorKw }}kW</span>
+        </div>
+        <div class="sub-item">
+          <span class="sub-title">台数</span>
+          <span class="sub-value">{{ motorCount }} 台</span>
+        </div>
       </div>
     </div>
 
-    <!-- 既存のサイドスライドトリガー（合算電流・力率詳細設定用ドロワー）-->
-    <!-- <IrSectionCard
-      v-model:isshow="isTotalAmpOpenProxy"
-      :display-total-load-amp="displayTotalLoadAmp"
-      :calculated-amp="calculatedAmp"
-      :motor-count="motorCount"
-      :other-load-amp="otherLoadAmp"
-    />
+    <!-- 2. 詳細選定結果は全条件が揃った場合だけ表示 -->
+    <template v-if="showDetails">
+      <!-- <BreakerSelect :breaker-info="breakerInfo" /> -->
 
-    <CapacitorSectionCard
-      v-model:isshow="isPowerFactorOpenProxy"
-      v-model:powerFactor="powerFactorProxy"
-      v-model:targetPowerFactor="targetPowerFactorProxy"
-      v-model:efficiency="efficiencyProxy"
-    /> -->
+      <ElbSelectionCard
+        :elcb-info="elcbInfo"
+        :recommended-installation="recommendedInstallation"
+      />
+
+      <Thermal :thermal-info="thermalInfo" />
+
+      <div v-if="breakerInfo?.warningNote" class="notice-box warning">
+        <div class="notice-icon">
+          <span>⚠️</span>
+        </div>
+        <div class="notice-content">
+          <p class="notice-text">{{ breakerInfo.warningNote }}</p>
+        </div>
+      </div>
+
+      <div v-if="driveMode === 'inverter'" class="notice-box warning">
+        <div class="notice-icon">
+          <span>⚠️</span>
+        </div>
+        <div class="notice-content">
+          <p class="notice-text">
+            インバータ一次側遮断器です。始動電流が抑制されるため商用直結（3倍則）より容量が小さくなります。
+          </p>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import IrSectionCard from '@/components/Motor/IrSectionCard.vue';
-import CapacitorSectionCard from '@/components/Motor/CapacitorSectionCard.vue';
 import BreakerSelect from '@/components/Motor/BreakerSelect.vue';
+import Thermal from '@/components/Motor/Thermal.vue';
+import type { ThermalSelectionResult } from '@/composables/useThermal';
 import ElbSelectionCard from '@/components/Motor/ElbSelectionCard.vue';
 import type { CapacitorProduct } from '@/utils/capacitor';
 
 const props = defineProps<{
   driveMode: string | null;
   calculatedAmp: number;
-  isTotalAmpOpen: boolean;
   displayTotalLoadAmp: number;
   motorCount: number;
   otherLoadAmp: number;
-  isPowerFactorOpen: boolean;
+  voltage: number;
+  motorKw: number;
+  showDetails: boolean;
+  thermalInfo: ThermalSelectionResult;
   powerFactor: number;
   targetPowerFactor: number;
   efficiency: number;
@@ -79,38 +85,6 @@ const props = defineProps<{
   recommendedCapacitors: CapacitorProduct[];
 }>();
 
-const emit = defineEmits<{
-  (e: 'update:isTotalAmpOpen', value: boolean): void;
-  (e: 'update:isPowerFactorOpen', value: boolean): void;
-  (e: 'update:powerFactor', value: number): void;
-  (e: 'update:targetPowerFactor', value: number): void;
-  (e: 'update:efficiency', value: number): void;
-}>();
-
-const isTotalAmpOpenProxy = computed({
-  get: () => props.isTotalAmpOpen,
-  set: (val) => emit('update:isTotalAmpOpen', val),
-});
-
-const isPowerFactorOpenProxy = computed({
-  get: () => props.isPowerFactorOpen,
-  set: (val) => emit('update:isPowerFactorOpen', val),
-});
-
-const powerFactorProxy = computed({
-  get: () => props.powerFactor,
-  set: (val) => emit('update:powerFactor', val),
-});
-
-const targetPowerFactorProxy = computed({
-  get: () => props.targetPowerFactor,
-  set: (val) => emit('update:targetPowerFactor', val),
-});
-
-const efficiencyProxy = computed({
-  get: () => props.efficiency,
-  set: (val) => emit('update:efficiency', val),
-});
 </script>
 
 <style scoped>
@@ -118,6 +92,7 @@ const efficiencyProxy = computed({
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 /* メイン結果表示用スタイル */
@@ -154,6 +129,31 @@ const efficiencyProxy = computed({
   font-size: 20px;
   font-weight: bold;
   color: #94a3b8;
+}
+ .sub-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  text-align: center;
+}
+.sub-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: #0f172a;
+  padding: 12px 8px;
+  border-radius: 8px;
+}
+.sub-title {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+.sub-value {
+  font-size: 15px;
+  font-weight: bold;
+  color: #f8fafc;
 }
 
 /* 組み込んだ通知・警告ボックススタイル */
