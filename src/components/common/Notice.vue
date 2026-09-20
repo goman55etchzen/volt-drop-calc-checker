@@ -1,6 +1,9 @@
 <!-- src/components/common/Notice.vue -->
 <template>
   <div class="notice-cards-wrapper">
+    <!-- 警告・個別選定の通知カード（右からスライドイン＆常時表示） -->
+    <Caution v-if="cautionMessage" :message="cautionMessage" />
+
     <!-- 合算定格電流スライドインカード（独立コンポーネント） -->
     <IrSectionCard
       v-model:isOpen="isTotalAmpOpenProxy"
@@ -24,6 +27,7 @@
 import { computed } from 'vue';
 import IrSectionCard from '@/components/Motor/IrSectionCard.vue';
 import CapacitorSectionCard from '@/components/Motor/CapacitorSectionCard.vue';
+import Caution from '@/components/Motor/Caution.vue';
 
 const props = defineProps<{
   isTotalAmpOpen: boolean;
@@ -35,6 +39,7 @@ const props = defineProps<{
   powerFactor: number;
   targetPowerFactor: number;
   efficiency: number;
+  cautionMessage?: string; // 追加：警告メッセージ
 }>();
 
 const emit = defineEmits<{
@@ -73,6 +78,9 @@ const efficiencyProxy = computed({
 
 <style scoped>
 .notice-cards-wrapper {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
 }
 </style>
