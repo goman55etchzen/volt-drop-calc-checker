@@ -78,7 +78,16 @@
             <label class="sub-label">8. 保護遮断器 種別</label>
             <div class="preset-chips">
               <button type="button" :class="['chip-btn', formData.breakerMode === 'auto' ? 'active' : '']" @click="formData.breakerMode = 'auto'">自動選定</button>
-              <button type="button" :class="['chip-btn', formData.breakerMode === 'motor_breaker' ? 'active' : '']" @click="formData.breakerMode = 'motor_breaker'">モーターブレーカー</button>
+              
+              <!-- インバータ駆動時はモーターブレーカーを選択不可に制御 -->
+              <button type="button" 
+                      :class="['chip-btn', formData.breakerMode === 'motor_breaker' ? 'active' : '']" 
+                      :disabled="formData.driveMode === 'inverter'"
+                      :title="formData.driveMode === 'inverter' ? 'インバータ駆動時は選択できません' : ''"
+                      @click="formData.driveMode !== 'inverter' && (formData.breakerMode = 'motor_breaker')">
+                モーターブレーカー
+              </button>
+
               <button type="button" :class="['chip-btn', formData.breakerMode === 'mccb' ? 'active' : '']" @click="formData.breakerMode = 'mccb'">配線用遮断器 (MCCB)</button>
             </div>
           </div>
@@ -191,17 +200,17 @@
           </div>
 
           <Notice 
-  v-model:isTotalAmpOpen="isTotalAmpOpen"
-  v-model:isPowerFactorOpen="isPowerFactorOpen"
-  :display-total-load-amp="mc.totalLoadAmp.value"
-  :calculated-amp="mc.calculatedAmp.value"
-  :motor-count="formData.quantity || 1"
-  :other-load-amp="formData.otherLoadIr || 0"
-  v-model:powerFactor="mc.powerFactor.value"
-  v-model:targetPowerFactor="mc.targetPowerFactor.value"
-  v-model:efficiency="mc.efficiency.value"
-  :caution-message="dynamicCautionMessage"
-/>
+            v-model:isTotalAmpOpen="isTotalAmpOpen"
+            v-model:isPowerFactorOpen="isPowerFactorOpen"
+            :display-total-load-amp="mc.totalLoadAmp.value"
+            :calculated-amp="mc.calculatedAmp.value"
+            :motor-count="formData.quantity || 1"
+            :other-load-amp="formData.otherLoadIr || 0"
+            v-model:powerFactor="mc.powerFactor.value"
+            v-model:targetPowerFactor="mc.targetPowerFactor.value"
+            v-model:efficiency="mc.efficiency.value"
+            :caution-message="dynamicCautionMessage"
+          />
         </div>
 
       </TransitionGroup>
@@ -250,7 +259,13 @@ watch(() => formData.quantity, (val) => { if (val !== null) mc.motorCount.value 
 watch(() => formData.otherLoadIr, (val) => { if (val !== null) mc.otherLoadAmp.value = val; });
 watch(() => formData.environment, (val) => { if (val !== null) mc.environment.value = val; });
 watch(() => formData.frequency, (val) => { if (val !== null) mc.frequency.value = val; });
-watch(() => formData.driveMode, (val) => { if (val !== null) mc.driveMode.value = val; });
+watch(() => formData.driveMode, (val) => { 
+  if (val !== null) mc.driveMode.value = val;
+  // インバータ駆動に切り替えた際、もしモーターブレーカーが選ばれていた場合は自動選定に戻す
+  if (val === 'inverter' && formData.breakerMode === 'motor_breaker') {
+    formData.breakerMode = 'auto';
+  }
+});
 watch(() => formData.breakerMode, (val) => { if (val !== null) mc.breakerTypeMode.value = val; });
 watch(() => formData.systemId, (val) => {
   if (val === '1P3W_100V') mc.voltage.value = 100;
@@ -291,33 +306,38 @@ const recommendedCapacitors = computed(() => {
   const V = mc.voltage.value;
   const eff = mc.efficiency.value || 0.85;
   
-  // kvar = P/eff * (tan(acos(pf1)) - tan(acos(pf2)))
   const acos1 = Math.acos(pf1);
   const acos2 = Math.acos(pf2);
   const kvar = (P / eff) * (Math.tan(acos1) - Math.tan(acos2));
   
   if (kvar <= 0) return [];
   
-  // C(F) = Q(var) / (2 * π * f * V^2)
   const cFarad = (kvar * 1000) / (2 * Math.PI * f * Math.pow(V, 2));
   const targetUf = cFarad * 1000000;
 
   return findClosestCapacitorGroup(capacitorCatalog.value, V, f, targetUf);
-  // 電動機の台数に応じた警告・通知メッセージの動的生成
+});
+
+// 電動機の台数に応じた警告・通知メッセージの動的生成
 const dynamicCautionMessage = computed(() => {
   const count = formData.quantity || 1;
   const amp = mc.breakerInfo.value.recommendedAmp || 20;
+
+  // インバータ駆動時、またはモータブレーカー選定時以外は非表示にする
+  if (formData.driveMode === 'inverter' || mc.breakerInfo.value.selectedType !== 'motor_breaker') {
+    return '';
+  }
+
   if (count >= 2) {
     return `電動機${count}台それぞれに個別モーターブレーカー（各台定格基準・推奨${amp}A × ${count}台）を選定しています。`;
   }
   return '';
 });
-});
 </script>
 
 <style scoped>
 /* ==========================================
-   ベース・レスポンシブレイアウト
+    ベース・レスポンシブレイアウト
    ========================================== */
 .motor-calc-container { 
   display: flex; 
@@ -342,7 +362,7 @@ const dynamicCautionMessage = computed(() => {
 }
 
 /* ==========================================
-   ダークテーマ UIパーツ
+    ダークテーマ UIパーツ
    ========================================== */
 .form-card {
   background-color: #0f172a;
@@ -413,9 +433,17 @@ const dynamicCautionMessage = computed(() => {
   border-color: #38bdf8;
   box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
 }
+.chip-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #334155;
+  background-color: #0f172a;
+  color: #64748b;
+  box-shadow: none;
+}
 
 /* ==========================================
-   結果表示カード
+    結果表示カード
    ========================================== */
 .result-card-dark {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -504,7 +532,7 @@ const dynamicCautionMessage = computed(() => {
 .mt-6 { margin-top: 1.5rem; }
 
 /* ==========================================
-   Vue TransitionGroup アニメーション設定
+    Vue TransitionGroup アニメーション設定
    ========================================== */
 .fade-slide-enter-active,
 .fade-slide-leave-active { transition: all 0.4s ease; }
