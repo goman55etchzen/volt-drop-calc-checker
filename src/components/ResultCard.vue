@@ -3,7 +3,7 @@
     <div class="sticky-inner">
       <div class="sticky-info">
         <span class="status-badge" :class="{ ok: !isOverCurrent }">
-          {{ isOverCurrent ? '⚠️ 許容オーバー' : '⭕ セーフ' }}
+          {{ isOverCurrent ? '⚠️ 電流オーバー' : '⭕ 電流OK' }}
         </span>
         <span class="sub-text">最大許容配線長</span>
       </div>

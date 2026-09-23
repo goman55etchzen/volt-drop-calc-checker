@@ -26,7 +26,10 @@ export type CableTypeCode =
   | 'cv_4c'
   | 'mlfc'
   | 'ow' 
-  | 'dv';
+  | 'dv'
+  | 'vct'
+  | 'vctf'
+  | 'vff';
 
 export type EnvironmentType = 'normal' | 'enclosure' | 'wet';
 export type PowerFrequency = 50 | 60;
@@ -90,6 +93,8 @@ export interface CableType {
   maxTemp: number; // 最高許容温度 (60, 75, 90)
   tempCategory: '60' | '75' | '90' | 'outdoor';
   limits: Record<string, number>;
+  isIndoorWiringForbidden?: boolean; // 屋内配線（固定配線）使用不可フラグ
+  warningMessage?: string; // 警告メッセージ
 }
 
 export interface WireSize {
@@ -396,6 +401,45 @@ export const CABLE_TYPES: CableType[] = [
       '3.0 sq (30A)': 38.0, '3.5 sq': 41, '5.0 sq (40A)': 52.0, '5.5 sq': 54, '8.0 sq': 70,
       '14.0 sq': 99, '22.0 sq': 130
     }
+  },
+  {
+    id: 'vct',
+    name: 'VCT (ビニルキャブタイヤケーブル)',
+    desc: '移動用機器・延長ケーブル用 (※屋内固定配線不可)',
+    maxTemp: 60,
+    tempCategory: '60',
+    isIndoorWiringForbidden: true,
+    warningMessage: 'VCTは機器への電源供給・延長用です。壁内や天井などの屋内固定配線には使用できません（電気設備技術基準）。',
+    limits: {
+      '0.75 sq (6.6A)': 7, '1.25 sq (11.6A)': 12, '2.0 sq': 19, '3.5 sq': 27,
+      '5.5 sq': 37, '8.0 sq': 49, '14.0 sq': 69, '22.0 sq': 88
+    }
+  },
+  {
+    id: 'vctf',
+    name: 'VCTF / VCT-F (ビニルキャブタイヤコード)',
+    desc: '小型機器・延長コード用 (※屋内固定配線不可)',
+    maxTemp: 60,
+    tempCategory: '60',
+    isIndoorWiringForbidden: true,
+    warningMessage: 'VCTFは小型機器電源供給・延長コード専用です。壁内等の固定配線には使用できません（内線規程）。',
+    limits: {
+      '0.2 sq (2.5A)': 2.5, '0.3 sq (5A)': 5.0, '0.5 sq (5A)': 5.0,
+      '0.75 sq (6.6A)': 7, '1.25 sq (11.6A)': 12, '2.0 sq': 17
+    }
+  },
+  {
+    id: 'vff',
+    name: 'VFF (小判コード / 平形コード)',
+    desc: '器具コード・家庭用延長コード (※屋内固定配線不可)',
+    maxTemp: 60,
+    tempCategory: '60',
+    isIndoorWiringForbidden: true,
+    warningMessage: '小判コード(VFF)は器具電源・延長用です。壁内や造営物への固定配線には使用できません。',
+    limits: {
+      '0.2 sq (2.5A)': 2.5, '0.3 sq (5A)': 5.0, '0.5 sq (5A)': 5.0,
+      '0.75 sq (6.6A)': 7, '1.25 sq (11.6A)': 12, '2.0 sq': 17
+    }
   }
 ];
 
@@ -403,7 +447,8 @@ export const CABLE_TEMP_GROUPS = [
   { label: '60℃ (低熱・標準室内配線)', items: ['vv', 'vvr', 'iv'] },
   { label: '75℃ (中熱・エコ・耐熱)', items: ['em_eef', 'em_ief', 'hiv'] },
   { label: '90℃ (高耐熱・大容量幹配線)', items: ['cv', 'cvd', 'cvt', 'cvq', 'cv_2c', 'cv_3c', 'cv_4c', 'mlfc'] },
-  { label: '屋外空中架空 (放熱良好)', items: ['ow', 'dv'] }
+  { label: '屋外空中架空 (放熱良好)', items: ['ow', 'dv'] },
+  { label: '機器電源・延長コード (※屋内固定配線不可)', items: ['vct', 'vctf', 'vff'] }
 ];
 
 export const SYSTEM_DEFINITIONS: SystemType[] = [
@@ -435,7 +480,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 7, vvr: 7, iv: 7, em_eef: 8, em_ief: 8, hiv: 8,
       cv: 0, cvd: 0, cvt: 0, cvq: 0, cv_2c: 0, cv_3c: 0, cv_4c: 0, mlfc: 0,
-      ow: 9, dv: 9
+      ow: 9, dv: 9, vct: 7, vctf: 7, vff: 7
     }
   },
   {
@@ -446,7 +491,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 12, vvr: 12, iv: 12, em_eef: 13, em_ief: 13, hiv: 13,
       cv: 0, cvd: 0, cvt: 0, cvq: 0, cv_2c: 0, cv_3c: 0, cv_4c: 0, mlfc: 0,
-      ow: 16, dv: 16
+      ow: 16, dv: 16, vct: 12, vctf: 12, vff: 12
     }
   },
   {
@@ -457,7 +502,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 18, vvr: 18, iv: 27, em_eef: 21, em_ief: 31, hiv: 31,
       cv: 33, cvd: 27, cvt: 25, cvq: 24, cv_2c: 26, cv_3c: 24, cv_4c: 22, mlfc: 33,
-      ow: 32, dv: 30
+      ow: 32, dv: 30, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -468,7 +513,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 24, vvr: 24, iv: 35, em_eef: 28, em_ief: 40, hiv: 40,
       cv: 44, cvd: 38, cvt: 35, cvq: 33, cv_2c: 36, cv_3c: 33, cv_4c: 30, mlfc: 44,
-      ow: 42, dv: 39
+      ow: 42, dv: 39, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -479,7 +524,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 35, vvr: 35, iv: 48, em_eef: 40, em_ief: 55, hiv: 55,
       cv: 57, cvd: 49, cvt: 46, cvq: 43, cv_2c: 46, cv_3c: 40, cv_4c: 38, mlfc: 57,
-      ow: 58, dv: 54
+      ow: 58, dv: 54, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -490,7 +535,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 19, vvr: 19, iv: 27, em_eef: 22, em_ief: 31, hiv: 31,
       cv: 33, cvd: 27, cvt: 25, cvq: 24, cv_2c: 26, cv_3c: 24, cv_4c: 22, mlfc: 33,
-      ow: 32, dv: 30
+      ow: 32, dv: 30, vct: 19, vctf: 17, vff: 17
     }
   },
   {
@@ -501,7 +546,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 27, vvr: 27, iv: 37, em_eef: 31, em_ief: 42, hiv: 42,
       cv: 44, cvd: 38, cvt: 35, cvq: 33, cv_2c: 36, cv_3c: 33, cv_4c: 30, mlfc: 44,
-      ow: 44, dv: 41
+      ow: 44, dv: 41, vct: 27, vctf: 0, vff: 0
     }
   },
   {
@@ -512,7 +557,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 37, vvr: 37, iv: 49, em_eef: 43, em_ief: 56, hiv: 56,
       cv: 57, cvd: 49, cvt: 46, cvq: 43, cv_2c: 46, cv_3c: 40, cv_4c: 38, mlfc: 57,
-      ow: 58, dv: 54
+      ow: 58, dv: 54, vct: 37, vctf: 0, vff: 0
     }
   },
   {
@@ -523,7 +568,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 49, vvr: 49, iv: 61, em_eef: 56, em_ief: 70, hiv: 70,
       cv: 78, cvd: 60, cvt: 51, cvq: 48, cv_2c: 57, cv_3c: 48, cv_4c: 45, mlfc: 78,
-      ow: 75, dv: 70
+      ow: 75, dv: 70, vct: 49, vctf: 0, vff: 0
     }
   },
   {
@@ -534,7 +579,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 69, vvr: 69, iv: 88, em_eef: 79, em_ief: 101, hiv: 101,
       cv: 110, cvd: 86, cvt: 73, cvq: 69, cv_2c: 81, cv_3c: 69, cv_4c: 65, mlfc: 110,
-      ow: 107, dv: 99
+      ow: 107, dv: 99, vct: 69, vctf: 0, vff: 0
     }
   },
   {
@@ -545,7 +590,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 80, vvr: 80, iv: 115, em_eef: 105, em_ief: 132, hiv: 132,
       cv: 145, cvd: 110, cvt: 96, cvq: 91, cv_2c: 105, cv_3c: 91, cv_4c: 86, mlfc: 145,
-      ow: 140, dv: 130
+      ow: 140, dv: 130, vct: 88, vctf: 0, vff: 0
     }
   },
   {
@@ -556,7 +601,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 115, vvr: 115, iv: 162, em_eef: 148, em_ief: 186, hiv: 186,
       cv: 205, cvd: 155, cvt: 132, cvq: 125, cv_2c: 148, cv_3c: 126, cv_4c: 119, mlfc: 205,
-      ow: 190, dv: 180
+      ow: 190, dv: 180, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -567,7 +612,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 150, vvr: 150, iv: 217, em_eef: 198, em_ief: 249, hiv: 249,
       cv: 275, cvd: 210, cvt: 181, cvq: 171, cv_2c: 198, cv_3c: 170, cv_4c: 161, mlfc: 275,
-      ow: 250, dv: 235
+      ow: 250, dv: 235, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -578,7 +623,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 205, vvr: 205, iv: 298, em_eef: 272, em_ief: 342, hiv: 342,
       cv: 385, cvd: 290, cvt: 253, cvq: 240, cv_2c: 280, cv_3c: 242, cv_4c: 229, mlfc: 385,
-      ow: 345, dv: 325
+      ow: 345, dv: 325, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -589,7 +634,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 260, vvr: 260, iv: 383, em_eef: 350, em_ief: 440, hiv: 440,
       cv: 495, cvd: 373, cvt: 324, cvq: 307, cv_2c: 356, cv_3c: 308, cv_4c: 291, mlfc: 495,
-      ow: 440, dv: 415
+      ow: 440, dv: 415, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -600,7 +645,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 310, vvr: 310, iv: 457, em_eef: 417, em_ief: 525, hiv: 525,
       cv: 605, cvd: 445, cvt: 385, cvq: 365, cv_2c: 423, cv_3c: 368, cv_4c: 349, mlfc: 605,
-      ow: 525, dv: 495
+      ow: 525, dv: 495, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -611,7 +656,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 355, vvr: 355, iv: 525, em_eef: 479, em_ief: 603, hiv: 603,
       cv: 700, cvd: 510, cvt: 445, cvq: 421, cv_2c: 489, cv_3c: 423, cv_4c: 402, mlfc: 700,
-      ow: 600, dv: 565
+      ow: 600, dv: 565, vct: 0, vctf: 0, vff: 0
     }
   },
   {
@@ -622,7 +667,7 @@ export const CABLE_SPECS: CableSpec[] = [
     baseAllowAmp: {
       vv: 420, vvr: 420, iv: 622, em_eef: 568, em_ief: 714, hiv: 714,
       cv: 835, cvd: 610, cvt: 528, cvq: 501, cv_2c: 583, cv_3c: 501, cv_4c: 475, mlfc: 835,
-      ow: 710, dv: 670
+      ow: 710, dv: 670, vct: 0, vctf: 0, vff: 0
     }
   }
 ];
@@ -674,26 +719,19 @@ export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
 // 4. 許容電流・動的補正計算エンジン関数群
 // ==========================================
 
-/**
- * 周囲温度による温度補正係数 k1 の計算
- * k1 = sqrt((Tmax - Ta) / (Tmax - 30))
- */
 export function calculateK1(maxTemp: number, ambientTemp: number): number {
   if (ambientTemp >= maxTemp) {
-    return 0; // 周囲温度が最高許容温度以上の場合は使用不可
+    return 0;
   }
   if (ambientTemp <= 30) {
-    return 1.0; // 30℃以下は補正なし (1.0)
+    return 1.0;
   }
   return Math.sqrt((maxTemp - ambientTemp) / (maxTemp - 30));
 }
 
-/**
- * 同一管内・束ね配線本数による電流減少係数 k2 の取得 (内線規程 1340-5表)
- */
 export function calculateK2(wireCount: number, isRackSpaced: boolean = false): number {
   if (isRackSpaced || wireCount <= 0) {
-    return 1.0; // ラック上等で径以上離隔配置する場合は低減なし
+    return 1.0;
   }
   const entry = REDUCTION_FACTOR_TABLE.find(
     (item) => wireCount >= item.minWires && wireCount <= item.maxWires
@@ -701,22 +739,18 @@ export function calculateK2(wireCount: number, isRackSpaced: boolean = false): n
   return entry ? entry.factor : 0.70;
 }
 
-/**
- * 総合許容電流計算
- * I_total = floor(I0 * k1 * k2) * N
- */
 export function calculateAllowableCurrent(params: {
-  baseAllowAmp: number;   // 基準許容電流 I0 (30℃・1条布設)
-  maxTemp: number;        // 絶縁体の最高許容温度 Tmax (60, 75, 90)
-  ambientTemp: number;    // 周囲温度 Ta
-  wireCount: number;      // 管内・束ね電線本数
-  parallelCount?: number; // 並列条数 N (デフォルト 1)
-  isRackSpaced?: boolean; // ケーブルラック離隔配置フラグ
+  baseAllowAmp: number;
+  maxTemp: number;
+  ambientTemp: number;
+  wireCount: number;
+  parallelCount?: number;
+  isRackSpaced?: boolean;
 }): {
   k1: number;
   k2: number;
-  singleAllowAmp: number; // 1条あたりの最終許容電流
-  totalAllowAmp: number;  // 並列合計の最終許容電流
+  singleAllowAmp: number;
+  totalAllowAmp: number;
 } {
   const {
     baseAllowAmp,
@@ -730,14 +764,11 @@ export function calculateAllowableCurrent(params: {
   const k1 = calculateK1(maxTemp, ambientTemp);
   const k2 = calculateK2(wireCount, isRackSpaced);
 
-  // 端数切捨てで1条あたりの許容電流を算出
   const singleAllowAmp = Math.floor(baseAllowAmp * k1 * k2);
-  
-  // 並列本数 N を乗算
   const totalAllowAmp = singleAllowAmp * Math.max(1, parallelCount);
 
   return {
-    k1: Math.round(k1 * 100) / 100, // 評価表示用 (小数点第2位桁)
+    k1: Math.round(k1 * 100) / 100,
     k2,
     singleAllowAmp,
     totalAllowAmp

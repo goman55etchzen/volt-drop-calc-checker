@@ -21,10 +21,22 @@
         </option>
       </optgroup>
     </select>
+
+    <!-- 機器専用・屋内固定配線不可の警告バナー表示 -->
+    <div v-if="selectedCable?.isIndoorWiringForbidden" class="warning-banner">
+      <div class="warning-header">
+        <span class="warning-icon">⚠️</span>
+        <span class="warning-title">屋内固定配線 使用不可</span>
+      </div>
+      <p class="warning-text">
+        {{ selectedCable.warningMessage || 'この電線・コードは機器への電源供給および延長用です。壁内や天井裏などの屋内固定配線には使用できません（電気設備技術基準・内線規程）。' }}
+      </p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import {
   CableTypeCode,
   CABLE_TYPES,
@@ -40,8 +52,12 @@ interface Emits {
   (e: 'change', value: CableTypeCode): void;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+const selectedCable = computed(() => {
+  return CABLE_TYPES.find((c) => c.id === props.modelValue);
+});
 
 const getCablesByGroup = (items: string[]) => {
   return CABLE_TYPES.filter((cable) => items.includes(cable.id));
@@ -90,5 +106,38 @@ optgroup {
 option {
   background-color: #334155;
   color: #f8fafc;
+}
+
+/* 屋内配線不可の警告用スタイリング */
+.warning-banner {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background-color: #451a03;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.warning-icon {
+  font-size: 14px;
+}
+
+.warning-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+.warning-text {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #fde68a;
 }
 </style>

@@ -43,13 +43,31 @@ export function useCabling(
     return k > 0 && i > 0 ? (allowDropV.value * 1000 * area) / (k * i) : 0;
   });
 
-  // 許容電流値 (キーが存在しない場合は安全側として 0A 扱い)
-  const maxLimit = computed(
-    () => currentCable.value.limits[currentWire.value.name] ?? 0
+  // 選択された電線サイズが該当ケーブルの limits 定義に存在するか確認
+  const isWireSizeValidForCable = computed(() => {
+    return currentWire.value.name in currentCable.value.limits;
+  });
+
+  // 許容電流値 (キーが存在しない場合は過電流判定を行わないよう Infinity と設定)
+  const maxLimit = computed(() => {
+    const limit = currentCable.value.limits[currentWire.value.name];
+    return limit !== undefined ? limit : Infinity;
+  });
+
+  // 過電流判定（電線サイズが適合し、かつ負荷電流が許容電流を超える場合のみ true）
+  const isOverCurrent = computed(() => {
+    if (!isWireSizeValidForCable.value) return false;
+    return totalI.value > maxLimit.value;
+  });
+
+  // 屋内固定配線不可判定および警告テキスト
+  const isIndoorWiringForbidden = computed(
+    () => !!currentCable.value.isIndoorWiringForbidden
   );
 
-  // 過電流判定
-  const isOverCurrent = computed(() => totalI.value > maxLimit.value);
+  const indoorWiringWarning = computed(() =>
+    isIndoorWiringForbidden.value ? currentCable.value.warningMessage || '' : ''
+  );
 
   return {
     selectedSystemId,
@@ -59,5 +77,8 @@ export function useCabling(
     currentWire,
     maxLen,
     isOverCurrent,
+    isWireSizeValidForCable,
+    isIndoorWiringForbidden,
+    indoorWiringWarning,
   };
 }
