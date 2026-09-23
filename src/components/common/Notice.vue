@@ -1,6 +1,7 @@
 <!-- src/components/common/Notice.vue -->
 <template>
   <div class="notice-cards-wrapper">
+
     <!-- 1. メイン算出結果カード -->
     <div class="result-card-dark">
       <div class="main-result">
@@ -25,49 +26,60 @@
       </div>
     </div>
 
-    <!-- 2. 詳細選定結果は全条件が揃った場合だけ表示 -->
+    <!-- 2. 詳細選定結果（全条件が揃った場合のみ） -->
     <template v-if="showDetails">
-      <!-- <BreakerSelect :breaker-info="breakerInfo" /> -->
 
+      <!-- 2-1. 漏電遮断器（ELCB） -->
       <ElbSelectionCard
         :elcb-info="elcbInfo"
         :recommended-installation="recommendedInstallation"
       />
 
-      <Thermal :thermal-info="thermalInfo" />
+      <!-- 2-2. 選定保護遮断器
+           直結: MotorBreakerCard（モーターブレーカー or MCCB）
+           インバータ: MccbSelectCard（一次側 MCCB 専用） -->
+      <MotorBreakerCard
+        v-if="driveMode === 'direct'"
+        :breaker-info="breakerInfo"
+      />
+      <MccbSelectCard
+        v-else-if="driveMode === 'inverter'"
+        :breaker-info="breakerInfo"
+      />
 
-      <div v-if="breakerInfo?.warningNote" class="notice-box warning">
-        <div class="notice-icon">
-          <span>⚠️</span>
-        </div>
+      <!-- 2-3. サーマルリレー選定 -->
+      <Thermal
+        :thermal-info="thermalInfo"
+        :drive-mode="driveMode"
+        :breaker-selected-type="breakerInfo.selectedType"
+      />
+
+      <!-- 2-4. 補足警告（直結時のみ・warningNote が存在する場合） -->
+      <div
+        v-if="driveMode !== 'inverter' && breakerInfo?.warningNote"
+        class="notice-box warning"
+      >
+        <div class="notice-icon"><span>⚠️</span></div>
         <div class="notice-content">
           <p class="notice-text">{{ breakerInfo.warningNote }}</p>
         </div>
       </div>
 
-      <div v-if="driveMode === 'inverter'" class="notice-box warning">
-        <div class="notice-icon">
-          <span>⚠️</span>
-        </div>
-        <div class="notice-content">
-          <p class="notice-text">
-            インバータ一次側遮断器です。始動電流が抑制されるため商用直結（3倍則）より容量が小さくなります。
-          </p>
-        </div>
-      </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import BreakerSelect from '@/components/Motor/BreakerSelect.vue';
-import Thermal from '@/components/Motor/Thermal.vue';
-import type { ThermalSelectionResult } from '@/composables/useThermal';
 import ElbSelectionCard from '@/components/Motor/ElbSelectionCard.vue';
+import MotorBreakerCard from '@/components/Motor/MotorBreakerCard.vue';
+import MccbSelectCard from '@/components/Motor/MccbSelectCard.vue';
+import Thermal from '@/components/Motor/Thermal.vue';
+import type { MotorBreakerSelectionResult, ElcbSelectionResult } from '@/types/appDefinitions';
+import type { ThermalSelectionResult } from '@/composables/useThermal';
 import type { CapacitorProduct } from '@/utils/capacitor';
 
-const props = defineProps<{
-  driveMode: string | null;
+defineProps<{
+  driveMode: 'direct' | 'inverter' | null;
   calculatedAmp: number;
   displayTotalLoadAmp: number;
   motorCount: number;
@@ -75,16 +87,15 @@ const props = defineProps<{
   voltage: number;
   motorKw: number;
   showDetails: boolean;
+  breakerInfo: MotorBreakerSelectionResult;
+  elcbInfo: ElcbSelectionResult;
   thermalInfo: ThermalSelectionResult;
   powerFactor: number;
   targetPowerFactor: number;
   efficiency: number;
-  breakerInfo: any;
-  elcbInfo: any;
   recommendedInstallation: string;
   recommendedCapacitors: CapacitorProduct[];
 }>();
-
 </script>
 
 <style scoped>
@@ -95,7 +106,7 @@ const props = defineProps<{
   width: 100%;
 }
 
-/* メイン結果表示用スタイル */
+/* ── メイン結果カード ── */
 .result-card-dark {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;
@@ -103,34 +114,12 @@ const props = defineProps<{
   padding: 20px;
   color: #ffffff;
 }
-.main-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.result-label {
-  font-size: 14px;
-  color: #38bdf8;
-  font-weight: bold;
-}
-.result-value-group {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-top: 8px;
-}
-.result-value {
-  font-size: 42px;
-  font-weight: 800;
-  color: #f8fafc;
-  line-height: 1;
-}
-.result-unit {
-  font-size: 20px;
-  font-weight: bold;
-  color: #94a3b8;
-}
- .sub-results {
+.main-result { display: flex; flex-direction: column; align-items: center; }
+.result-label { font-size: 14px; color: #38bdf8; font-weight: bold; }
+.result-value-group { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
+.result-value { font-size: 42px; font-weight: 800; color: #f8fafc; line-height: 1; }
+.result-unit { font-size: 20px; font-weight: bold; color: #94a3b8; }
+.sub-results {
   display: grid;
   grid-template-columns: repeat(2, minmax(100px, 1fr));
   gap: 12px;
@@ -145,18 +134,10 @@ const props = defineProps<{
   padding: 12px 8px;
   border-radius: 8px;
 }
-.sub-title {
-  font-size: 11px;
-  color: #cbd5e1;
-  margin-bottom: 4px;
-}
-.sub-value {
-  font-size: 15px;
-  font-weight: bold;
-  color: #f8fafc;
-}
+.sub-title { font-size: 11px; color: #cbd5e1; margin-bottom: 4px; }
+.sub-value { font-size: 15px; font-weight: bold; color: #f8fafc; }
 
-/* 組み込んだ通知・警告ボックススタイル */
+/* ── 警告ボックス ── */
 .notice-box {
   display: flex;
   align-items: flex-start;
@@ -165,37 +146,13 @@ const props = defineProps<{
   border-radius: 10px;
   font-size: 13px;
   line-height: 1.5;
-  margin-top: 12px;
 }
-
-.notice-box.info {
-  background-color: rgba(2, 132, 199, 0.15);
-  border: 1px solid #0284c7;
-  color: #38bdf8;
-}
-
 .notice-box.warning {
   background-color: rgba(217, 119, 6, 0.15);
   border: 1px solid #d97706;
   color: #fbbf24;
 }
-
-.notice-box.success {
-  background-color: rgba(16, 185, 129, 0.15);
-  border: 1px solid #10b981;
-  color: #34d399;
-}
-
-.notice-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.notice-content {
-  flex-grow: 1;
-}
-
-.notice-text {
-  margin: 0;
-}
+.notice-icon { font-size: 16px; flex-shrink: 0; }
+.notice-content { flex-grow: 1; }
+.notice-text { margin: 0; }
 </style>
