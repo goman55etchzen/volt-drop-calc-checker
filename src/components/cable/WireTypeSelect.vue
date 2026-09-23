@@ -1,3 +1,4 @@
+<!-- src/components/WireTypeSelect.vue -->
 <template>
   <div class="field-group">
     <label class="label">電線・ケーブル種別</label>
@@ -25,16 +26,22 @@
 
 <script setup lang="ts">
 import {
+  CableTypeCode,
   CABLE_TYPES,
   CABLE_TEMP_GROUPS,
 } from '@/types/appDefinitions';
-import {
-  WireTypeSelectProps,
-  WireTypeSelectEmits
-} from '@/types/base';
 
-defineProps<WireTypeSelectProps>();
-const emit = defineEmits<WireTypeSelectEmits>();
+interface Props {
+  modelValue: CableTypeCode;
+}
+
+interface Emits {
+  (e: 'update:modelValue', value: CableTypeCode): void;
+  (e: 'change', value: CableTypeCode): void;
+}
+
+defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 const getCablesByGroup = (items: string[]) => {
   return CABLE_TYPES.filter((cable) => items.includes(cable.id));
@@ -42,8 +49,9 @@ const getCablesByGroup = (items: string[]) => {
 
 const onChange = (e: Event) => {
   const target = e.target as HTMLSelectElement;
-  emit('update:modelValue', target.value);
-  emit('change');
+  const val = target.value as CableTypeCode;
+  emit('update:modelValue', val);
+  emit('change', val);
 };
 </script>
 

@@ -1,3 +1,5 @@
+// src/composables/useReversedCallc.ts
+
 import { computed, ref, Ref } from 'vue'
 import {
   CalculationInputMode,
@@ -14,7 +16,8 @@ import {
   CABLE_TYPES,
   BREAKER_SIZES,
   THREE_PHASE_BREAKER_SIZES,
-  calculateAllowableCurrent
+  calculateAllowableCurrent,
+  calculateK2
 } from '@/types/appDefinitions'
 
 export interface ExtendedAvailableWireResult extends AvailableWireResult {
@@ -88,21 +91,9 @@ export function useReversedCallc(
     return voltage.value * (targetPercent.value / 100)
   })
 
-  // 敷設方式・本数に応じた電流減少係数の算出（バックアップおよび判定用）
+  // 敷設本数に応じた電流減少係数 (一貫して calculateK2 を利用)
   const currentReductionFactor = computed(() => {
-    const count = wireCount.value
-    // 電線管収容（conduit）の場合：内線規程による管内本数減少係数
-    if (installationType.value === 'conduit') {
-      if (count <= 3) return 0.70
-      if (count === 4) return 0.63
-      if (count <= 6) return 0.56
-      return 0.50
-    }
-    // 天井内ころがし・ステップル等の多条/束ね配線の場合
-    if (count <= 1) return 1.00
-    if (count <= 3) return 0.80
-    if (count <= 6) return 0.70
-    return 0.60
+    return calculateK2(wireCount.value)
   })
 
   // 警告・情報ログの判定
@@ -139,12 +130,12 @@ export function useReversedCallc(
     }
 
     if (wireCount.value > 1) {
-      const label = installationType.value === 'conduit' ? '管内収容' : '束ね・密集'
+      const label = installationType.value.startsWith('conduit') ? '管内収容' : '束ね・露出'
       issues.push({
         level: 'info',
         code: 'WIRE_COUNT_REDUCTION_APPLIED',
         title: `${label}本数補正を適用中`,
-        message: `${label}本数 ${wireCount.value}本 による電流減少係数 (K1=${currentReductionFactor.value}) を適用しています。`
+        message: `${label}本数 ${wireCount.value}本 による電流減少係数 (K2=${currentReductionFactor.value}) を適用しています。`
       })
     }
 
@@ -211,13 +202,9 @@ export function useReversedCallc(
           baseAllowAmp: baseAllow,
           maxTemp: currentCableType.value.maxTemp,
           ambientTemp: ambientTemp.value,
-          wireCount: wireCount.value,
-          installationType: installationType.value
+          wireCount: wireCount.value
         })
         allowAmpereByHeat = calcRes.singleAllowAmp
-      } else {
-        // バックアップ用簡易計算
-        allowAmpereByHeat = baseAllow * currentReductionFactor.value
       }
 
       const effectiveMaxAmp = Math.min(maxAmpereByDrop, allowAmpereByHeat)

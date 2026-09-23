@@ -428,6 +428,28 @@ export const MOTOR_SPECS: MotorSpec[] = [
 
 export const CABLE_SPECS: CableSpec[] = [
   {
+    size: '0.75 sq',
+    area: 0.75,
+    r: 24.4,     // 導体抵抗 (Ω/km, 20℃)
+    x: 0.110,    // リアクタンス (Ω/km)
+    baseAllowAmp: {
+      vv: 7, vvr: 7, iv: 7, em_eef: 8, em_ief: 8, hiv: 8,
+      cv: 0, cvd: 0, cvt: 0, cvq: 0, cv_2c: 0, cv_3c: 0, cv_4c: 0, mlfc: 0,
+      ow: 9, dv: 9
+    }
+  },
+  {
+    size: '1.25 sq',
+    area: 1.25,
+    r: 14.7,     // 導体抵抗 (Ω/km, 20℃)
+    x: 0.110,    // リアクタンス (Ω/km)
+    baseAllowAmp: {
+      vv: 12, vvr: 12, iv: 12, em_eef: 13, em_ief: 13, hiv: 13,
+      cv: 0, cvd: 0, cvt: 0, cvq: 0, cv_2c: 0, cv_3c: 0, cv_4c: 0, mlfc: 0,
+      ow: 16, dv: 16
+    }
+  },
+  {
     size: '1.6mm',
     area: 2.01,
     r: 8.92,
@@ -663,8 +685,7 @@ export function calculateK1(maxTemp: number, ambientTemp: number): number {
   if (ambientTemp <= 30) {
     return 1.0; // 30℃以下は補正なし (1.0)
   }
-  const factor = Math.sqrt((maxTemp - ambientTemp) / (maxTemp - 30));
-  return factor;
+  return Math.sqrt((maxTemp - ambientTemp) / (maxTemp - 30));
 }
 
 /**
