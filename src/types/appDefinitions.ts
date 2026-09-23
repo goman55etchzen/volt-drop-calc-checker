@@ -18,7 +18,13 @@ export type CableTypeCode =
   | 'em_ief' 
   | 'hiv' 
   | 'cv' 
+  | 'cvd'
   | 'cvt' 
+  | 'cvq'
+  | 'cv_2c'
+  | 'cv_3c'
+  | 'cv_4c'
+  | 'mlfc'
   | 'ow' 
   | 'dv';
 
@@ -81,6 +87,7 @@ export interface CableType {
   id: CableTypeCode;
   name: string;
   desc: string;
+  maxTemp: number; // 最高許容温度 (60, 75, 90)
   tempCategory: '60' | '75' | '90' | 'outdoor';
   limits: Record<string, number>;
 }
@@ -144,9 +151,16 @@ export interface CapacitorTableEntry {
   kvar60Hz: number;
 }
 
+export interface ReductionFactorEntry {
+  minWires: number;
+  maxWires: number;
+  factor: number;
+}
+
 // ==========================================
 // 3. 定数・マスタデータ定義
 // ==========================================
+
 export const WIRE_SIZES: WireSize[] = [
   { name: '0.2 sq (2.5A)', area: 0.2, amp: 2.5 },
   { name: '0.3 sq (5A)', area: 0.3, amp: 5.0 },
@@ -163,7 +177,23 @@ export const WIRE_SIZES: WireSize[] = [
   { name: '5.5 sq', area: 5.5, amp: 42 },
   { name: '8.0 sq', area: 8.0, amp: 54 },
   { name: '14.0 sq', area: 14.0, amp: 76 },
-  { name: '22.0 sq', area: 22.0, amp: 98 }
+  { name: '22.0 sq', area: 22.0, amp: 98 },
+  { name: '38.0 sq', area: 38.0, amp: 140 },
+  { name: '60.0 sq', area: 60.0, amp: 185 },
+  { name: '100.0 sq', area: 100.0, amp: 255 },
+  { name: '150.0 sq', area: 150.0, amp: 325 },
+  { name: '200.0 sq', area: 200.0, amp: 390 },
+  { name: '250.0 sq', area: 250.0, amp: 445 },
+  { name: '325.0 sq', area: 325.0, amp: 525 }
+];
+
+export const REDUCTION_FACTOR_TABLE: ReductionFactorEntry[] = [
+  { minWires: 1, maxWires: 3, factor: 0.70 },
+  { minWires: 4, maxWires: 4, factor: 0.63 },
+  { minWires: 5, maxWires: 6, factor: 0.56 },
+  { minWires: 7, maxWires: 15, factor: 0.49 },
+  { minWires: 16, maxWires: 40, factor: 0.43 },
+  { minWires: 41, maxWires: Infinity, factor: 0.39 }
 ];
 
 export const CABLE_TYPES: CableType[] = [
@@ -171,6 +201,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'vv',
     name: 'VVF (平形ビニル)',
     desc: '標準室内配線 (許容温度 60℃)',
+    maxTemp: 60,
     tempCategory: '60',
     limits: {
       '0.2 sq (2.5A)': 2.5, '0.3 sq (5A)': 5.0, '0.5 sq (5A)': 5.0, '0.75 sq (6.6A)': 6.6,
@@ -183,6 +214,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'vvr',
     name: 'VVR (丸形ビニル)',
     desc: '幹配線・動力用丸形 (許容温度 60℃)',
+    maxTemp: 60,
     tempCategory: '60',
     limits: {
       '0.2 sq (2.5A)': 2.5, '0.3 sq (5A)': 5.0, '0.5 sq (5A)': 5.0, '0.75 sq (6.6A)': 6.6,
@@ -195,6 +227,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'iv',
     name: 'IV (ビニル絶縁電線)',
     desc: '配管内配線用 (許容温度 60℃)',
+    maxTemp: 60,
     tempCategory: '60',
     limits: {
       '0.2 sq (2.5A)': 2.5, '0.3 sq (5A)': 5.0, '0.5 sq (5A)': 5.0, '0.75 sq (6.6A)': 6.6,
@@ -207,6 +240,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'em_eef',
     name: 'EM-EEF (エコ電線平形)',
     desc: '耐燃性ポリエチレン (許容温度 75℃)',
+    maxTemp: 75,
     tempCategory: '75',
     limits: {
       '0.2 sq (2.5A)': 2.8, '0.3 sq (5A)': 5.5, '0.5 sq (5A)': 5.5, '0.75 sq (6.6A)': 7.2,
@@ -219,6 +253,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'em_ief',
     name: 'EM-IEF (エコ絶縁電線)',
     desc: '耐燃性ポリエチレン絶縁 (許容温度 75℃)',
+    maxTemp: 75,
     tempCategory: '75',
     limits: {
       '0.2 sq (2.5A)': 2.8, '0.3 sq (5A)': 5.5, '0.5 sq (5A)': 5.5, '0.75 sq (6.6A)': 7.2,
@@ -231,6 +266,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'hiv',
     name: 'HIV (二種耐熱形ビニル)',
     desc: '盤内・高耐熱配線 (許容温度 75℃)',
+    maxTemp: 75,
     tempCategory: '75',
     limits: {
       '0.2 sq (2.5A)': 2.8, '0.3 sq (5A)': 5.5, '0.5 sq (5A)': 5.5, '0.75 sq (6.6A)': 7.2,
@@ -241,32 +277,105 @@ export const CABLE_TYPES: CableType[] = [
   },
   {
     id: 'cv',
-    name: 'CV (3心架橋PE)',
-    desc: '高容量幹配線・丸形 (許容温度 90℃)',
+    name: 'CV 1C (単心3条)',
+    desc: '高容量幹配線 (許容温度 90℃)',
+    maxTemp: 90,
     tempCategory: '90',
     limits: {
-      '0.2 sq (2.5A)': 3.0, '0.3 sq (5A)': 6.0, '0.5 sq (5A)': 6.0, '0.75 sq (6.6A)': 8.0,
-      '1.25 sq (11.6A)': 14.0, '1.6mm': 24, '2.0mm': 33, '2.6mm': 47, '2.0 sq': 24,
-      '3.0 sq (30A)': 35.0, '3.5 sq': 33, '5.0 sq (40A)': 46.0, '5.5 sq': 46, '8.0 sq': 61,
-      '14.0 sq': 88, '22.0 sq': 115
+      '1.6mm': 33, '2.0mm': 44, '2.6mm': 57, '2.0 sq': 33, '3.5 sq': 44, '5.5 sq': 57,
+      '8.0 sq': 78, '14.0 sq': 110, '22.0 sq': 145, '38.0 sq': 205, '60.0 sq': 275,
+      '100.0 sq': 385, '150.0 sq': 495, '200.0 sq': 605, '250.0 sq': 700, '325.0 sq': 835
+    }
+  },
+  {
+    id: 'cvd',
+    name: 'CVD (2心より合わせ)',
+    desc: '単相2線式幹配線 (許容温度 90℃)',
+    maxTemp: 90,
+    tempCategory: '90',
+    limits: {
+      '1.6mm': 27, '2.0mm': 38, '2.6mm': 49, '2.0 sq': 27, '3.5 sq': 38, '5.5 sq': 49,
+      '8.0 sq': 60, '14.0 sq': 86, '22.0 sq': 110, '38.0 sq': 155, '60.0 sq': 210,
+      '100.0 sq': 290, '150.0 sq': 373, '200.0 sq': 445, '250.0 sq': 510, '325.0 sq': 610
     }
   },
   {
     id: 'cvt',
-    name: 'CVT (3心より合わせCV)',
-    desc: '熱放散向上トリプレックス (許容温度 90℃)',
+    name: 'CVT (3心より合わせ)',
+    desc: '三相/単三幹配線 (許容温度 90℃)',
+    maxTemp: 90,
     tempCategory: '90',
     limits: {
-      '0.2 sq (2.5A)': 3.2, '0.3 sq (5A)': 6.5, '0.5 sq (5A)': 6.5, '0.75 sq (6.6A)': 8.5,
-      '1.25 sq (11.6A)': 15.0, '1.6mm': 27, '2.0mm': 37, '2.6mm': 52, '2.0 sq': 27,
-      '3.0 sq (30A)': 38.0, '3.5 sq': 37, '5.0 sq (40A)': 50.0, '5.5 sq': 52, '8.0 sq': 69,
-      '14.0 sq': 100, '22.0 sq': 132
+      '1.6mm': 25, '2.0mm': 35, '2.6mm': 46, '2.0 sq': 25, '3.5 sq': 35, '5.5 sq': 46,
+      '8.0 sq': 51, '14.0 sq': 73, '22.0 sq': 96, '38.0 sq': 132, '60.0 sq': 181,
+      '100.0 sq': 253, '150.0 sq': 324, '200.0 sq': 385, '250.0 sq': 445, '325.0 sq': 528
+    }
+  },
+  {
+    id: 'cvq',
+    name: 'CVQ (4心より合わせ)',
+    desc: '4線式配線 (許容温度 90℃)',
+    maxTemp: 90,
+    tempCategory: '90',
+    limits: {
+      '1.6mm': 24, '2.0mm': 33, '2.6mm': 43, '2.0 sq': 24, '3.5 sq': 33, '5.5 sq': 43,
+      '8.0 sq': 48, '14.0 sq': 69, '22.0 sq': 91, '38.0 sq': 125, '60.0 sq': 171,
+      '100.0 sq': 240, '150.0 sq': 307, '200.0 sq': 365, '250.0 sq': 421, '325.0 sq': 501
+    }
+  },
+  {
+    id: 'cv_2c',
+    name: 'CV-2C (シース2心)',
+    desc: '一括シース丸形2心 (許容温度 90℃)',
+    maxTemp: 90,
+    tempCategory: '90',
+    limits: {
+      '1.6mm': 26, '2.0mm': 36, '2.6mm': 46, '2.0 sq': 26, '3.5 sq': 36, '5.5 sq': 46,
+      '8.0 sq': 57, '14.0 sq': 81, '22.0 sq': 105, '38.0 sq': 148, '60.0 sq': 198,
+      '100.0 sq': 280, '150.0 sq': 356, '200.0 sq': 423, '250.0 sq': 489, '325.0 sq': 583
+    }
+  },
+  {
+    id: 'cv_3c',
+    name: 'CV-3C (シース3心)',
+    desc: '一括シース丸形3心 (許容温度 90℃)',
+    maxTemp: 90,
+    tempCategory: '90',
+    limits: {
+      '1.6mm': 24, '2.0mm': 33, '2.6mm': 40, '2.0 sq': 24, '3.5 sq': 33, '5.5 sq': 40,
+      '8.0 sq': 48, '14.0 sq': 69, '22.0 sq': 91, '38.0 sq': 126, '60.0 sq': 170,
+      '100.0 sq': 242, '150.0 sq': 308, '200.0 sq': 368, '250.0 sq': 423, '325.0 sq': 501
+    }
+  },
+  {
+    id: 'cv_4c',
+    name: 'CV-4C (シース4心)',
+    desc: '一括シース丸形4心 (許容温度 90℃)',
+    maxTemp: 90,
+    tempCategory: '90',
+    limits: {
+      '1.6mm': 22, '2.0mm': 30, '2.6mm': 38, '2.0 sq': 22, '3.5 sq': 30, '5.5 sq': 38,
+      '8.0 sq': 45, '14.0 sq': 65, '22.0 sq': 86, '38.0 sq': 119, '60.0 sq': 161,
+      '100.0 sq': 229, '150.0 sq': 291, '200.0 sq': 349, '250.0 sq': 402, '325.0 sq': 475
+    }
+  },
+  {
+    id: 'mlfc',
+    name: 'MLFC (難燃ポリフレックス)',
+    desc: '盤内・端末配線用 (許容温度 90℃)',
+    maxTemp: 90,
+    tempCategory: '90',
+    limits: {
+      '1.6mm': 33, '2.0mm': 44, '2.6mm': 57, '2.0 sq': 33, '3.5 sq': 44, '5.5 sq': 57,
+      '8.0 sq': 78, '14.0 sq': 110, '22.0 sq': 145, '38.0 sq': 205, '60.0 sq': 275,
+      '100.0 sq': 385, '150.0 sq': 495, '200.0 sq': 605, '250.0 sq': 700, '325.0 sq': 835
     }
   },
   {
     id: 'ow',
     name: 'OW (屋外用架空ビニル)',
     desc: '屋外空調架空線 (高放熱)',
+    maxTemp: 60,
     tempCategory: 'outdoor',
     limits: {
       '0.2 sq (2.5A)': 3.5, '0.3 sq (5A)': 7.0, '0.5 sq (5A)': 7.0, '0.75 sq (6.6A)': 9.0,
@@ -279,6 +388,7 @@ export const CABLE_TYPES: CableType[] = [
     id: 'dv',
     name: 'DV (引込用ビニル)',
     desc: '建物引込部空中配線 (高放熱)',
+    maxTemp: 60,
     tempCategory: 'outdoor',
     limits: {
       '0.2 sq (2.5A)': 3.5, '0.3 sq (5A)': 7.0, '0.5 sq (5A)': 7.0, '0.75 sq (6.6A)': 9.0,
@@ -292,7 +402,7 @@ export const CABLE_TYPES: CableType[] = [
 export const CABLE_TEMP_GROUPS = [
   { label: '60℃ (低熱・標準室内配線)', items: ['vv', 'vvr', 'iv'] },
   { label: '75℃ (中熱・エコ・耐熱)', items: ['em_eef', 'em_ief', 'hiv'] },
-  { label: '90℃ (高耐熱・大容量幹配線)', items: ['cv', 'cvt'] },
+  { label: '90℃ (高耐熱・大容量幹配線)', items: ['cv', 'cvd', 'cvt', 'cvq', 'cv_2c', 'cv_3c', 'cv_4c', 'mlfc'] },
   { label: '屋外空中架空 (放熱良好)', items: ['ow', 'dv'] }
 ];
 
@@ -317,22 +427,182 @@ export const MOTOR_SPECS: MotorSpec[] = [
 ];
 
 export const CABLE_SPECS: CableSpec[] = [
-  { size: '0.2 sq (2.5A)', area: 0.2,  r: 89.5, x: 0.12, baseAllowAmp: { vv: 2.5, vvr: 2.5, iv: 2.5, em_eef: 2.8, em_ief: 2.8, hiv: 2.8, cv: 3.0, cvt: 3.2, ow: 3.5, dv: 3.5 } },
-  { size: '0.3 sq (5A)',   area: 0.3,  r: 60.0, x: 0.12, baseAllowAmp: { vv: 5.0, vvr: 5.0, iv: 5.0, em_eef: 5.5, em_ief: 5.5, hiv: 5.5, cv: 6.0, cvt: 6.5, ow: 7.0, dv: 7.0 } },
-  { size: '0.5 sq (5A)',   area: 0.5,  r: 36.7, x: 0.11, baseAllowAmp: { vv: 5.0, vvr: 5.0, iv: 5.0, em_eef: 5.5, em_ief: 5.5, hiv: 5.5, cv: 6.0, cvt: 6.5, ow: 7.0, dv: 7.0 } },
-  { size: '0.75 sq (6.6A)',area: 0.75, r: 24.4, x: 0.11, baseAllowAmp: { vv: 6.6, vvr: 6.6, iv: 6.6, em_eef: 7.2, em_ief: 7.2, hiv: 7.2, cv: 8.0, cvt: 8.5, ow: 9.0, dv: 9.0 } },
-  { size: '1.25 sq (11.6A)',area: 1.25,r: 14.7, x: 0.11, baseAllowAmp: { vv: 11.6, vvr: 11.6, iv: 11.6, em_eef: 13.0, em_ief: 13.0, hiv: 13.0, cv: 14.0, cvt: 15.0, ow: 16.0, dv: 16.0 } },
-  { size: '1.6mm',         area: 2.01, r: 8.92, x: 0.106, baseAllowAmp: { vv: 18, vvr: 18, iv: 27, em_eef: 21, em_ief: 31, hiv: 31, cv: 24, cvt: 27, ow: 32, dv: 30 } },
-  { size: '2.0mm',         area: 3.14, r: 5.65, x: 0.101, baseAllowAmp: { vv: 24, vvr: 24, iv: 35, em_eef: 28, em_ief: 40, hiv: 40, cv: 33, cvt: 37, ow: 42, dv: 39 } },
-  { size: '2.6mm',         area: 5.31, r: 3.33, x: 0.095, baseAllowAmp: { vv: 35, vvr: 35, iv: 48, em_eef: 40, em_ief: 55, hiv: 55, cv: 47, cvt: 52, ow: 58, dv: 54 } },
-  { size: '2.0 sq',        area: 2.0,  r: 9.24, x: 0.106, baseAllowAmp: { vv: 19, vvr: 19, iv: 27, em_eef: 22, em_ief: 31, hiv: 31, cv: 24, cvt: 27, ow: 32, dv: 30 } },
-  { size: '3.0 sq (30A)',  area: 3.0,  r: 6.10, x: 0.102, baseAllowAmp: { vv: 30, vvr: 30, iv: 30, em_eef: 33, em_ief: 34, hiv: 34, cv: 35, cvt: 38, ow: 40, dv: 38 } },
-  { size: '3.5 sq',        area: 3.5,  r: 5.20, x: 0.101, baseAllowAmp: { vv: 27, vvr: 27, iv: 37, em_eef: 31, em_ief: 42, hiv: 42, cv: 33, cvt: 37, ow: 44, dv: 41 } },
-  { size: '5.0 sq (40A)',  area: 5.0,  r: 3.90, x: 0.101, baseAllowAmp: { vv: 40, vvr: 40, iv: 40, em_eef: 44, em_ief: 46, hiv: 46, cv: 46, cvt: 50, ow: 55, dv: 52 } },
-  { size: '5.5 sq',        area: 5.5,  r: 3.79, x: 0.101, baseAllowAmp: { vv: 37, vvr: 37, iv: 49, em_eef: 43, em_ief: 56, hiv: 56, cv: 46, cvt: 52, ow: 58, dv: 54 } },
-  { size: '8.0 sq',        area: 8.0,  r: 2.31, x: 0.097, baseAllowAmp: { vv: 49, vvr: 49, iv: 61, em_eef: 56, em_ief: 70, hiv: 70, cv: 61, cvt: 69, ow: 75, dv: 70 } },
-  { size: '14.0 sq',       area: 14.0, r: 1.32, x: 0.093, baseAllowAmp: { vv: 69, vvr: 69, iv: 88, em_eef: 79, em_ief: 101, hiv: 101, cv: 88, cvt: 100, ow: 107, dv: 99 } },
-  { size: '22.0 sq',       area: 22.0, r: 0.84, x: 0.089, baseAllowAmp: { vv: 80, vvr: 80, iv: 115, em_eef: 105, em_ief: 132, hiv: 132, cv: 115, cvt: 132, ow: 140, dv: 130 } }
+  {
+    size: '1.6mm',
+    area: 2.01,
+    r: 8.92,
+    x: 0.106,
+    baseAllowAmp: {
+      vv: 18, vvr: 18, iv: 27, em_eef: 21, em_ief: 31, hiv: 31,
+      cv: 33, cvd: 27, cvt: 25, cvq: 24, cv_2c: 26, cv_3c: 24, cv_4c: 22, mlfc: 33,
+      ow: 32, dv: 30
+    }
+  },
+  {
+    size: '2.0mm',
+    area: 3.14,
+    r: 5.65,
+    x: 0.101,
+    baseAllowAmp: {
+      vv: 24, vvr: 24, iv: 35, em_eef: 28, em_ief: 40, hiv: 40,
+      cv: 44, cvd: 38, cvt: 35, cvq: 33, cv_2c: 36, cv_3c: 33, cv_4c: 30, mlfc: 44,
+      ow: 42, dv: 39
+    }
+  },
+  {
+    size: '2.6mm',
+    area: 5.31,
+    r: 3.33,
+    x: 0.095,
+    baseAllowAmp: {
+      vv: 35, vvr: 35, iv: 48, em_eef: 40, em_ief: 55, hiv: 55,
+      cv: 57, cvd: 49, cvt: 46, cvq: 43, cv_2c: 46, cv_3c: 40, cv_4c: 38, mlfc: 57,
+      ow: 58, dv: 54
+    }
+  },
+  {
+    size: '2.0 sq',
+    area: 2.0,
+    r: 9.24,
+    x: 0.106,
+    baseAllowAmp: {
+      vv: 19, vvr: 19, iv: 27, em_eef: 22, em_ief: 31, hiv: 31,
+      cv: 33, cvd: 27, cvt: 25, cvq: 24, cv_2c: 26, cv_3c: 24, cv_4c: 22, mlfc: 33,
+      ow: 32, dv: 30
+    }
+  },
+  {
+    size: '3.5 sq',
+    area: 3.5,
+    r: 5.20,
+    x: 0.101,
+    baseAllowAmp: {
+      vv: 27, vvr: 27, iv: 37, em_eef: 31, em_ief: 42, hiv: 42,
+      cv: 44, cvd: 38, cvt: 35, cvq: 33, cv_2c: 36, cv_3c: 33, cv_4c: 30, mlfc: 44,
+      ow: 44, dv: 41
+    }
+  },
+  {
+    size: '5.5 sq',
+    area: 5.5,
+    r: 3.79,
+    x: 0.101,
+    baseAllowAmp: {
+      vv: 37, vvr: 37, iv: 49, em_eef: 43, em_ief: 56, hiv: 56,
+      cv: 57, cvd: 49, cvt: 46, cvq: 43, cv_2c: 46, cv_3c: 40, cv_4c: 38, mlfc: 57,
+      ow: 58, dv: 54
+    }
+  },
+  {
+    size: '8.0 sq',
+    area: 8.0,
+    r: 2.31,
+    x: 0.097,
+    baseAllowAmp: {
+      vv: 49, vvr: 49, iv: 61, em_eef: 56, em_ief: 70, hiv: 70,
+      cv: 78, cvd: 60, cvt: 51, cvq: 48, cv_2c: 57, cv_3c: 48, cv_4c: 45, mlfc: 78,
+      ow: 75, dv: 70
+    }
+  },
+  {
+    size: '14.0 sq',
+    area: 14.0,
+    r: 1.32,
+    x: 0.093,
+    baseAllowAmp: {
+      vv: 69, vvr: 69, iv: 88, em_eef: 79, em_ief: 101, hiv: 101,
+      cv: 110, cvd: 86, cvt: 73, cvq: 69, cv_2c: 81, cv_3c: 69, cv_4c: 65, mlfc: 110,
+      ow: 107, dv: 99
+    }
+  },
+  {
+    size: '22.0 sq',
+    area: 22.0,
+    r: 0.84,
+    x: 0.089,
+    baseAllowAmp: {
+      vv: 80, vvr: 80, iv: 115, em_eef: 105, em_ief: 132, hiv: 132,
+      cv: 145, cvd: 110, cvt: 96, cvq: 91, cv_2c: 105, cv_3c: 91, cv_4c: 86, mlfc: 145,
+      ow: 140, dv: 130
+    }
+  },
+  {
+    size: '38.0 sq',
+    area: 38.0,
+    r: 0.49,
+    x: 0.086,
+    baseAllowAmp: {
+      vv: 115, vvr: 115, iv: 162, em_eef: 148, em_ief: 186, hiv: 186,
+      cv: 205, cvd: 155, cvt: 132, cvq: 125, cv_2c: 148, cv_3c: 126, cv_4c: 119, mlfc: 205,
+      ow: 190, dv: 180
+    }
+  },
+  {
+    size: '60.0 sq',
+    area: 60.0,
+    r: 0.31,
+    x: 0.083,
+    baseAllowAmp: {
+      vv: 150, vvr: 150, iv: 217, em_eef: 198, em_ief: 249, hiv: 249,
+      cv: 275, cvd: 210, cvt: 181, cvq: 171, cv_2c: 198, cv_3c: 170, cv_4c: 161, mlfc: 275,
+      ow: 250, dv: 235
+    }
+  },
+  {
+    size: '100.0 sq',
+    area: 100.0,
+    r: 0.18,
+    x: 0.080,
+    baseAllowAmp: {
+      vv: 205, vvr: 205, iv: 298, em_eef: 272, em_ief: 342, hiv: 342,
+      cv: 385, cvd: 290, cvt: 253, cvq: 240, cv_2c: 280, cv_3c: 242, cv_4c: 229, mlfc: 385,
+      ow: 345, dv: 325
+    }
+  },
+  {
+    size: '150.0 sq',
+    area: 150.0,
+    r: 0.12,
+    x: 0.078,
+    baseAllowAmp: {
+      vv: 260, vvr: 260, iv: 383, em_eef: 350, em_ief: 440, hiv: 440,
+      cv: 495, cvd: 373, cvt: 324, cvq: 307, cv_2c: 356, cv_3c: 308, cv_4c: 291, mlfc: 495,
+      ow: 440, dv: 415
+    }
+  },
+  {
+    size: '200.0 sq',
+    area: 200.0,
+    r: 0.09,
+    x: 0.077,
+    baseAllowAmp: {
+      vv: 310, vvr: 310, iv: 457, em_eef: 417, em_ief: 525, hiv: 525,
+      cv: 605, cvd: 445, cvt: 385, cvq: 365, cv_2c: 423, cv_3c: 368, cv_4c: 349, mlfc: 605,
+      ow: 525, dv: 495
+    }
+  },
+  {
+    size: '250.0 sq',
+    area: 250.0,
+    r: 0.07,
+    x: 0.076,
+    baseAllowAmp: {
+      vv: 355, vvr: 355, iv: 525, em_eef: 479, em_ief: 603, hiv: 603,
+      cv: 700, cvd: 510, cvt: 445, cvq: 421, cv_2c: 489, cv_3c: 423, cv_4c: 402, mlfc: 700,
+      ow: 600, dv: 565
+    }
+  },
+  {
+    size: '325.0 sq',
+    area: 325.0,
+    r: 0.05,
+    x: 0.075,
+    baseAllowAmp: {
+      vv: 420, vvr: 420, iv: 622, em_eef: 568, em_ief: 714, hiv: 714,
+      cv: 835, cvd: 610, cvt: 528, cvq: 501, cv_2c: 583, cv_3c: 501, cv_4c: 475, mlfc: 835,
+      ow: 710, dv: 670
+    }
+  }
 ];
 
 export const REDUCTION_FACTORS: Record<InstallationType, number> = {
@@ -377,3 +647,78 @@ export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
   { kw: 50.0, uf50Hz: 900, kvar50Hz: 11.3, uf60Hz: 750, kvar60Hz: 11.3 },
   { kw: 55.0, uf50Hz: 900, kvar50Hz: 11.3, uf60Hz: 750, kvar60Hz: 11.3 }
 ];
+
+// ==========================================
+// 4. 許容電流・動的補正計算エンジン関数群
+// ==========================================
+
+/**
+ * 周囲温度による温度補正係数 k1 の計算
+ * k1 = sqrt((Tmax - Ta) / (Tmax - 30))
+ */
+export function calculateK1(maxTemp: number, ambientTemp: number): number {
+  if (ambientTemp >= maxTemp) {
+    return 0; // 周囲温度が最高許容温度以上の場合は使用不可
+  }
+  if (ambientTemp <= 30) {
+    return 1.0; // 30℃以下は補正なし (1.0)
+  }
+  const factor = Math.sqrt((maxTemp - ambientTemp) / (maxTemp - 30));
+  return factor;
+}
+
+/**
+ * 同一管内・束ね配線本数による電流減少係数 k2 の取得 (内線規程 1340-5表)
+ */
+export function calculateK2(wireCount: number, isRackSpaced: boolean = false): number {
+  if (isRackSpaced || wireCount <= 0) {
+    return 1.0; // ラック上等で径以上離隔配置する場合は低減なし
+  }
+  const entry = REDUCTION_FACTOR_TABLE.find(
+    (item) => wireCount >= item.minWires && wireCount <= item.maxWires
+  );
+  return entry ? entry.factor : 0.70;
+}
+
+/**
+ * 総合許容電流計算
+ * I_total = floor(I0 * k1 * k2) * N
+ */
+export function calculateAllowableCurrent(params: {
+  baseAllowAmp: number;   // 基準許容電流 I0 (30℃・1条布設)
+  maxTemp: number;        // 絶縁体の最高許容温度 Tmax (60, 75, 90)
+  ambientTemp: number;    // 周囲温度 Ta
+  wireCount: number;      // 管内・束ね電線本数
+  parallelCount?: number; // 並列条数 N (デフォルト 1)
+  isRackSpaced?: boolean; // ケーブルラック離隔配置フラグ
+}): {
+  k1: number;
+  k2: number;
+  singleAllowAmp: number; // 1条あたりの最終許容電流
+  totalAllowAmp: number;  // 並列合計の最終許容電流
+} {
+  const {
+    baseAllowAmp,
+    maxTemp,
+    ambientTemp,
+    wireCount,
+    parallelCount = 1,
+    isRackSpaced = false
+  } = params;
+
+  const k1 = calculateK1(maxTemp, ambientTemp);
+  const k2 = calculateK2(wireCount, isRackSpaced);
+
+  // 端数切捨てで1条あたりの許容電流を算出
+  const singleAllowAmp = Math.floor(baseAllowAmp * k1 * k2);
+  
+  // 並列本数 N を乗算
+  const totalAllowAmp = singleAllowAmp * Math.max(1, parallelCount);
+
+  return {
+    k1: Math.round(k1 * 100) / 100, // 評価表示用 (小数点第2位桁)
+    k2,
+    singleAllowAmp,
+    totalAllowAmp
+  };
+}

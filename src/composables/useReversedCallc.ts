@@ -1,22 +1,26 @@
-import { computed, Ref } from 'vue'
+import { computed, ref, Ref } from 'vue'
 import {
-  AppMode,
   CalculationInputMode,
   LoadType,
   InstallationType,
   CableTypeCode,
   SystemType,
-  MotorSpec,
-  CableSpec,
   AvailableWireResult,
   BreakerStatusResult,
   CalculationIssue,
   SYSTEM_DEFINITIONS,
   MOTOR_SPECS,
   CABLE_SPECS,
-  REDUCTION_FACTORS,
-  BREAKER_SIZES
+  CABLE_TYPES,
+  BREAKER_SIZES,
+  THREE_PHASE_BREAKER_SIZES,
+  calculateAllowableCurrent
 } from '@/types/appDefinitions'
+
+export interface ExtendedAvailableWireResult extends AvailableWireResult {
+  limiter: 'drop' | 'heat' | 'none'; // ボトルネック要因
+  isRecommended: boolean;           // 推奨最小サイズフラグ
+}
 
 export function useReversedCallc(
   voltage: Ref<number>,
@@ -32,13 +36,23 @@ export function useReversedCallc(
   loadType: Ref<LoadType>,
   motorKw: Ref<number>,
   installationType: Ref<InstallationType>,
-  isContinuous: Ref<boolean>
+  isContinuous: Ref<boolean>,
+  ambientTemp: Ref<number> = ref(30),
+  wireCount: Ref<number> = ref(3)
 ) {
   // 選択中の配線方式を取得
   const currentSystem = computed<SystemType>(() => {
     return (
       SYSTEM_DEFINITIONS.find((s) => s.id === selectedSystemId.value) ||
       SYSTEM_DEFINITIONS[0]
+    )
+  })
+
+  // 選択中のケーブル定義を取得
+  const currentCableType = computed(() => {
+    return (
+      CABLE_TYPES.find((c) => c.id === selectedCableType.value) ||
+      CABLE_TYPES[0]
     )
   })
 
@@ -74,9 +88,21 @@ export function useReversedCallc(
     return voltage.value * (targetPercent.value / 100)
   })
 
-  // 敷設方式の電流低減係数
+  // 敷設方式・本数に応じた電流減少係数の算出（バックアップおよび判定用）
   const currentReductionFactor = computed(() => {
-    return REDUCTION_FACTORS[installationType.value] ?? 0.7
+    const count = wireCount.value
+    // 電線管収容（conduit）の場合：内線規程による管内本数減少係数
+    if (installationType.value === 'conduit') {
+      if (count <= 3) return 0.70
+      if (count === 4) return 0.63
+      if (count <= 6) return 0.56
+      return 0.50
+    }
+    // 天井内ころがし・ステップル等の多条/束ね配線の場合
+    if (count <= 1) return 1.00
+    if (count <= 3) return 0.80
+    if (count <= 6) return 0.70
+    return 0.60
   })
 
   // 警告・情報ログの判定
@@ -100,6 +126,25 @@ export function useReversedCallc(
         code: 'INVALID_LOAD_CURRENT',
         title: '負荷電流/電力が不正です',
         message: '正しい消費電力(W)または電流値(A)を入力してください。'
+      })
+    }
+
+    if (ambientTemp.value > 30) {
+      issues.push({
+        level: 'info',
+        code: 'TEMP_CORRECTION_APPLIED',
+        title: '周囲温度補正を適用中',
+        message: `周囲温度 ${ambientTemp.value}℃ (絶縁体上限 ${currentCableType.value.maxTemp}℃) による温度補正を適用しています。`
+      })
+    }
+
+    if (wireCount.value > 1) {
+      const label = installationType.value === 'conduit' ? '管内収容' : '束ね・密集'
+      issues.push({
+        level: 'info',
+        code: 'WIRE_COUNT_REDUCTION_APPLIED',
+        title: `${label}本数補正を適用中`,
+        message: `${label}本数 ${wireCount.value}本 による電流減少係数 (K1=${currentReductionFactor.value}) を適用しています。`
       })
     }
 
@@ -128,8 +173,8 @@ export function useReversedCallc(
     calculationIssues.value.some((issue) => issue.level === 'error')
   )
 
-  // 電線サイズごとの判定算出
-  const availableWires = computed<AvailableWireResult[]>(() => {
+  // 電線サイズごとの判定算出（精密計算エンジン）
+  const availableWires = computed<ExtendedAvailableWireResult[]>(() => {
     if (hasError.value) return []
 
     const L = oneWayDistance.value
@@ -139,21 +184,53 @@ export function useReversedCallc(
     const cosTheta = effectivePowerFactor.value
     const sinTheta = Math.sqrt(Math.max(0, 1 - cosTheta * cosTheta))
 
-    // モーター時の耐熱必要電流基準 (1.25倍 / 1.1倍則)
-    const requiredWireAmp =
-      loadType.value === 'motor' ? (I <= 50 ? I * 1.25 : I * 1.1) : I
+    // 耐熱必要電流基準 (モーター: 1.25倍/1.1倍則, 一般連続負荷: 1.25倍則)
+    let requiredWireAmp = I
+    if (loadType.value === 'motor') {
+      requiredWireAmp = I <= 50 ? I * 1.25 : I * 1.1
+    } else if (isContinuous.value) {
+      requiredWireAmp = I * 1.25
+    }
 
-    return CABLE_SPECS.map((spec) => {
-      // 力率無視の場合は R のみ、通常は Rcosθ + Xsinθ
+    // 全サイズ計算
+    const rawResults = CABLE_SPECS.map((spec) => {
+      // 1. 電圧降下限界電流の計算
       const z = ignorePowerFactor.value
         ? spec.r
         : spec.r * cosTheta + spec.x * sinTheta
 
       const maxAmpereByDrop =
         z > 0 ? (e_allow * 1000) / (sys.kFactor * z * L) : 0
-      const baseAllow = spec.baseAllowAmp[selectedCableType.value]
-      const allowAmpereByHeat = baseAllow * currentReductionFactor.value
+
+      // 2. 熱的許容電流の精密計算 (calculateAllowableCurrent使用)
+      const baseAllow = spec.baseAllowAmp[selectedCableType.value] ?? 0
+      
+      let allowAmpereByHeat = 0
+      if (baseAllow > 0) {
+        const calcRes = calculateAllowableCurrent({
+          baseAllowAmp: baseAllow,
+          maxTemp: currentCableType.value.maxTemp,
+          ambientTemp: ambientTemp.value,
+          wireCount: wireCount.value,
+          installationType: installationType.value
+        })
+        allowAmpereByHeat = calcRes.singleAllowAmp
+      } else {
+        // バックアップ用簡易計算
+        allowAmpereByHeat = baseAllow * currentReductionFactor.value
+      }
+
       const effectiveMaxAmp = Math.min(maxAmpereByDrop, allowAmpereByHeat)
+      const isOkForLoad =
+        effectiveMaxAmp >= I && allowAmpereByHeat >= requiredWireAmp
+
+      // 支配的制限要因 (ボトルネック)
+      let limiter: 'drop' | 'heat' | 'none' = 'none'
+      if (maxAmpereByDrop < allowAmpereByHeat) {
+        limiter = 'drop'
+      } else if (allowAmpereByHeat < maxAmpereByDrop) {
+        limiter = 'heat'
+      }
 
       return {
         wireName: spec.size,
@@ -161,10 +238,28 @@ export function useReversedCallc(
         maxAmpereByDrop: Number(maxAmpereByDrop.toFixed(1)),
         allowAmpereByHeat: Number(allowAmpereByHeat.toFixed(1)),
         effectiveMaxAmp: Number(effectiveMaxAmp.toFixed(1)),
-        isOkForLoad:
-          effectiveMaxAmp >= I && allowAmpereByHeat >= requiredWireAmp
+        isOkForLoad,
+        limiter,
+        isRecommended: false
       }
     })
+
+    // 推奨最小サイズ（条件を満たす最小の断面積）を特定
+    const okWires = rawResults.filter((w) => w.isOkForLoad)
+    let minArea = Infinity
+    if (okWires.length > 0) {
+      minArea = Math.min(...okWires.map((w) => w.area))
+    }
+
+    return rawResults.map((w) => ({
+      ...w,
+      isRecommended: w.isOkForLoad && w.area === minArea
+    }))
+  })
+
+  // おすすめ最小電線
+  const recommendedWire = computed(() => {
+    return availableWires.value.find((w) => w.isRecommended) || null
   })
 
   // 送る側ブレーカー判定
@@ -180,9 +275,15 @@ export function useReversedCallc(
       requiredCapacity = I * 1.25
     }
 
+    // 三相 / 単相 でブレーカー規格サイズを分岐
+    const breakerList =
+      selectedSystemId.value === '3P3W' || loadType.value === 'motor'
+        ? THREE_PHASE_BREAKER_SIZES
+        : BREAKER_SIZES
+
     const recommendedBreaker =
-      BREAKER_SIZES.find((b) => b >= requiredCapacity) ||
-      BREAKER_SIZES[BREAKER_SIZES.length - 1]
+      breakerList.find((b) => b >= requiredCapacity) ||
+      breakerList[breakerList.length - 1]
 
     return {
       is20AOk: recommendedBreaker <= 20,
@@ -198,8 +299,10 @@ export function useReversedCallc(
   return {
     calculatedLoadCurrent,
     currentSystem,
+    currentCableType,
     allowDropV,
     availableWires,
+    recommendedWire,
     breakerStatus,
     calculationIssues,
     hasError,

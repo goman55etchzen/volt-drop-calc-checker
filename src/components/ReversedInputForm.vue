@@ -55,13 +55,72 @@
             </option>
           </select>
         </div>
+
         <div class="input-group">
-          <label class="sub-label">電線種別</label>
+          <label class="sub-label">電線種別（許容温度）</label>
           <select v-model="selectedCableType" class="select-input">
-            <option value="vv">VVF / VVR (60℃)</option>
-            <option value="iv">IV (60℃)</option>
-            <option value="cv">CV / CVT (90℃)</option>
+            <optgroup
+              v-for="group in CABLE_TEMP_GROUPS"
+              :key="group.label"
+              :label="group.label"
+            >
+              <option
+                v-for="itemKey in group.items"
+                :key="itemKey"
+                :value="itemKey"
+              >
+                {{ getCableTypeName(itemKey) }}
+              </option>
+            </optgroup>
           </select>
+        </div>
+      </div>
+
+      <!-- 敷設方式 ＆ 敷設環境（周囲温度） -->
+      <div class="row-inputs mt-12">
+        <div class="input-group">
+          <label class="sub-label">敷設方式</label>
+          <select v-model="installationType" class="select-input">
+            <option value="conduit">電線管収容（金属管・PF等）</option>
+            <option value="ceiling_open">天井内ころがし / 架空</option>
+            <option value="staple_surface">造営材支持 / ステップル</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label class="sub-label">周囲温度 Ta (℃)</label>
+          <input
+            v-model.number="ambientTemp"
+            type="number"
+            inputmode="numeric"
+            placeholder="例: 30"
+            class="text-input"
+          />
+          <div class="preset-chips">
+            <button type="button" class="chip-btn" :class="{ active: ambientTemp === 30 }" @click="ambientTemp = 30">30℃</button>
+            <button type="button" class="chip-btn" :class="{ active: ambientTemp === 40 }" @click="ambientTemp = 40">40℃</button>
+            <button type="button" class="chip-btn" :class="{ active: ambientTemp === 50 }" @click="ambientTemp = 50">50℃</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 同一管内・束ね本数 -->
+      <div class="input-group mt-12">
+        <label class="sub-label">
+          {{ installationType === 'conduit' ? '同一管内収容本数' : '束ね・密集本数' }}
+        </label>
+        <input
+          v-model.number="wireCount"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          placeholder="本数"
+          class="text-input"
+        />
+        <div class="preset-chips">
+          <button type="button" class="chip-btn" :class="{ active: wireCount === 3 }" @click="wireCount = 3">3本以下</button>
+          <button type="button" class="chip-btn" :class="{ active: wireCount === 4 }" @click="wireCount = 4">4本</button>
+          <button type="button" class="chip-btn" :class="{ active: wireCount === 6 }" @click="wireCount = 6">5〜6本</button>
         </div>
       </div>
 
@@ -152,31 +211,20 @@
         </div>
       </div>
 
-      <!-- 力率＆敷設方式 -->
-      <div class="row-inputs mt-12">
-        <div class="input-group">
-          <label class="sub-label">力率 cosθ</label>
-          <input
-            v-model.number="powerFactor"
-            type="number"
-            inputmode="decimal"
-            step="0.01"
-            min="0"
-            max="1"
-            placeholder="例: 0.85"
-            class="text-input"
-            :disabled="ignorePowerFactor"
-          />
-        </div>
-        <div class="input-group">
-          <label class="sub-label">敷設方式</label>
-          <select v-model="installationType" class="select-input">
-            <option value="conduit_3">配管収容 (3本以下) - 低減0.70</option>
-            <option value="conduit_4">配管収容 (4本) - 低減0.63</option>
-            <option value="ceiling_open">天井内ころがし / 架空 - 低減1.00</option>
-            <option value="staple_surface">造営材支持 / ステップル - 低減0.85</option>
-          </select>
-        </div>
+      <!-- 力率 -->
+      <div class="input-group mt-12">
+        <label class="sub-label">力率 cosθ</label>
+        <input
+          v-model.number="powerFactor"
+          type="number"
+          inputmode="decimal"
+          step="0.01"
+          min="0"
+          max="1"
+          placeholder="例: 0.85"
+          class="text-input"
+          :disabled="ignorePowerFactor"
+        />
       </div>
 
       <!-- オプションチェックボックス -->
@@ -208,6 +256,8 @@
       :motor-kw="motorKw"
       :installation-type="installationType"
       :is-continuous="isContinuous"
+      :ambient-temp="ambientTemp"
+      :wire-count="wireCount"
     />
   </div>
 </template>
@@ -220,11 +270,12 @@ import {
   InstallationType,
   CableTypeCode,
   SYSTEM_DEFINITIONS,
-  MOTOR_SPECS
+  MOTOR_SPECS,
+  CABLE_TYPES,
+  CABLE_TEMP_GROUPS
 } from '@/types/appDefinitions'
 import ReversedResult from '@/components/ReversedResult.vue'
 
-// Home.vueと共有する状態（v-modelでバインド）
 const props = defineProps<{
   voltage: number
   targetPercent: number
@@ -245,7 +296,7 @@ const localTargetPercent = computed({
   set: (val) => emit('update:targetPercent', val)
 })
 
-// モード2専用のリアクティブ状態
+// モード専用のリアクティブ状態
 const selectedReversedSystemId = ref<string>('1P2W')
 const selectedCableType = ref<CableTypeCode>('vv')
 const calcInputMode = ref<CalculationInputMode>('amp')
@@ -256,10 +307,16 @@ const powerFactor = ref<number>(0.85)
 const ignorePowerFactor = ref<boolean>(false)
 const loadType = ref<LoadType>('general')
 const motorKw = ref<number>(0.75)
-const installationType = ref<InstallationType>('conduit_3')
+const installationType = ref<InstallationType>('conduit')
 const isContinuous = ref<boolean>(true)
+const ambientTemp = ref<number>(30)
+const wireCount = ref<number>(3)
 
-// 配線方式変更時の電圧自動連動
+const getCableTypeName = (id: string): string => {
+  const item = CABLE_TYPES.find((c) => c.id === id)
+  return item ? `${item.name}` : id
+}
+
 const handleSystemChange = () => {
   const sys = SYSTEM_DEFINITIONS.find((s) => s.id === selectedReversedSystemId.value)
   if (sys) {
@@ -267,7 +324,6 @@ const handleSystemChange = () => {
   }
 }
 
-// 負荷種別変更時の動作制御
 const handleLoadTypeChange = () => {
   if (loadType.value === 'motor') {
     selectedReversedSystemId.value = '3P3W'
@@ -280,7 +336,6 @@ const handleLoadTypeChange = () => {
   }
 }
 
-// モーター出力変更時の規約電流・力率自動反映
 const applyMotorAmp = () => {
   const spec = MOTOR_SPECS.find((m) => m.kw === motorKw.value)
   if (spec) {
@@ -358,34 +413,31 @@ const applyMotorAmp = () => {
   outline: none;
 }
 
-.text-input::placeholder {
-  color: #64748b;
-  font-size: 14px;
-}
-
-.text-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .preset-chips {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .chip-btn {
   flex: 1;
-  min-height: 38px;
-  font-size: 13px;
+  min-height: 34px;
+  font-size: 12px;
   font-weight: bold;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
   border: 1px solid #38bdf8;
   background-color: #0c4a6e;
   color: #38bdf8;
   cursor: pointer;
   touch-action: manipulation;
+  transition: all 0.2s;
+}
+
+.chip-btn.active {
+  background-color: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
 }
 
 .row-inputs {
@@ -400,13 +452,8 @@ const applyMotorAmp = () => {
   }
 }
 
-.mt-8 {
-  margin-top: 8px;
-}
-
-.mt-12 {
-  margin-top: 12px;
-}
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
 
 .checkbox-container {
   display: flex;
