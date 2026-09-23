@@ -85,17 +85,23 @@ export function calculateDirectRequiredWireAmp(calculatedAmp: number): number {
 }
 
 /**
- * 4. 配線用遮断器 (MCCB) / モーターブレーカー容量の計算
- * 商用直結時は直列始動電流 (約5〜6倍) を考慮し、定格電流の3.0倍 (3倍則) を基準とする
+ * 4. 配線用遮断器 (MCCB) 容量の計算
+ * 内線規程 第3705-8条に基づき、過電流遮断器の上限値 (定格電流の3.0倍/2.75倍) を超えない最大サイズを選定
  */
 export function calculateDirectBreakerCapacity(calculatedAmp: number): {
   rawTarget: number;
   recommended: number;
 } {
-  const target = calculatedAmp * 3.0;
-  const recommended =
-    THREE_PHASE_BREAKER_SIZES.find((s) => s >= target) ||
-    THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];
+  // 内線規程 第3705-8条：50A以下は3.0倍、50A超は2.75倍を上限とする
+  const motorFactor = calculatedAmp <= 50 ? 3.0 : 2.75;
+  const target = calculatedAmp * motorFactor;
+
+  // 上限値 (target) 以下のサイズを抽出（内線規程の上限ルール遵守）
+  const validSizes = THREE_PHASE_BREAKER_SIZES.filter((s) => s <= target);
+
+  // 上限値以下のサイズが存在すればその中の最大値、なければ最小定格（30A）を採用
+  let recommended = validSizes.length > 0 ? validSizes[validSizes.length - 1] : 30;
+  if (recommended < 30) recommended = 30;
 
   return {
     rawTarget: Number(target.toFixed(1)),
@@ -105,7 +111,7 @@ export function calculateDirectBreakerCapacity(calculatedAmp: number): {
 
 /**
  * 5. モーターブレーカー / MCCB 詳細選定ロジック
- * 15kW超の電動機はモーターブレーカー適用不可 (MCCB + サーマルリレーの構成が必須)
+ * 種別（モーターブレーカー / MCCB）に応じて適切な定格電流を選定
  */
 export function selectDirectMotorBreaker(
   outputKw: number,
@@ -123,7 +129,20 @@ export function selectDirectMotorBreaker(
     selectedType = breakerTypeMode;
   }
 
-  const { recommended } = calculateDirectBreakerCapacity(calculatedAmp);
+  let recommendedAmp = 30;
+
+  if (selectedType === 'motor_breaker') {
+    // 【モーターブレーカー (MB)】
+    // 機器保護用のため、電動機定格電流 (calculatedAmp) 以上をカバーする最小のサイズを選定
+    recommendedAmp = THREE_PHASE_BREAKER_SIZES.find((s) => s >= calculatedAmp) || 20;
+    if (recommendedAmp < 20) recommendedAmp = 20;
+  } else {
+    // 【配線用遮断器 (MCCB)】
+    // 内線規程 第3705-8条の上限値以下で最大サイズを選定
+    const { recommended } = calculateDirectBreakerCapacity(calculatedAmp);
+    recommendedAmp = recommended;
+  }
+
   const requiresThermalRelay = selectedType === 'mccb';
 
   let warningNote: string | undefined = undefined;
@@ -137,7 +156,7 @@ export function selectDirectMotorBreaker(
 
   return {
     selectedType,
-    recommendedAmp: recommended,
+    recommendedAmp,
     requiresThermalRelay,
     isOver15kW,
     warningNote,
