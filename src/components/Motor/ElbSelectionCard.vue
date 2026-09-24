@@ -1,8 +1,8 @@
-<!-- src/components/ElbSelectionCard.vue -->
+<!-- src/components/Motor/ElbSelectionCard.vue -->
 <template>
   <div class="category-card">
     <div class="card-header">
-      <h3 class="card-title">漏電遮断器 (ELB) 選定 (内線規程3310-4)</h3>
+      <h3 class="card-title">⚡ 漏電遮断器 (ELB) 選定 (内線規程3310-4)</h3>
     </div>
     <div class="card-body">
       <!-- 適合するブレーカー定格 (AF/AT) -->
@@ -10,32 +10,51 @@
         <div class="data-block">
           <span class="data-label">基準ブレーカー容量</span>
           <span class="data-value highlight">
-            {{ elbResult.breakerFrameAndAmp }}
-            <span class="unit"></span>
+            {{ displayFrameAndAmp }}
           </span>
         </div>
 
         <div class="data-block">
           <span class="data-label">要求定格感度電流</span>
           <span class="data-value">
-            {{ elbResult.sensitivity }}
-            <span class="unit"></span>
+            {{ displaySensitivity }}
           </span>
         </div>
+      </div>
+
+      <!-- 施工推奨仕様・解説文表示 -->
+      <div v-if="recommendedInstallation || elcbInfo?.description" class="installation-note mt-3">
+        <span class="note-label">施工推奨仕様 / 解説：</span>
+        <p class="note-text">{{ recommendedInstallation || elcbInfo?.description }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-interface ElbResult {
-  breakerFrameAndAmp: string;
-  sensitivity: string;
-}
+import { computed } from 'vue';
+import type { ElcbSelectionResult } from '@/types/appDefinitions';
 
-defineProps<{
-  elbResult: ElbResult;
+const props = defineProps<{
+  elcbInfo: ElcbSelectionResult;
+  recommendedInstallation?: string;
 }>();
+
+/** 基準ブレーカー容量の表示整形 */
+const displayFrameAndAmp = computed(() => {
+  if (!props.elcbInfo) return '-';
+  // 型定義の recommendedAmp を利用して表示整形 (例: "30 A")
+  const amp = props.elcbInfo.recommendedAmp;
+  return amp ? `${amp} A` : '-';
+});
+
+/** 要求定格感度電流の表示整形 */
+const displaySensitivity = computed(() => {
+  if (!props.elcbInfo) return '-';
+  // 型定義の sensitivityCurrent を利用して表示整形 (例: "30 mA")
+  const sensitivity = props.elcbInfo.sensitivityCurrent;
+  return sensitivity ? `${sensitivity} mA` : '-';
+});
 </script>
 
 <style scoped>
@@ -43,7 +62,6 @@ defineProps<{
   background-color: #1e293b;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 24px;
   border: 1px solid #334155;
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -99,22 +117,37 @@ defineProps<{
   color: #4ade80;
 }
 
-.unit {
+.installation-note {
+  background-color: #0f172a;
+  border-left: 3px solid #38bdf8;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
   font-size: 12px;
-  font-weight: normal;
+}
+
+.note-label {
+  color: #cbd5e1;
+  font-weight: bold;
+}
+
+.note-text {
+  margin: 4px 0 0 0;
   color: #94a3b8;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.mt-3 {
+  margin-top: 12px;
 }
 
 /* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
   .category-card {
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    padding: 20px;
   }
-  .category-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    border-color: #475569;
+  .card-title {
+    font-size: 16px;
   }
   .card-body-grid {
     gap: 16px;
@@ -122,8 +155,15 @@ defineProps<{
   .data-block {
     padding: 16px;
   }
+  .data-label {
+    font-size: 13px;
+  }
   .data-value {
     font-size: 20px;
+  }
+  .installation-note {
+    font-size: 13px;
+    padding: 10px 14px;
   }
 }
 </style>
