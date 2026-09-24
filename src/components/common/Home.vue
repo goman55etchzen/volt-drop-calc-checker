@@ -105,6 +105,11 @@
 
     <!-- モード3: 電動機 電流計算 -->
     <MotorCalc v-else-if="currentMode === 'motor'" />
+
+    <!-- =====================================================
+         全モード共通の画面下部（フッター）に配置するご利用上の注意
+         ===================================================== -->
+    <Caution />
   </div>
 </template>
 
@@ -124,6 +129,7 @@ import WireSizeSelect from '@/components/cable/WireSizeSelect.vue'
 import ResultCard from '@/components/ResultCard.vue'
 import ReversedMode from '@/components/ReversedInputForm.vue'
 import MotorCalc from '@/components/Motor/MotorCalc.vue'
+import Caution from '@/components/common/Caution.vue' // ご利用上の注意コンポーネントのインポート
 
 const currentMode = ref<AppMode>('normal')
 const voltage = ref<number>(100)
