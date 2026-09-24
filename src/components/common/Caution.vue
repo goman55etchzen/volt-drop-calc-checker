@@ -48,7 +48,7 @@
 .caution-list {
   margin: 0;
   padding-left: 20px;
-  font-size: 12px;
+  font-size: 11px;
   color: #94a3b8;
   line-height: 1.5;
 }
