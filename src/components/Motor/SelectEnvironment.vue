@@ -51,4 +51,22 @@ const handleChange = (event: Event) => {
   font-size: 1rem;
   background-color: #fff;
 }
+
+/* --- PC用レスポンシブ --- */
+@media (min-width: 768px) {
+  .input-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+  }
+  .input-label {
+    margin-bottom: 0;
+    min-width: 180px;
+    font-size: 1rem;
+  }
+  .base-select {
+    flex: 1;
+    padding: 0.75rem;
+  }
+}
 </style>

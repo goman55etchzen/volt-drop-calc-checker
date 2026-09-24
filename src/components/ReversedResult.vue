@@ -372,6 +372,7 @@ const smallAvailableWires = computed(() => {
   border-radius: 10px;
   padding: 12px;
   box-sizing: border-box;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
 .wire-item.is-recommended {
@@ -515,5 +516,29 @@ const smallAvailableWires = computed(() => {
   color: #fca5a5;
   font-size: 13px;
   font-weight: bold;
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .reversed-result-container {
+    max-width: 800px;
+    margin: 16px auto;
+  }
+  .wire-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border-color: #475569;
+  }
+  .wire-item.is-recommended:hover {
+    border-color: #7dd3fc;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+  }
+  .wire-item-body {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+  .accordion-summary:hover {
+    background-color: #1e293b;
+  }
 }
 </style>

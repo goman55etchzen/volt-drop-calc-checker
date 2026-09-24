@@ -92,7 +92,7 @@ defineEmits<{
   gap: 4px;
   cursor: pointer;
   box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.5);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, padding 0.2s ease;
   touch-action: manipulation;
 }
 
@@ -183,6 +183,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
 }
 .close-btn:active {
   background: #e11d48;
@@ -229,5 +230,35 @@ defineEmits<{
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .side-trigger-btn {
+    padding: 16px 10px;
+    top: 40%;
+  }
+  .trigger-label {
+    font-size: 12px;
+  }
+  .trigger-value-mini {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+  .slide-drawer-card {
+    max-width: 450px;
+    padding: 32px;
+  }
+  .card-title {
+    font-size: 18px;
+  }
+  .side-trigger-btn:hover {
+    background: #0284c7;
+    padding-right: 14px;
+  }
+  .close-btn:hover {
+    background: #475569;
+    color: #fff;
+  }
 }
 </style>

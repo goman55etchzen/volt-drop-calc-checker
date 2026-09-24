@@ -180,4 +180,32 @@ watch(selectedVoltageKey, (newKey) => {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- PC用レスポンシブ --- */
+@media (min-width: 768px) {
+  .selected-container {
+    padding: 24px;
+  }
+  .grid-2 {
+    gap: 24px;
+  }
+  .toggle-switch-group {
+    display: flex;
+    justify-content: center;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .toggle-btn {
+    flex: 1;
+    height: 48px;
+    font-size: 16px;
+  }
+  .sub-label {
+    font-size: 14px;
+  }
+  .select-input {
+    font-size: 16px;
+    height: 52px;
+  }
+}
 </style>

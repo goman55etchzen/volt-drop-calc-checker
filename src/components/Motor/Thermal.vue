@@ -435,4 +435,52 @@ details[open] .collapsible-summary::before { content: '▼ '; }
   padding: 10px 12px 12px;
   border-top: 1px dashed #334155;
 }
+
+/* --- PC用レスポンシブ追加 --- */
+@media (min-width: 768px) {
+  .thermal-card {
+    padding: 24px;
+  }
+  .card-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+  .title {
+    font-size: 18px;
+  }
+  .status-banner {
+    padding: 16px 20px;
+  }
+  .status-title {
+    font-size: 15px;
+  }
+  .status-desc {
+    font-size: 13px;
+  }
+  .guide-grid {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+  .info-row {
+    padding: 12px 20px;
+  }
+  .label, .value-sub {
+    font-size: 14px;
+  }
+  .value {
+    font-size: 18px;
+  }
+  .alert {
+    padding: 16px;
+  }
+  .check-list li {
+    font-size: 13px;
+  }
+  .circuit-flow {
+    padding: 14px 20px;
+  }
+  .flow-node {
+    font-size: 13px;
+    padding: 6px 14px;
+  }
+}
 </style>

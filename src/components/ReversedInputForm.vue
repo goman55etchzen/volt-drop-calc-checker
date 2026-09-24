@@ -117,7 +117,7 @@
           placeholder="本数"
           class="text-input"
         />
-        <div class="preset-chips">
+        <div class="preset-chips max-w-half">
           <button type="button" class="chip-btn" :class="{ active: wireCount === 3 }" @click="wireCount = 3">3本以下</button>
           <button type="button" class="chip-btn" :class="{ active: wireCount === 4 }" @click="wireCount = 4">4本</button>
           <button type="button" class="chip-btn" :class="{ active: wireCount === 6 }" @click="wireCount = 6">5〜6本</button>
@@ -212,7 +212,7 @@
       </div>
 
       <!-- 力率 -->
-      <div class="input-group mt-12">
+      <div class="input-group mt-12 max-w-half">
         <label class="sub-label">力率 cosθ</label>
         <input
           v-model.number="powerFactor"
@@ -411,6 +411,7 @@ const applyMotorAmp = () => {
   font-size: 16px;
   box-sizing: border-box;
   outline: none;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .preset-chips {
@@ -476,5 +477,42 @@ const applyMotorAmp = () => {
   width: 20px;
   height: 20px;
   accent-color: #0284c7;
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .reversed-mode-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .form-card {
+    padding: 24px;
+  }
+  .row-inputs {
+    gap: 20px;
+  }
+  .max-w-half {
+    max-width: calc(50% - 10px);
+  }
+  .checkbox-container {
+    flex-direction: row;
+    gap: 32px;
+  }
+  .checkbox-label.mt-8 {
+    margin-top: 0;
+  }
+  .text-input:hover:not(:disabled),
+  .select-input:hover:not(:disabled) {
+    border-color: #7dd3fc;
+  }
+  .volt-btn:hover:not(.active),
+  .segment-btn:hover:not(.active) {
+    background-color: #475569;
+    color: #f8fafc;
+  }
+  .chip-btn:hover:not(.active) {
+    background-color: #0ea5e9;
+    color: #fff;
+  }
 }
 </style>

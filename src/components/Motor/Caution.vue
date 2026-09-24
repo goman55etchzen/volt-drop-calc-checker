@@ -1,58 +1,77 @@
-<!-- src/components/Motor/Caution.vue -->
 <template>
-  <div class="caution-card-wrapper" v-if="message">
-    <div class="caution-box">
-      <span class="caution-icon">⚠️</span>
-      <p class="caution-text">{{ message }}</p>
+  <div class="caution-card-wrapper mt-8">
+    <div class="caution-card">
+      <h3 class="caution-title">ご利用上の注意</h3>
+      <ul class="caution-list">
+        <li>
+          本ツールは内線規程や関連法規に基づく一般的な簡易計算であり、現場特有の条件
+          （高調波、特殊環境、盤内温度上昇など）は考慮していません。
+        </li>
+        <li>
+          実際の施工・選定に際しては、必ず各メーカーの仕様書、電気設備技術基準、内線規程の最新版を確認し、
+          有資格者（電気工事士など）の責任において実施してください。
+        </li>
+        <li>
+          本ツールの計算結果を用いて生じた如何なる損害についても、当方は一切の責任を負いません。
+        </li>
+      </ul>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-defineProps<{
-  message: string;
-}>();
-</script>
-
 <style scoped>
 .caution-card-wrapper {
-  width: 100%;
-  /* 右からニュッとスライドインするアニメーション */
-  animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  padding: 0 4px;
 }
 
-.caution-box {
-  background-color: #451a03;
-  border: 1px solid #b45309;
+.caution-card {
+  background-color: #1e293b;
+  border-left: 4px solid #f59e0b;
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 16px;
+}
+
+.caution-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fcd34d;
+  margin-top: 0;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  gap: 6px;
+}
+.caution-title::before {
+  content: "⚠️";
 }
 
-.caution-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.caution-text {
-  font-size: 13px;
-  color: #fde047;
+.caution-list {
   margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: #94a3b8;
   line-height: 1.5;
-  font-weight: 500;
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(40px);
+.caution-list li {
+  margin-bottom: 6px;
+}
+.caution-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .caution-card-wrapper {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+  .caution-title {
+    font-size: 15px;
+  }
+  .caution-list {
+    font-size: 13px;
   }
 }
 </style>

@@ -1,93 +1,129 @@
-<!-- src/components/Motor/ElbSelectionCard.vue -->
+<!-- src/components/ElbSelectionCard.vue -->
 <template>
-  <div class="category-card elb-card">
-    <div class="card-category-header">
-      <span class="category-badge elb-badge">漏電保護</span>
-      <span class="category-title">漏電遮断器 (ELCB)・設置工事</span>
+  <div class="category-card">
+    <div class="card-header">
+      <h3 class="card-title">漏電遮断器 (ELB) 選定 (内線規程3310-4)</h3>
     </div>
+    <div class="card-body">
+      <!-- 適合するブレーカー定格 (AF/AT) -->
+      <div class="card-body-grid">
+        <div class="data-block">
+          <span class="data-label">基準ブレーカー容量</span>
+          <span class="data-value highlight">
+            {{ elbResult.breakerFrameAndAmp }}
+            <span class="unit"></span>
+          </span>
+        </div>
 
-    <div class="card-body-grid">
-      <div class="result-item">
-        <span class="item-label">推奨 ELCB 容量</span>
-        <span class="item-value highlight-cyan">{{ elcbInfo?.recommendedAmp || '-' }} <span class="unit">A</span></span>
-      </div>
-      <div class="result-item">
-        <span class="item-label">ELCB 感度電流</span>
-        <span class="item-value highlight-cyan">{{ elcbInfo?.sensitivityCurrent || '-' }} <span class="unit">mA</span></span>
-      </div>
-    </div>
-
-    <div class="mt-3 pt-3 border-t border-slate-700/60">
-      <span class="item-label">対応設置工事</span>
-      <div class="mt-1 bg-slate-900/80 p-2.5 rounded-lg border border-slate-700 text-xs text-slate-200 leading-relaxed">
-        {{ recommendedInstallation }}
+        <div class="data-block">
+          <span class="data-label">要求定格感度電流</span>
+          <span class="data-value">
+            {{ elbResult.sensitivity }}
+            <span class="unit"></span>
+          </span>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+interface ElbResult {
+  breakerFrameAndAmp: string;
+  sensitivity: string;
+}
+
 defineProps<{
-  elcbInfo: { recommendedAmp: number; sensitivityCurrent: number } | null;
-  recommendedInstallation: string;
+  elbResult: ElbResult;
 }>();
 </script>
 
 <style scoped>
 .category-card {
-  background-color: #0f172a;
-  border: 1px solid #334155;
+  background-color: #1e293b;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  border: 1px solid #334155;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.elb-card {
-  border-left: 4px solid #38bdf8;
+
+.card-header {
+  border-bottom: 1px solid #334155;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
 }
-.card-category-header {
+
+.card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: bold;
+  color: #38bdf8;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #1e293b;
-  padding-bottom: 8px;
+  gap: 6px;
 }
-.category-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-.elb-badge { background-color: #0369a1; color: #bae6fd; }
-.category-title {
-  font-size: 13px;
-  font-weight: bold;
-  color: #f8fafc;
-}
+
 .card-body-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
-.result-item {
-  background-color: #1e293b;
-  padding: 10px;
+
+.data-block {
+  background-color: #0f172a;
   border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #334155;
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
-.item-label {
-  font-size: 11px;
+
+.data-label {
+  font-size: 12px;
   color: #94a3b8;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  font-weight: 600;
 }
-.item-value {
-  font-size: 18px;
-  font-weight: 800;
+
+.data-value {
+  font-size: 16px;
+  font-weight: 900;
   color: #f8fafc;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
-.highlight-cyan { color: #38bdf8; }
-.unit { font-size: 12px; font-weight: normal; color: #94a3b8; }
+
+.data-value.highlight {
+  color: #4ade80;
+}
+
+.unit {
+  font-size: 12px;
+  font-weight: normal;
+  color: #94a3b8;
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .category-card {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .category-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border-color: #475569;
+  }
+  .card-body-grid {
+    gap: 16px;
+  }
+  .data-block {
+    padding: 16px;
+  }
+  .data-value {
+    font-size: 20px;
+  }
+}
 </style>

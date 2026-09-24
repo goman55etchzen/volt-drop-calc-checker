@@ -99,4 +99,27 @@ defineProps<ResultCardProps>();
   margin-left: 4px;
   color: #f8fafc;
 }
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .result-sticky-card {
+    max-width: 800px;
+    margin: 0 auto 24px auto;
+    padding: 16px 24px;
+    top: 16px;
+  }
+  .status-badge {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+  .sub-text {
+    font-size: 14px;
+  }
+  .num {
+    font-size: 42px;
+  }
+  .unit {
+    font-size: 20px;
+  }
+}
 </style>

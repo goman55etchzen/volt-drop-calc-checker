@@ -278,10 +278,29 @@ const recommendedCapacitors = computed(() => {
   gap: 1rem; 
 }
 
+/* 既存のメディアクエリを拡張してPCレイアウトを強化 */
 @media (min-width: 992px) {
-  .motor-calc-container { flex-direction: row; align-items: flex-start; }
-  .input-section { flex: 1.2; min-width: 450px; }
-  .result-section { flex: 1; min-width: 350px; position: sticky; top: 2rem; }
+  .motor-calc-container { 
+    flex-direction: row; 
+    align-items: flex-start; 
+    gap: 40px; /* 余白を拡大 */
+  }
+  .input-section { 
+    flex: 1.2; 
+    min-width: 450px; 
+  }
+  .result-section { 
+    flex: 1; 
+    min-width: 350px; 
+    position: sticky; 
+    top: 2rem; 
+  }
+  .form-card {
+    padding: 32px;
+  }
+  .card-title {
+    font-size: 20px;
+  }
 }
 
 /* フォームパーツ */

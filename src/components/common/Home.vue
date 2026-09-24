@@ -1,3 +1,4 @@
+<!-- src/views/Home.vue -->
 <template>
   <div class="home-container">
     <!-- 3モード切り替えタブ -->
@@ -197,6 +198,10 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
     min-height: 52px;
     font-size: 15px;
   }
+  .tab-btn:hover {
+    border-color: #38bdf8;
+    color: #f8fafc;
+  }
 }
 
 .tab-btn.active {
@@ -216,17 +221,19 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   .layout-grid {
     flex-direction: row;
     align-items: flex-start;
-    gap: 24px;
+    gap: 32px;
   }
   .form-column {
     order: 1; /* 左側へ */
     flex: 1;
-    max-width: 600px;
+    max-width: 650px;
   }
   .result-column {
     order: 2; /* 右側へ */
-    width: 380px;
+    width: 400px;
     flex-shrink: 0;
+    position: sticky;
+    top: 24px;
   }
 }
 
@@ -239,7 +246,7 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
 
 @media (min-width: 1024px) {
   .form-card {
-    padding: 24px;
+    padding: 28px;
   }
 }
 
@@ -253,6 +260,12 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   font-weight: 600;
   color: #94a3b8;
   margin-bottom: 6px;
+}
+
+@media (min-width: 1024px) {
+  .sub-label {
+    font-size: 14px;
+  }
 }
 
 .voltage-toggle {
@@ -278,6 +291,7 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .volt-btn.active {
@@ -296,6 +310,11 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   font-size: 16px;
   box-sizing: border-box;
   outline: none;
+  transition: border-color 0.2s;
+}
+
+.text-input:focus {
+  border-color: #38bdf8;
 }
 
 .text-input::placeholder {
@@ -313,7 +332,8 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   .row-inputs { grid-template-columns: 1fr; }
 }
 @media (min-width: 1024px) {
-  .row-inputs { gap: 16px; }
+  .row-inputs { gap: 20px; }
+  .text-input { min-height: 52px; }
 }
 
 .mt-12 { margin-top: 12px; }

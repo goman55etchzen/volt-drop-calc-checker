@@ -1,3 +1,4 @@
+<!-- src/components/cable/WireSizeSelect.vue -->
 <template>
   <div class="field-group">
     <label class="label">4. 使用する電線サイズ</label>
@@ -74,6 +75,12 @@ const selectWire = (name: string) => {
   font-size: 15px;
   box-sizing: border-box;
   touch-action: manipulation;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.size-display-card:hover {
+  background-color: #475569;
+  border-color: #7dd3fc;
 }
 
 .size-value {
@@ -172,6 +179,12 @@ const selectWire = (name: string) => {
   border-radius: 10px;
   cursor: pointer;
   touch-action: manipulation;
+  transition: all 0.15s ease;
+}
+
+.size-option-btn:hover {
+  border-color: #38bdf8;
+  background-color: #1e293b;
 }
 
 .size-option-btn.active {
@@ -193,5 +206,45 @@ const selectWire = (name: string) => {
 
 .size-option-btn.active .wire-amp {
   color: #e0f2fe;
+}
+
+/* PC向けレスポンシブ（ボトムシートを中央配置のダイアログへ変換） */
+@media (min-width: 768px) {
+  .modal-overlay {
+    align-items: center;
+    padding: 20px;
+  }
+  .modal-content {
+    border: 1px solid #475569;
+    border-radius: 16px;
+    max-width: 600px;
+    max-height: 80vh;
+    animation: fadeInModal 0.2s ease-out;
+  }
+  .size-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 24px;
+  }
+  .size-option-btn {
+    min-height: 60px;
+  }
+  .wire-name {
+    font-size: 15px;
+  }
+  .wire-amp {
+    font-size: 12px;
+  }
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

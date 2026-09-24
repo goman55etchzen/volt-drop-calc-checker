@@ -198,4 +198,40 @@ defineProps<{
   line-height: 1.5;
   margin: 4px 0 0 0;
 }
+
+/* --- PC用レスポンシブ --- */
+@media (min-width: 768px) {
+  .mb-card {
+    padding: 24px;
+  }
+  .card-header {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+  }
+  .title {
+    font-size: 18px;
+  }
+  .type-badge {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+  .card-body {
+    gap: 12px;
+  }
+  .info-row {
+    padding: 12px 16px;
+  }
+  .label {
+    font-size: 14px;
+  }
+  .value {
+    font-size: 18px;
+  }
+  .value-sub {
+    font-size: 14px;
+  }
+  .badge {
+    font-size: 13px;
+  }
+}
 </style>

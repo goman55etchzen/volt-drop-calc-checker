@@ -1,3 +1,4 @@
+<!-- src/components/cable/CablingSelect.vue -->
 <template>
   <div class="field-group">
     <label class="label">1. 配線方式</label>
@@ -39,10 +40,30 @@ const selectedSystem = defineModel<string>({ required: true });
   color: #f8fafc;
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  color-scheme: dark; /* 白浮き崩れ防止のためのネイティブダーク設定 */
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .select-input:focus {
   border-color: #38bdf8;
+}
+
+option {
+  background-color: #1e293b; /* 白枠崩れ修正 */
+  color: #f8fafc;
+  padding: 8px;
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .label {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .select-input {
+    min-height: 52px;
+    font-size: 16px;
+    padding: 12px;
+  }
 }
 </style>

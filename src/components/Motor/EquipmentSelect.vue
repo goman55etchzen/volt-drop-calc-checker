@@ -118,4 +118,26 @@ const breakerAmp = defineModel<number>('breakerAmp', { required: true });
     grid-template-columns: 1fr;
   }
 }
+
+/* --- PC用レスポンシブ --- */
+@media (min-width: 768px) {
+  .field-group {
+    padding: 24px;
+    background-color: #1e293b;
+    border-radius: 12px;
+    border: 1px solid #334155;
+  }
+  .label {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .grid-2 {
+    gap: 24px;
+  }
+  .select-input,
+  .text-input {
+    font-size: 16px;
+    min-height: 52px;
+  }
+}
 </style>

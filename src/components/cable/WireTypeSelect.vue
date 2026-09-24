@@ -1,4 +1,4 @@
-<!-- src/components/WireTypeSelect.vue -->
+<!-- src/components/cable/WireTypeSelect.vue -->
 <template>
   <div class="field-group">
     <label class="label">電線・ケーブル種別</label>
@@ -95,6 +95,12 @@ const onChange = (e: Event) => {
   color: #f8fafc;
   outline: none;
   box-sizing: border-box;
+  color-scheme: dark; /* 白浮き崩れ防止のためのネイティブダーク設定 */
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.select-input:focus {
+  border-color: #38bdf8;
 }
 
 optgroup {
@@ -104,8 +110,9 @@ optgroup {
 }
 
 option {
-  background-color: #334155;
+  background-color: #1e293b; /* ドロップダウンメニュー白崩れ修正 */
   color: #f8fafc;
+  padding: 8px;
 }
 
 /* 屋内配線不可の警告用スタイリング */
@@ -139,5 +146,27 @@ option {
   font-size: 12px;
   line-height: 1.45;
   color: #fde68a;
+}
+
+/* PC向けレスポンシブ拡張 */
+@media (min-width: 768px) {
+  .label {
+    font-size: 14px;
+  }
+  .select-input {
+    min-height: 52px;
+    font-size: 15px;
+    padding: 12px;
+  }
+  .warning-banner {
+    padding: 14px 18px;
+    margin-top: 14px;
+  }
+  .warning-title {
+    font-size: 14px;
+  }
+  .warning-text {
+    font-size: 13px;
+  }
 }
 </style>

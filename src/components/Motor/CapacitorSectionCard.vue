@@ -241,4 +241,28 @@ defineEmits<{
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* --- PC用レスポンシブ --- */
+@media (min-width: 768px) {
+  .side-trigger-btn-pf {
+    padding: 16px 14px;
+  }
+  .trigger-icon {
+    font-size: 14px;
+  }
+  .trigger-label {
+    font-size: 14px;
+  }
+  .slide-drawer-card {
+    max-width: 450px;
+    padding: 32px;
+  }
+  .card-title {
+    font-size: 18px;
+  }
+  .text-input {
+    height: 54px;
+    font-size: 18px;
+  }
+}
 </style>
