@@ -22,10 +22,14 @@
         </div>
       </div>
 
-      <!-- 施工推奨仕様・解説文表示 -->
+      <!-- 施工推奨仕様・解説文表示（両方の情報を結合して確実に表示） -->
       <div v-if="recommendedInstallation || elcbInfo?.description" class="installation-note mt-3">
         <span class="note-label">施工推奨仕様 / 解説：</span>
-        <p class="note-text">{{ recommendedInstallation || elcbInfo?.description }}</p>
+        <p class="note-text">
+          <span v-if="recommendedInstallation">{{ recommendedInstallation }}</span>
+          <span v-if="recommendedInstallation && elcbInfo?.description"><br></span>
+          <span v-if="elcbInfo?.description">{{ elcbInfo.description }}</span>
+        </p>
       </div>
     </div>
   </div>
@@ -43,7 +47,6 @@ const props = defineProps<{
 /** 基準ブレーカー容量の表示整形 */
 const displayFrameAndAmp = computed(() => {
   if (!props.elcbInfo) return '-';
-  // 型定義の recommendedAmp を利用して表示整形 (例: "30 A")
   const amp = props.elcbInfo.recommendedAmp;
   return amp ? `${amp} A` : '-';
 });
@@ -51,7 +54,6 @@ const displayFrameAndAmp = computed(() => {
 /** 要求定格感度電流の表示整形 */
 const displaySensitivity = computed(() => {
   if (!props.elcbInfo) return '-';
-  // 型定義の sensitivityCurrent を利用して表示整形 (例: "30 mA")
   const sensitivity = props.elcbInfo.sensitivityCurrent;
   return sensitivity ? `${sensitivity} mA` : '-';
 });

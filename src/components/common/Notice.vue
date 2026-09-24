@@ -2,8 +2,8 @@
 <template>
   <div class="notice-cards-wrapper">
 
-    <!-- 1. メイン算出結果カード -->
-    <div class="result-card-dark">
+    <!-- 1. メイン算出結果カード（タップで拡大） -->
+    <div class="result-card-dark clickable-card" @click="openModal('result')">
       <div class="main-result">
         <span class="result-label">
           {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
@@ -24,37 +24,65 @@
           <span class="sub-value">{{ motorCount }} 台</span>
         </div>
       </div>
+      <div class="tap-hint">🔍 タップして拡大表示</div>
     </div>
 
     <!-- 2. 詳細選定結果（全条件が揃った場合のみ） -->
     <template v-if="showDetails">
 
-      <!-- 2-1. 漏電遮断器（ELCB） -->
-      <ElbSelectionCard
-        :elcb-info="elcbInfo"
-        :recommended-installation="recommendedInstallation"
-      />
+      <!-- 2-1. 漏電遮断器（ELCB）（タップで拡大） -->
+      <div class="clickable-card-wrapper" @click="openModal('elb')">
+        <ElbSelectionCard
+          :elcb-info="elcbInfo"
+          :recommended-installation="recommendedInstallation"
+        />
+        <div class="tap-hint-bar">🔍 タップして拡大</div>
+      </div>
 
-      <!-- 2-2. 選定保護遮断器
-           直結: MotorBreakerCard（モーターブレーカー or MCCB）
-           インバータ: MccbSelectCard（一次側 MCCB 専用） -->
-      <MotorBreakerCard
-        v-if="driveMode === 'direct'"
-        :breaker-info="breakerInfo"
-      />
-      <MccbSelectCard
-        v-else-if="driveMode === 'inverter'"
-        :breaker-info="breakerInfo"
-      />
+      <!-- 2-2. 選定保護遮断器（タップで拡大） -->
+      <div class="clickable-card-wrapper" @click="openModal('breaker')">
+        <MotorBreakerCard
+          v-if="driveMode === 'direct'"
+          :breaker-info="breakerInfo"
+        />
+        <MccbSelectCard
+          v-else-if="driveMode === 'inverter'"
+          :breaker-info="breakerInfo"
+        />
+        <div class="tap-hint-bar">🔍 タップして拡大</div>
+      </div>
 
-      <!-- 2-3. サーマルリレー選定 -->
-      <Thermal
-        :thermal-info="thermalInfo"
-        :drive-mode="driveMode"
-        :breaker-selected-type="breakerInfo.selectedType"
-      />
+      <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
+      <div 
+        v-if="recommendedCapacitors && recommendedCapacitors.length > 0" 
+        class="clickable-card-wrapper" 
+        @click="openModal('capacitor')"
+      >
+        <div class="capacitor-recommend-card">
+          <h4 class="cap-title">⚡ 推奨進相コンデンサ（力率改善用）</h4>
+          <div class="cap-list">
+            <div v-for="(cap, idx) in recommendedCapacitors" :key="idx" class="cap-item">
+              <span class="cap-name">{{ cap.mfr }} ({{ cap.part_number }})</span>
+              <span class="cap-spec">
+                {{ frequency === 60 ? cap.kvar_60hz : cap.kvar_50hz }} kvar / {{ cap.capacity_uf }} μF
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="tap-hint-bar">🔍 タップして拡大</div>
+      </div>
 
-      <!-- 2-4. 補足警告（直結時のみ・warningNote が存在する場合） -->
+      <!-- 2-4. サーマルリレー選定（タップで拡大） -->
+      <div class="clickable-card-wrapper" @click="openModal('thermal')">
+        <Thermal
+          :thermal-info="thermalInfo"
+          :drive-mode="driveMode"
+          :breaker-selected-type="breakerInfo.selectedType"
+        />
+        <div class="tap-hint-bar">🔍 タップして拡大</div>
+      </div>
+
+      <!-- 2-5. 補足警告 -->
       <div
         v-if="driveMode !== 'inverter' && breakerInfo?.warningNote"
         class="notice-box warning"
@@ -66,10 +94,105 @@
       </div>
 
     </template>
+
+    <!-- =====================================================
+         全画面ポップアップ拡大モーダル（比率拡大適用）
+         ===================================================== -->
+    <div v-if="activeModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <span class="modal-title-text">拡大詳細ビュー</span>
+          <button type="button" class="close-btn" @click="closeModal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- 1. メイン結果の拡大 -->
+          <div v-if="activeModal === 'result'" class="result-card-dark modal-inner-card modal-scale-wrapper">
+            <div class="main-result">
+              <span class="result-label">
+                {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
+              </span>
+              <div class="result-value-group">
+                <span class="result-value large-num">{{ calculatedAmp || 0 }}</span>
+                <span class="result-unit">A</span>
+              </div>
+            </div>
+            <div class="sub-results">
+              <div class="sub-item">
+                <span class="sub-title">電圧 / 出力</span>
+                <span class="sub-value">{{ voltage }}V / {{ motorKw }}kW</span>
+              </div>
+              <div class="sub-item">
+                <span class="sub-title">台数</span>
+                <span class="sub-value">{{ motorCount }} 台</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. ELCBの拡大 -->
+          <div v-if="activeModal === 'elb'" class="modal-scale-wrapper">
+            <ElbSelectionCard
+              :elcb-info="elcbInfo"
+              :recommended-installation="recommendedInstallation"
+            />
+          </div>
+
+          <!-- 3. 保護遮断器の拡大 -->
+          <template v-if="activeModal === 'breaker'">
+            <div class="modal-scale-wrapper">
+              <MotorBreakerCard
+                v-if="driveMode === 'direct'"
+                :breaker-info="breakerInfo"
+              />
+              <MccbSelectCard
+                v-else-if="driveMode === 'inverter'"
+                :breaker-info="breakerInfo"
+              />
+              <!-- モーダル内でも保護遮断器の直下にコンデンサを表示（既存コード維持） -->
+              <div v-if="recommendedCapacitors && recommendedCapacitors.length > 0" class="capacitor-recommend-card mt-3">
+                <h4 class="cap-title">⚡ 推奨進相コンデンサ（力率改善用）</h4>
+                <div class="cap-list">
+                  <div v-for="(cap, idx) in recommendedCapacitors" :key="idx" class="cap-item">
+                    <span class="cap-name">{{ cap.mfr }} ({{ cap.part_number }})</span>
+                    <span class="cap-spec">
+                      {{ frequency === 60 ? cap.kvar_60hz : cap.kvar_50hz }} kvar / {{ cap.capacity_uf }} μF
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- 4. サーマルリレーの拡大 -->
+          <div v-if="activeModal === 'thermal'" class="modal-scale-wrapper">
+            <Thermal
+              :thermal-info="thermalInfo"
+              :drive-mode="driveMode"
+              :breaker-selected-type="breakerInfo.selectedType"
+            />
+          </div>
+
+          <!-- 5. コンデンサ単体の拡大（新設） -->
+          <div v-if="activeModal === 'capacitor'" class="capacitor-recommend-card modal-inner-card modal-scale-wrapper">
+            <h4 class="cap-title">⚡ 推奨進相コンデンサ（力率改善用）</h4>
+            <div class="cap-list">
+              <div v-for="(cap, idx) in recommendedCapacitors" :key="idx" class="cap-item">
+                <span class="cap-name">{{ cap.mfr }} ({{ cap.part_number }})</span>
+                <span class="cap-spec">
+                  {{ frequency === 60 ? cap.kvar_60hz : cap.kvar_50hz }} kvar / {{ cap.capacity_uf }} μF
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import ElbSelectionCard from '@/components/Motor/ElbSelectionCard.vue';
 import MotorBreakerCard from '@/components/Motor/MotorBreakerCard.vue';
 import MccbSelectCard from '@/components/Motor/MccbSelectCard.vue';
@@ -86,6 +209,7 @@ defineProps<{
   otherLoadAmp: number;
   voltage: number;
   motorKw: number;
+  frequency: number;
   showDetails: boolean;
   breakerInfo: MotorBreakerSelectionResult;
   elcbInfo: ElcbSelectionResult;
@@ -96,6 +220,16 @@ defineProps<{
   recommendedInstallation: string;
   recommendedCapacitors: CapacitorProduct[];
 }>();
+
+const activeModal = ref<'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor' | null>(null);
+
+const openModal = (type: 'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor') => {
+  activeModal.value = type;
+};
+
+const closeModal = () => {
+  activeModal.value = null;
+};
 </script>
 
 <style scoped>
@@ -104,6 +238,32 @@ defineProps<{
   flex-direction: column;
   gap: 12px;
   width: 100%;
+}
+
+/* ── タップ可能カードの共通スタイル ── */
+.clickable-card,
+.clickable-card-wrapper {
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.clickable-card:hover,
+.clickable-card-wrapper:hover {
+  filter: brightness(1.05);
+}
+.tap-hint {
+  text-align: center;
+  font-size: 11px;
+  color: #38bdf8;
+  margin-top: 10px;
+  font-weight: bold;
+}
+.tap-hint-bar {
+  text-align: right;
+  font-size: 10px;
+  color: #38bdf8;
+  padding: 2px 8px;
+  font-weight: bold;
 }
 
 /* ── メイン結果カード ── */
@@ -137,6 +297,35 @@ defineProps<{
 .sub-title { font-size: 11px; color: #cbd5e1; margin-bottom: 4px; }
 .sub-value { font-size: 15px; font-weight: bold; color: #f8fafc; }
 
+/* ── コンデンサ推奨カード ── */
+.capacitor-recommend-card {
+  background-color: #0f172a;
+  border: 1px solid #10b981;
+  border-radius: 12px;
+  padding: 14px;
+}
+.cap-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #34d399;
+  margin: 0 0 8px 0;
+}
+.cap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cap-item {
+  display: flex;
+  justify-content: space-between;
+  background-color: #1e293b;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.cap-name { color: #f8fafc; font-weight: bold; }
+.cap-spec { color: #38bdf8; font-weight: bold; }
+
 /* ── 警告ボックス ── */
 .notice-box {
   display: flex;
@@ -155,4 +344,70 @@ defineProps<{
 .notice-icon { font-size: 16px; flex-shrink: 0; }
 .notice-content { flex-grow: 1; }
 .notice-text { margin: 0; }
+
+/* ── 拡大モーダル画面スタイル ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-content {
+  background-color: #0f172a;
+  border: 2px solid #38bdf8;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 8px;
+}
+.modal-title-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: #38bdf8;
+}
+.close-btn {
+  background: #334155;
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.close-btn:active {
+  background: #e11d48;
+}
+.large-num {
+  font-size: 52px !important;
+}
+.mt-3 {
+  margin-top: 12px;
+}
+
+/* ── 比率による適度な拡大用ラッパー ── */
+.modal-scale-wrapper {
+  transform: scale(1.08);
+  transform-origin: center;
+  margin: 16px 4px;
+}
 </style>

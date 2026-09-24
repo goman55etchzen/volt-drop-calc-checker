@@ -126,6 +126,7 @@
         :other-load-amp="formData.otherLoadIr || 0"
         :voltage="mc.voltage.value"
         :motor-kw="formData.motorKw || 0"
+        :frequency="formData.frequency || 50"
         :show-details="canCalculateFull"
         v-model:powerFactor="mc.powerFactor.value"
         v-model:targetPowerFactor="mc.targetPowerFactor.value"
@@ -160,13 +161,10 @@ import { fetchCapacitorCatalog, findClosestCapacitorGroup } from '@/utils/capaci
 import type { CapacitorProduct } from '@/utils/capacitor';
 
 const mc = useMotorCalc();
-const isTotalAmpOpen = ref(true);
-const isPowerFactorOpen = ref(true);
 const isFreqSaved = ref(false);
 
 const capacitorCatalog = ref<CapacitorProduct[]>([]);
 
-// フォーム保持オブジェクト（初期値は全て null とし、算出用デフォルト値の混入を防止）
 const formData = reactive({
   frequency: null as PowerFrequency | null,
   systemId: null as string | null,
@@ -181,7 +179,6 @@ const formData = reactive({
 onMounted(async () => {
   capacitorCatalog.value = await fetchCapacitorCatalog();
   
-  // localDbから周波数を復元
   const savedFreq = localDb.getFrequency();
   if (savedFreq) {
     formData.frequency = savedFreq;
@@ -190,7 +187,6 @@ onMounted(async () => {
   }
 });
 
-/** 周波数を更新し、localDbに永続化保存 */
 const updateFrequency = (freq: PowerFrequency) => {
   formData.frequency = freq;
   mc.frequency.value = freq;
@@ -198,7 +194,6 @@ const updateFrequency = (freq: PowerFrequency) => {
   isFreqSaved.value = true;
 };
 
-// watchによるComposable側状態への安全な同期 (null の場合は安全なデフォルト数値へフォールバック)
 watch(() => formData.motorKw, (val) => { mc.outputKw.value = val ?? 0; });
 watch(() => formData.quantity, (val) => { mc.motorCount.value = val ?? 1; });
 watch(() => formData.otherLoadIr, (val) => { mc.otherLoadAmp.value = val ?? 0; });
@@ -217,13 +212,10 @@ watch(() => formData.systemId, (val) => {
 
 const { thermalInfo } = useThermal(mc.calculatedAmp, mc.driveMode, mc.motorCount);
 
-// --- 計算状態フラグ ---
-/** 1. 1台あたりの定格電流を計算できる最低条件 */
 const canCalculateBasic = computed(() => {
   return formData.frequency !== null && formData.systemId !== null && formData.motorKw !== null && formData.motorKw > 0;
 });
 
-/** 2. ブレーカーやサーマル等の詳細選定を算出できるフル条件 */
 const canCalculateFull = computed(() => {
   return canCalculateBasic.value && formData.environment !== null && formData.driveMode !== null && formData.breakerMode !== null;
 });
@@ -261,7 +253,6 @@ const recommendedCapacitors = computed(() => {
 </script>
 
 <style scoped>
-/* ベース構造 */
 .motor-calc-container { 
   display: flex; 
   flex-direction: column; 
@@ -278,12 +269,11 @@ const recommendedCapacitors = computed(() => {
   gap: 1rem; 
 }
 
-/* 既存のメディアクエリを拡張してPCレイアウトを強化 */
 @media (min-width: 992px) {
   .motor-calc-container { 
     flex-direction: row; 
     align-items: flex-start; 
-    gap: 40px; /* 余白を拡大 */
+    gap: 40px; 
   }
   .input-section { 
     flex: 1.2; 
@@ -303,7 +293,6 @@ const recommendedCapacitors = computed(() => {
   }
 }
 
-/* フォームパーツ */
 .form-card {
   background-color: #0f172a;
   border: 1px solid #334155;
@@ -386,7 +375,6 @@ const recommendedCapacitors = computed(() => {
   color: #64748b;
   box-shadow: none;
 }
-
 
 .empty-state { 
   text-align: center; 
