@@ -102,9 +102,12 @@ defineProps<ResultCardProps>();
 
 /* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
+  .reversed-result-container,
   .result-sticky-card {
-    max-width: 800px;
-    margin: 0 auto 24px auto;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 24px;
     padding: 16px 24px;
     top: 16px;
   }

@@ -520,10 +520,13 @@ const smallAvailableWires = computed(() => {
 
 /* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
-  .reversed-result-container {
-    max-width: 800px;
-    margin: 16px auto;
+  .reversed-result-container,
+  .result-sticky-card {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
   }
+}
   .wire-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -540,5 +543,5 @@ const smallAvailableWires = computed(() => {
   .accordion-summary:hover {
     background-color: #1e293b;
   }
-}
+
 </style>

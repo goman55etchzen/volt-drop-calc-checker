@@ -524,41 +524,57 @@ const handleSendToWireCalc = () => {
 </template>
 
 <style scoped>
+/* 全体コンテナを電動機モード同様のカードスタイルに変更 */
 .aircon-container {
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
   padding: 1.5rem;
-  background-color: transparent;
-  border-radius: 8px;
+  background-color: #111a2e; /* 電動機モードと同等の濃紺背景 */
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
   color: #f8fafc;
+  box-sizing: border-box;
 }
 
+/* ヘッダーデザイン */
 .card-header {
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #334155;
-  padding-bottom: 0.75rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 1rem;
   text-align: center;
 }
 
 .title {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0 0 0.4rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* タイトル頭にアイコンを追加（擬似要素） */
+.title::before {
+  content: "❄️"; /* アイコン演出 */
+  font-size: 1.2rem;
 }
 
 .subtitle {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: #94a3b8;
   margin: 0;
 }
 
+/* 入力セクション */
 .input-section {
   background-color: transparent;
-  padding: 0.5rem 0 1.5rem 0;
+  padding: 0 0 1rem 0;
 }
 
 .form-grid {
@@ -577,10 +593,12 @@ const handleSendToWireCalc = () => {
   grid-column: 1 / -1;
 }
 
+/* 電動機モード風のラベルスタイル（左揃え・太字） */
 .form-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: left;
 }
 
 .field-hint {
@@ -593,18 +611,17 @@ const handleSendToWireCalc = () => {
   gap: 0.5rem;
 }
 
+/* 入力フォーム・セレクトボックス（暗めの統一感ある配色） */
 .form-input,
 .form-select {
-  padding: 0.6rem 0.8rem;
-  background-color: #223046;
-  border: 1px solid #334155;
-  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  background-color: #1a2638;
+  border: 1px solid #2d3d54;
+  border-radius: 8px;
   font-size: 0.95rem;
   color: #ffffff;
   outline: none;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 
 .form-input::placeholder {
@@ -614,7 +631,8 @@ const handleSendToWireCalc = () => {
 .form-input:focus,
 .form-select:focus {
   border-color: #0284c7;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.4);
+  background-color: #1e2e45;
 }
 
 .form-input {
@@ -627,27 +645,29 @@ const handleSendToWireCalc = () => {
 }
 
 .form-select option {
-  background-color: #1e293b;
+  background-color: #162032;
   color: #ffffff;
 }
 
+/* セグメントコントロール（木造/鉄筋切り替え） */
 .segmented-control {
   display: flex;
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 6px;
-  padding: 3px;
+  background-color: #162032;
+  border: 1px solid #2d3d54;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
 }
 
 .segment-btn {
   flex: 1;
-  padding: 0.55rem;
-  background: none;
+  padding: 0.6rem;
+  background: transparent;
   border: none;
   color: #94a3b8;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -655,8 +675,10 @@ const handleSendToWireCalc = () => {
 .segment-btn.active {
   background-color: #0284c7;
   color: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
 }
 
+/* 詳細条件のアコーディオン開閉ボタン */
 .advanced-toggle-wrapper {
   margin-top: 1.25rem;
   text-align: center;
@@ -666,48 +688,60 @@ const handleSendToWireCalc = () => {
   background: none;
   border: none;
   color: #38bdf8;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.btn-toggle-advanced:hover {
+  background-color: rgba(56, 189, 248, 0.1);
 }
 
 .advanced-panel {
   margin-top: 1rem;
   padding: 1.25rem;
-  background-color: #131d31;
-  border: 1px dashed #334155;
+  background-color: #0d1526;
+  border: 1px dashed #2d3d54;
   border-radius: 8px;
 }
 
+/* ステッパー（人数設定） */
 .stepper-input {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background-color: #223046;
-  border: 1px solid #334155;
-  border-radius: 6px;
-  padding: 0.3rem 0.5rem;
+  background-color: #1a2638;
+  border: 1px solid #2d3d54;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
   width: fit-content;
 }
 
 .btn-step {
   width: 32px;
   height: 32px;
-  background-color: #334155;
+  background-color: #2d3d54;
   color: #ffffff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.btn-step:hover:not(:disabled) {
+  background-color: #0284c7;
 }
 
 .btn-step:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -718,6 +752,7 @@ const handleSendToWireCalc = () => {
   text-align: center;
 }
 
+/* チップ選択肢 */
 .chip-group {
   display: flex;
   flex-wrap: wrap;
@@ -727,34 +762,36 @@ const handleSendToWireCalc = () => {
 .chip-label {
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 0.8rem;
-  background-color: #1e293b;
-  border: 1px solid #334155;
+  padding: 0.55rem 0.9rem;
+  background-color: #1a2638;
+  border: 1px solid #2d3d54;
   border-radius: 20px;
-  font-size: 0.825rem;
+  font-size: 0.85rem;
   color: #cbd5e1;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
 }
 
 .chip-label.active {
   background-color: rgba(2, 132, 199, 0.2);
   border-color: #0284c7;
   color: #38bdf8;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .hidden-checkbox {
   display: none;
 }
 
+/* 結果表示カード */
 .result-section {
-  background-color: #131d31;
+  background-color: #0d1526;
   border: 1px solid #1e293b;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 1.25rem;
+  margin-top: 1rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .result-section.is-warning {
@@ -766,19 +803,20 @@ const handleSendToWireCalc = () => {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .badge {
   background-color: #0284c7;
   color: #ffffff;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
 }
 
 .result-title {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: #38bdf8;
   margin: 0;
@@ -793,11 +831,11 @@ const handleSendToWireCalc = () => {
 
 .info-pill {
   font-size: 0.85rem;
-  background-color: #1e293b;
+  background-color: #162032;
   color: #cbd5e1;
-  padding: 0.35rem 0.8rem;
+  padding: 0.4rem 0.85rem;
   border-radius: 20px;
-  border: 1px solid #334155;
+  border: 1px solid #2d3d54;
 }
 
 .info-pill.highlight {
@@ -807,12 +845,12 @@ const handleSendToWireCalc = () => {
 }
 
 .breakdown-box {
-  background-color: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
+  background-color: #162032;
+  border: 1px solid #2d3d54;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
   margin-bottom: 1rem;
-  font-size: 0.825rem;
+  font-size: 0.85rem;
 }
 
 .breakdown-title {
@@ -829,17 +867,18 @@ const handleSendToWireCalc = () => {
 }
 
 .breakdown-list li {
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
 }
 
+/* スペックグリッド */
 .spec-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 0.75rem;
-  background-color: #0f172a;
+  background-color: #162032;
   padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid #1e293b;
+  border-radius: 8px;
+  border: 1px solid #2d3d54;
   margin-bottom: 1rem;
 }
 
@@ -869,10 +908,10 @@ const handleSendToWireCalc = () => {
   font-size: 0.875rem;
   line-height: 1.5;
   color: #cbd5e1;
-  background-color: rgba(30, 41, 59, 0.6);
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  border-left: 3px solid #0284c7;
+  background-color: rgba(2, 132, 199, 0.1);
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #0284c7;
   margin-bottom: 1.25rem;
 }
 
@@ -886,25 +925,29 @@ const handleSendToWireCalc = () => {
 }
 
 .btn {
-  padding: 0.65rem 1.3rem;
+  padding: 0.7rem 1.4rem;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .btn-primary {
   background-color: #0284c7;
   color: #ffffff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
 }
 
 .btn-primary:hover {
   background-color: #0369a1;
+  transform: translateY(-1px);
 }
 
+/* マスタテーブル */
 .master-table-section {
-  border-top: 1px solid #334155;
+  border-top: 1px solid #1e293b;
   padding-top: 1rem;
 }
 
@@ -945,19 +988,19 @@ const handleSendToWireCalc = () => {
 
 .spec-table th,
 .spec-table td {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #334155;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #2d3d54;
   white-space: nowrap;
 }
 
 .spec-table th {
-  background-color: #1e293b;
+  background-color: #162032;
   color: #cbd5e1;
   font-weight: 600;
 }
 
 .spec-table tr {
-  background-color: #0f172a;
+  background-color: #0d1526;
 }
 
 .spec-table tr.is-selected {

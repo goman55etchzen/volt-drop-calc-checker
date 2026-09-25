@@ -482,12 +482,11 @@ const applyMotorAmp = () => {
 /* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
   .reversed-mode-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
+    width: 100%; /* 親の幅にフィットさせる */
   }
   .form-card {
     padding: 24px;
-  }
+    }
   .row-inputs {
     gap: 20px;
   }

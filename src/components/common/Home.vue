@@ -404,7 +404,8 @@ const handleAirconCableSelect =
 <style scoped>
 .home-container {
   width: 100%;
-  max-width: 480px;
+  /* スマホ版の標準サイズ */
+  max-width: 500px; 
   margin: 0 auto;
   padding: 12px 12px 40px 12px;
   background-color: #1e293b;
@@ -412,17 +413,27 @@ const handleAirconCableSelect =
   box-sizing: border-box;
 }
 
-@media (min-width: 1024px) {
-  .home-container {
-    max-width: 1200px;
-    padding: 24px 32px 60px;
-  }
-}
-
+/* タブボタンのコンテナ幅も揃える */
 .mode-tabs {
   display: flex;
   gap: 6px;
   margin-bottom: 16px;
+  width: 100%;
+}
+
+/* PC版 (768px 以上 または 1024px 以上) */
+@media (min-width: 1024px) {
+  .home-container {
+    /* PC版で全モード共通とする最大幅（必要に応じて900px〜1000pxに統一） */
+    max-width: 960px; 
+    padding: 24px 32px 60px;
+  }
+
+  .mode-tabs {
+    gap: 12px;
+    margin-bottom: 24px;
+    max-width: 100%; /* タブも全体幅に拡張 */
+  }
 }
 
 @media (min-width: 1024px) {
