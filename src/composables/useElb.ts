@@ -1,10 +1,10 @@
-// useElb.ts
+// src/composables/useElb.ts
 import { computed, Ref } from 'vue';
 import {
   EnvironmentType,
   ElcbSelectionResult,
   THREE_PHASE_BREAKER_SIZES
-} from './appDefinitions';
+} from '@/types/appDefinitions';
 
 /**
  * 漏電遮断器（ELCB）の選定・判定ロジックを行うComposable
@@ -42,8 +42,6 @@ export function useElb(
     const maxAllowedAmp = Math.min(limitByLoad, limitByWire);
 
     // 3. 定格サイズの選定 (最小30A)
-    // 負荷電流を確実にカバーし、かつ規定上限値(maxAllowedAmp)を超えないサイズを選定
-    // (※上限計算値が標準サイズと一致しない場合は、1サイズ上位の標準定格を選択)
     const MIN_BREAKER_SIZE = 30;
     let recommendedAmp = THREE_PHASE_BREAKER_SIZES.find((size) => size >= limitByLoad) 
       ?? THREE_PHASE_BREAKER_SIZES[THREE_PHASE_BREAKER_SIZES.length - 1];

@@ -1,4 +1,4 @@
-<!-- src/components/BreakerSelect.vue -->
+<!-- src/components/Motor/BreakerSelect.vue -->
 <template>
   <div class="input-group">
     <label class="sub-label">保護遮断器 種別選択</label>

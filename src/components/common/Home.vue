@@ -1,4 +1,4 @@
-<!-- src/views/Home.vue -->
+<!-- src/common/Home.vue -->
 <template>
   <div class="home-container">
     <!-- 3モード切り替えタブ -->
@@ -129,7 +129,7 @@ import WireSizeSelect from '@/components/cable/WireSizeSelect.vue'
 import ResultCard from '@/components/ResultCard.vue'
 import ReversedMode from '@/components/ReversedInputForm.vue'
 import MotorCalc from '@/components/Motor/MotorCalc.vue'
-import Caution from '@/components/common/Caution.vue' // ご利用上の注意コンポーネントのインポート
+import Caution from '@/components/common/Caution.vue'
 
 const currentMode = ref<AppMode>('normal')
 const voltage = ref<number>(100)

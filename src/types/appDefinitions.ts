@@ -58,6 +58,7 @@ export interface ElcbSelectionResult {
   recommendedAmp: number;
   sensitivityCurrent: number;
   operatingTime: string;
+  maxGroundResistance: number;
   isMandatory: boolean;
   description: string;
 }

@@ -1,3 +1,4 @@
+// src/composables/useWireSize.ts
 import { ref } from 'vue';
 import { WIRE_SIZES } from '@/types/appDefinitions';
 
