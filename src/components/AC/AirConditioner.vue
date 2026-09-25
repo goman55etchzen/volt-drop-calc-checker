@@ -1,71 +1,57 @@
 <!-- src/components/AC/AirConditioner.vue -->
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
 import {
-  AreaUnit,
-  RoomType,
-  BuildingType,
-  calculateAirconSelection,
-  AC_SPECS,
-} from "@/utils/airconCalc";
-import { CableTypeCode } from "@/types/appDefinitions";
+  useAirconCable,
+  type AirconCableSelectionPayload,
+} from "@/composables/useAirconCable";
 
-/**
- * ==========================================
- * Emits
- * ==========================================
- *
- * エアコン選定結果を配線計算へ渡す。
- *
- * 電線だけではなく、
- * 電圧・電流・ブレーカー容量まで渡す。
- */
+import type { CableTypeCode } from "@/types/appDefinitions";
+
+// ==========================================
+// Emits
+// ==========================================
+
 const emit = defineEmits<{
-  (
-    e: "select-cable",
-    payload: {
-      cableType: CableTypeCode;
-      wireSize: string;
-      voltage: 100 | 200;
-      ratedCurrentA: number;
-      maxCurrentA: number;
-      breakerAmp: number;
-      breakerPoles: string;
-    },
-  ): void;
+  (e: "select-cable", payload: AirconCableSelectionPayload): void;
 }>();
 
-/* ========================================== *
-/* 状態管理*/
-/* ==========================================*/
-const areaValue = ref<number>(12);
+// ==========================================
+// Composable
+// ==========================================
 
-const areaUnit = ref<AreaUnit>("tatami");
+const {
+  areaValue,
+  areaUnit,
+  roomType,
+  buildingType,
+  personCount,
+  hasStrongSunlight,
+  isTopFloor,
+  hasHighCeiling,
 
-const roomType = ref<RoomType>("living");
+  showSpecTable,
 
-const buildingType = ref<BuildingType>("wooden");
+  selectionResult,
+  acMasterSpecs,
+
+  toggleSpecTable,
+  getCableSelectionPayload,
+} = useAirconCable();
+
+// ==========================================
+// UI
+// ==========================================
+
+import { ref } from "vue";
 
 const showAdvanced = ref<boolean>(false);
 
-const personCount = ref<number>(2);
+// ==========================================
+// 選択肢
+// ==========================================
 
-const hasStrongSunlight = ref<boolean>(false);
-
-const isTopFloor = ref<boolean>(false);
-
-const hasHighCeiling = ref<boolean>(false);
-
-const showSpecTable = ref<boolean>(false);
-
-/* ==========================================
- /* 選択肢*/
-/* ==========================================*/
-const unitOptions: {
-  label: string;
-  value: AreaUnit;
-}[] = [
+const unitOptions = [
   {
     label: "畳（帖）",
     value: "tatami",
@@ -78,13 +64,9 @@ const unitOptions: {
     label: "坪",
     value: "tsubo",
   },
-];
+] as const;
 
-const roomOptions: {
-  label: string;
-  value: RoomType;
-  desc: string;
-}[] = [
+const roomOptions = [
   {
     label: "居間・リビング",
     value: "living",
@@ -115,93 +97,41 @@ const roomOptions: {
     value: "kids",
     desc: "標準洋室 ×1.00",
   },
-];
+] as const;
 
-/**
- * ==========================================
- * エアコン選定結果
- * ==========================================
- */
+// ==========================================
+// 配線計算へ送る
+// ==========================================
 
-const selectionResult = computed(() => {
-  return calculateAirconSelection({
-    areaValue: areaValue.value || 0,
-    unit: areaUnit.value,
-    roomType: roomType.value,
-    buildingType: buildingType.value,
-    personCount: personCount.value,
-    hasStrongSunlight: hasStrongSunlight.value,
-    isTopFloor: isTopFloor.value,
-    hasHighCeiling: hasHighCeiling.value,
-  });
-});
-
-/**
- * ==========================================
- * 配線計算へ送る
- * ==========================================
- */
 const handleSendToWireCalc = () => {
-  const spec = selectionResult.value.selectedSpec;
+  const payload = getCableSelectionPayload();
 
-  /**
-   * 選択されたエアコンの電気条件を
-   * そのまま親(Home.vue)へ渡す。
-   */
-  emit("select-cable", {
-    cableType: spec.cableTypeCode,
-    wireSize: spec.recommendedWireSize,
-
-    /**
-     * 100V / 200V
-     */
-    voltage: spec.voltage,
-
-    /**
-     * 定格電流
-     *
-     * 表示・記録用。
-     * 配線計算には maxCurrentA を使用する。
-     */
-    ratedCurrentA: spec.ratedCurrentA,
-
-    /**
-     * 最大運転電流
-     *
-     * 配線計算に使用する値。
-     */
-    maxCurrentA: spec.maxCurrentA,
-
-    /**
-     * 推奨ブレーカー容量
-     */
-    breakerAmp: spec.breakerAmp,
-
-    /**
-     * 2P1E / 2P2E
-     */
-    breakerPoles: spec.breakerPoles,
-  });
+  emit("select-cable", payload);
 };
 </script>
 
 <template>
   <div class="aircon-container">
+    <!-- ========================================
+         ヘッダー
+         ======================================== -->
+
     <header class="card-header">
       <h2 class="title">エアコン適合選定 &amp; 専用回路計算</h2>
 
       <p class="subtitle">
-        部屋の広さ・環境条件から最適なエアコン能力と電源回路規格を自動算定します
+        部屋の広さ・環境条件から エアコン能力と電源回路規格を算定します
       </p>
     </header>
 
-    <!-- ==========================================
-         入力フォーム
-         ========================================== -->
+    <!-- ========================================
+         入力
+         ======================================== -->
 
     <section class="input-section">
       <div class="form-grid">
-        <!-- 部屋の広さ -->
+        <!-- 面積 -->
+
         <div class="form-group">
           <label class="form-label" for="area-input"> 部屋の広さ </label>
 
@@ -229,7 +159,8 @@ const handleSendToWireCalc = () => {
           </div>
         </div>
 
-        <!-- 建物構造 -->
+        <!-- 建物 -->
+
         <div class="form-group">
           <label class="form-label"> 建物構造 </label>
 
@@ -237,7 +168,9 @@ const handleSendToWireCalc = () => {
             <button
               type="button"
               class="segment-btn"
-              :class="{ active: buildingType === 'wooden' }"
+              :class="{
+                active: buildingType === 'wooden',
+              }"
               @click="buildingType = 'wooden'"
             >
               木造・戸建て
@@ -246,7 +179,9 @@ const handleSendToWireCalc = () => {
             <button
               type="button"
               class="segment-btn"
-              :class="{ active: buildingType === 'reinforced' }"
+              :class="{
+                active: buildingType === 'reinforced',
+              }"
               @click="buildingType = 'reinforced'"
             >
               鉄筋・マンション
@@ -254,7 +189,8 @@ const handleSendToWireCalc = () => {
           </div>
         </div>
 
-        <!-- 部屋種類 -->
+        <!-- 部屋 -->
+
         <div class="form-group full-width">
           <label class="form-label" for="room-select"> 部屋の種類・用途 </label>
 
@@ -264,34 +200,35 @@ const handleSendToWireCalc = () => {
               :key="opt.value"
               :value="opt.value"
             >
-              {{ opt.label }} ({{ opt.desc }})
+              {{ opt.label }}
+              ({{ opt.desc }})
             </option>
           </select>
         </div>
       </div>
 
       <!-- 詳細条件 -->
+
       <div class="advanced-toggle-wrapper">
         <button
           type="button"
           class="btn-toggle-advanced"
           @click="showAdvanced = !showAdvanced"
         >
-          <span>
-            {{
-              showAdvanced
-                ? "▲ 詳細環境条件を閉じる"
-                : "▼ 日当たり・人数などの詳細条件を設定"
-            }}
-          </span>
+          {{
+            showAdvanced
+              ? "▲ 詳細環境条件を閉じる"
+              : "▼ 日当たり・人数などの詳細条件を設定"
+          }}
         </button>
       </div>
 
       <div v-if="showAdvanced" class="advanced-panel">
         <div class="form-grid">
           <!-- 人数 -->
+
           <div class="form-group">
-            <label class="form-label" for="person-input"> 想定在室人数 </label>
+            <label class="form-label"> 想定在室人数 </label>
 
             <div class="stepper-input">
               <button
@@ -310,15 +247,23 @@ const handleSendToWireCalc = () => {
               </button>
             </div>
 
-            <span class="field-hint"> ※標準2人を超える分は人熱負荷を加算 </span>
+            <span class="field-hint">
+              ※標準2人を超える分は 人熱負荷を加算
+            </span>
           </div>
 
-          <!-- 環境条件 -->
+          <!-- 環境 -->
+
           <div class="form-group full-width">
-            <label class="form-label"> 部屋の環境影響（熱負荷要素） </label>
+            <label class="form-label"> 部屋の環境影響 </label>
 
             <div class="chip-group">
-              <label class="chip-label" :class="{ active: hasStrongSunlight }">
+              <label
+                class="chip-label"
+                :class="{
+                  active: hasStrongSunlight,
+                }"
+              >
                 <input
                   v-model="hasStrongSunlight"
                   type="checkbox"
@@ -328,7 +273,12 @@ const handleSendToWireCalc = () => {
                 ☀️ 日当たり強 / 南西向き大開口窓 (+10%)
               </label>
 
-              <label class="chip-label" :class="{ active: isTopFloor }">
+              <label
+                class="chip-label"
+                :class="{
+                  active: isTopFloor,
+                }"
+              >
                 <input
                   v-model="isTopFloor"
                   type="checkbox"
@@ -338,7 +288,12 @@ const handleSendToWireCalc = () => {
                 🏢 最上階 / 屋根直下 (+10%)
               </label>
 
-              <label class="chip-label" :class="{ active: hasHighCeiling }">
+              <label
+                class="chip-label"
+                :class="{
+                  active: hasHighCeiling,
+                }"
+              >
                 <input
                   v-model="hasHighCeiling"
                   type="checkbox"
@@ -353,9 +308,9 @@ const handleSendToWireCalc = () => {
       </div>
     </section>
 
-    <!-- ==========================================
-         計算結果
-         ========================================== -->
+    <!-- ========================================
+         選定結果
+         ======================================== -->
 
     <section
       class="result-section"
@@ -368,23 +323,33 @@ const handleSendToWireCalc = () => {
 
         <h3 class="result-title">
           {{ selectionResult.selectedSpec.tatamiStandard }}
+
           （{{ selectionResult.selectedSpec.capacityKw }} kW）
         </h3>
       </div>
 
+      <!-- 畳数 -->
+
       <div class="tatami-info">
         <div class="info-pill">
           入力面積:
-          <strong> {{ selectionResult.baseTatami }} 畳 </strong>
+          <strong>
+            {{ selectionResult.baseTatami }}
+            畳
+          </strong>
         </div>
 
         <div class="info-pill highlight">
           補正後実効畳数:
-          <strong> {{ selectionResult.effectiveTatami }} 畳相当 </strong>
+          <strong>
+            {{ selectionResult.effectiveTatami }}
+            畳相当
+          </strong>
         </div>
       </div>
 
       <!-- 計算根拠 -->
+
       <div
         v-if="selectionResult.breakdownNotes.length > 0"
         class="breakdown-box"
@@ -398,9 +363,9 @@ const handleSendToWireCalc = () => {
         </ul>
       </div>
 
-      <!-- ==========================================
-           電気設備スペック
-           ========================================== -->
+      <!-- ======================================
+           スペック
+           ====================================== -->
 
       <div class="spec-grid">
         <div class="spec-item">
@@ -414,10 +379,25 @@ const handleSendToWireCalc = () => {
         </div>
 
         <div class="spec-item">
-          <span class="spec-label"> 運転電流（定格 / 最大） </span>
+          <span class="spec-label"> 定格運転電流 </span>
 
           <span class="spec-value">
-            {{ selectionResult.selectedSpec.ratedCurrentA }}A /
+            {{ selectionResult.selectedSpec.ratedCurrentA }}A
+          </span>
+        </div>
+
+        <div class="spec-item">
+          <span class="spec-label"> 最大運転電流 </span>
+
+          <span class="spec-value emphasize">
+            {{ selectionResult.selectedSpec.maxCurrentA }}A
+          </span>
+        </div>
+
+        <div class="spec-item">
+          <span class="spec-label"> 配線計算使用電流 </span>
+
+          <span class="spec-value emphasize">
             {{ selectionResult.selectedSpec.maxCurrentA }}A
           </span>
         </div>
@@ -441,29 +421,15 @@ const handleSendToWireCalc = () => {
         </div>
       </div>
 
-      <!-- ==========================================
-           配線計算へ渡す電流の説明
-           ========================================== -->
+      <!-- 注意 -->
 
-      <div class="calculation-current-note">
-        <strong>
-          配線計算へ反映する電流：
-          {{ selectionResult.selectedSpec.maxCurrentA }}A
-        </strong>
-
-        <span> ※定格運転電流ではなく最大運転電流を使用 </span>
-      </div>
-
-      <!-- 推奨文 -->
       <div class="recommendation-note">
         <p>
           {{ selectionResult.recommendationNote }}
         </p>
       </div>
 
-      <!-- ==========================================
-           配線計算へ送る
-           ========================================== -->
+      <!-- 配線計算へ -->
 
       <div class="action-row">
         <button
@@ -471,24 +437,29 @@ const handleSendToWireCalc = () => {
           class="btn btn-primary"
           @click="handleSendToWireCalc"
         >
-          この電線条件を配線計算に反映
+          この電線サイズ （{{
+            selectionResult.selectedSpec.recommendedWireSize
+          }}） で電圧降下計算へ送る
         </button>
       </div>
     </section>
 
-    <!-- ==========================================
-         マスタ一覧
-         ========================================== -->
+    <!-- ========================================
+         マスタ
+         ======================================== -->
 
     <section class="master-table-section">
-      <button
-        type="button"
-        class="accordion-toggle"
-        @click="showSpecTable = !showSpecTable"
-      >
-        <span> エアコン能力・電気設備規格マスタ一覧 </span>
+      <button type="button" class="accordion-toggle" @click="toggleSpecTable">
+        <span> エアコン能力・ 電気設備規格マスタ一覧 </span>
 
-        <span class="arrow" :class="{ 'is-open': showSpecTable }"> ▼ </span>
+        <span
+          class="arrow"
+          :class="{
+            'is-open': showSpecTable,
+          }"
+        >
+          ▼
+        </span>
       </button>
 
       <div v-if="showSpecTable" class="table-wrapper">
@@ -500,7 +471,7 @@ const handleSendToWireCalc = () => {
               <th>適合(木造)</th>
               <th>適合(鉄筋)</th>
               <th>電圧</th>
-              <th>運転電流</th>
+              <th>定格電流</th>
               <th>最大電流</th>
               <th>ブレーカー</th>
               <th>推奨電線</th>
@@ -509,7 +480,7 @@ const handleSendToWireCalc = () => {
 
           <tbody>
             <tr
-              v-for="spec in AC_SPECS"
+              v-for="spec in acMasterSpecs"
               :key="spec.capacityKw"
               :class="{
                 'is-selected':
@@ -522,7 +493,10 @@ const handleSendToWireCalc = () => {
                 </strong>
               </td>
 
-              <td>{{ spec.capacityKw }} kW</td>
+              <td>
+                {{ spec.capacityKw }}
+                kW
+              </td>
 
               <td>～{{ spec.minTatami }}畳</td>
 
@@ -532,7 +506,9 @@ const handleSendToWireCalc = () => {
 
               <td>{{ spec.ratedCurrentA }}A</td>
 
-              <td>{{ spec.maxCurrentA }}A</td>
+              <td>
+                <strong> {{ spec.maxCurrentA }}A </strong>
+              </td>
 
               <td>{{ spec.breakerAmp }}A ({{ spec.breakerPoles }})</td>
 
@@ -679,7 +655,6 @@ const handleSendToWireCalc = () => {
 .segment-btn.active {
   background-color: #0284c7;
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .advanced-toggle-wrapper {
@@ -695,10 +670,6 @@ const handleSendToWireCalc = () => {
   cursor: pointer;
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
-}
-
-.btn-toggle-advanced:hover {
-  background-color: rgba(56, 189, 248, 0.1);
 }
 
 .advanced-panel {
@@ -764,7 +735,6 @@ const handleSendToWireCalc = () => {
   color: #cbd5e1;
   cursor: pointer;
   user-select: none;
-  transition: all 0.2s ease;
 }
 
 .chip-label.active {
@@ -895,28 +865,6 @@ const handleSendToWireCalc = () => {
   font-weight: 700;
 }
 
-/* 配線計算に使用する電流の明示 */
-.calculation-current-note {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  background-color: #172554;
-  border: 1px solid #2563eb;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-}
-
-.calculation-current-note strong {
-  color: #60a5fa;
-  font-size: 0.95rem;
-}
-
-.calculation-current-note span {
-  color: #94a3b8;
-  font-size: 0.75rem;
-}
-
 .recommendation-note {
   font-size: 0.875rem;
   line-height: 1.5;
@@ -944,7 +892,6 @@ const handleSendToWireCalc = () => {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .btn-primary {
@@ -954,7 +901,6 @@ const handleSendToWireCalc = () => {
 
 .btn-primary:hover {
   background-color: #0369a1;
-  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
 }
 
 .master-table-section {
@@ -974,10 +920,6 @@ const handleSendToWireCalc = () => {
   font-weight: 600;
   color: #94a3b8;
   cursor: pointer;
-}
-
-.accordion-toggle:hover {
-  color: #f8fafc;
 }
 
 .arrow {
@@ -1005,6 +947,7 @@ const handleSendToWireCalc = () => {
 .spec-table td {
   padding: 0.6rem 0.75rem;
   border: 1px solid #334155;
+  white-space: nowrap;
 }
 
 .spec-table th {
