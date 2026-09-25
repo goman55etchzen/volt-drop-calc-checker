@@ -1,4 +1,4 @@
-<!-- src/components/AirConditioner.vue -->
+<!-- src/components/AC/AirConditioner.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import {

@@ -1,5 +1,5 @@
 // src/utils/airconCalc.ts
-import { CableTypeCode } from '@/types/appDefinitions';
+import { CableTypeCode } from '../types/appDefinitions';
 
 // ==========================================
 // 1. エアコン専用 型定義
@@ -234,11 +234,21 @@ export function calculateAirconSelection(
   roomType: RoomType = 'living'
 ): AirconSelectionResult {
   const baseTatami = convertToTatami(areaValue, unit);
+  if (baseTatami <= 0) {
+    return {
+      effectiveTatami: 0,
+      baseTatami: 0,
+      selectedSpec: AC_SPECS[0],
+      isOverCapacity: false,
+      recommendationNote: '広さを入力してください。'
+    };
+  }
+
   const multiplier = getRoomMultiplier(roomType);
   const effectiveTatami = Math.round(baseTatami * multiplier * 10) / 10;
 
-  // 実効畳数に応じた選定ロジック
-  let selectedSpec = AC_SPECS[0];
+  // 実効畳数を安全にカバーできるスペック（木造基準 minTatami 基準）の最小スペックを選定
+  let selectedSpec = AC_SPECS[AC_SPECS.length - 1];
   let isOverCapacity = false;
 
   for (let i = 0; i < AC_SPECS.length; i++) {
@@ -247,14 +257,13 @@ export function calculateAirconSelection(
       selectedSpec = spec;
       break;
     }
-    // 範囲内または超過時の切り上げ選定
-    if (effectiveTatami > spec.minTatami && effectiveTatami <= spec.maxTatami) {
-      selectedSpec = spec;
-      break;
-    }
-    // 最大クラスを超えた場合
-    if (i === AC_SPECS.length - 1 && effectiveTatami > spec.maxTatami) {
-      selectedSpec = spec;
+  }
+
+  // 最大スペックの対応範囲を超えた場合のハンドリング
+  const maxSpec = AC_SPECS[AC_SPECS.length - 1];
+  if (effectiveTatami > maxSpec.minTatami) {
+    selectedSpec = maxSpec;
+    if (effectiveTatami > maxSpec.maxTatami) {
       isOverCapacity = true;
     }
   }
