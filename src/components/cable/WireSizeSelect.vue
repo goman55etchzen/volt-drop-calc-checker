@@ -19,7 +19,7 @@
         
         <div class="size-grid">
           <button
-            v-for="wire in WIRE_SIZES"
+            v-for="wire in currentWireList"
             :key="wire.name"
             type="button"
             class="size-option-btn"
@@ -36,10 +36,28 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { WireSizeSelectProps, WireSizeSelectEmits } from '@/types/base';
-import { WIRE_SIZES } from '@/types/appDefinitions';
-defineProps<WireSizeSelectProps>();
+import { WIRE_SIZES, CABLE_TYPES, CableTypeCode } from '@/types/appDefinitions';
+
+interface Props extends WireSizeSelectProps {
+  selectedCableId?: CableTypeCode;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  selectedCableId: 'vvf'
+});
+
 const emit = defineEmits<WireSizeSelectEmits>();
+
+// 選択中のケーブル種別に応じた電線サイズ・許容電流リストを取得
+const currentWireList = computed(() => {
+  const targetCable = CABLE_TYPES.find((c) => c.id === props.selectedCableId);
+  if (targetCable && targetCable.sizes && targetCable.sizes.length > 0) {
+    return targetCable.sizes;
+  }
+  return WIRE_SIZES; // フォールバック用デフォルト定義
+});
 
 const selectWire = (name: string) => {
   emit('update:selectedWireName', name);
@@ -102,7 +120,7 @@ const selectWire = (name: string) => {
   height: 100vh;
   background-color: rgba(15, 23, 42, 0.8);
   display: flex;
-  align-items: flex-end; /* スマホ用に下部に配置（ボトムシート風） */
+  align-items: flex-end;
   justify-content: center;
   z-index: 1000;
   box-sizing: border-box;
@@ -208,7 +226,6 @@ const selectWire = (name: string) => {
   color: #e0f2fe;
 }
 
-/* PC向けレスポンシブ（ボトムシートを中央配置のダイアログへ変換） */
 @media (min-width: 768px) {
   .modal-overlay {
     align-items: center;

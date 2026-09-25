@@ -1,3 +1,4 @@
+<!-- src/common/Home.vue -->
 <template>
   <div class="home-container">
     <!-- 4モード切り替えタブ -->
@@ -9,6 +10,14 @@
         @click="currentMode = 'normal'"
       >
         許容配線長
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        :class="{ active: currentMode === 'aircon' }"
+        @click="currentMode = 'aircon'"
+      >
+        エアコン選定
       </button>
       <button
         type="button"
@@ -25,15 +34,6 @@
         @click="currentMode = 'motor'"
       >
         電動機 電流計算
-      </button>
-      <!-- 追加: エアコン選定タブ -->
-      <button
-        type="button"
-        class="tab-btn"
-        :class="{ active: currentMode === 'aircon' }"
-        @click="currentMode = 'aircon'"
-      >
-        エアコン選定
       </button>
     </div>
 
@@ -61,6 +61,7 @@
 
           <WireSizeSelect
             v-model:selectedWireName="selectedWireName"
+            :selected-cable-id="selectedCableId"
             :is-open="isSizePickerOpen"
             @open="openSizePicker"
             @close="closeSizePicker"
@@ -104,23 +105,25 @@
       </div>
     </div>
 
-    <!-- モード2: 距離固定 逆算選定 -->
+    <!-- モード2: エアコン選定 & 専用回路計算 -->
+    <AirConditioner
+      v-else-if="currentMode === 'aircon'"
+      @select-cable="handleAirconCableSelect"
+    />
+
+    <!-- モード3: 距離固定 逆算選定 -->
     <ReversedMode
       v-else-if="currentMode === 'reversed'"
       v-model:voltage="voltage"
       v-model:targetPercent="targetPercent"
     />
 
-    <!-- モード3: 電動機 電流計算 -->
+    <!-- モード4: 電動機 電流計算 -->
     <MotorCalc v-else-if="currentMode === 'motor'" />
 
-    <!-- 追加 モード4: エアコン選定 -->
-    <AirConditioner
-      v-else-if="currentMode === 'aircon'"
-      @select-cable="handleSelectCableFromAircon"
-    />
-
-    <!-- 全モード共通 フッター -->
+    <!-- =====================================================
+         全モード共通の画面下部（フッター）に配置するご利用上の注意
+         ===================================================== -->
     <Caution />
   </div>
 </template>
@@ -144,8 +147,9 @@ import MotorCalc from '@/components/Motor/MotorCalc.vue'
 import AirConditioner from '@/components/AC/AirConditioner.vue'
 import Caution from '@/components/common/Caution.vue'
 
-// AppMode 型に 'aircon' が含まれていない場合はローカルで拡張
-const currentMode = ref<AppMode | 'aircon'>('normal')
+type ExtendedAppMode = AppMode | 'aircon'
+
+const currentMode = ref<ExtendedAppMode>('normal')
 const voltage = ref<number>(100)
 const targetPercent = ref<number>(2.0)
 
@@ -161,11 +165,13 @@ const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   targetPercent
 )
 
-// エアコン選定から「配線計算」ボタンを押した時の連携処理
-const handleSelectCableFromAircon = (payload: { cableType: CableTypeCode; wireSize: string }) => {
+/**
+ * エアコン選定から「配線計算へ反映」を実行した際のイベントハンドラー
+ */
+const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: string }) => {
   selectedCableId.value = payload.cableType
   selectedWireName.value = payload.wireSize
-  currentMode.value = 'normal' // 許容配線長計算モードへ切り替え
+  currentMode.value = 'normal'
 }
 </script>
 
@@ -198,7 +204,7 @@ const handleSelectCableFromAircon = (payload: { cableType: CableTypeCode; wireSi
   .mode-tabs {
     gap: 16px;
     margin-bottom: 24px;
-    max-width: 800px; /* タブ数増加に伴いPC時の最大幅を少し拡張 */
+    max-width: 720px;
   }
 }
 

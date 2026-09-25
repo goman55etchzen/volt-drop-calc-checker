@@ -1,12 +1,7 @@
 <!-- src/components/AC/AirConditioner.vue -->
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import {
-  AreaUnit,
-  RoomType,
-  calculateAirconSelection,
-  AC_SPECS
-} from '@/utils/airconCalc';
+import { useAirconCable } from '@/composables/useAirconCable';
+import { AreaUnit, RoomType } from '@/utils/airconCalc';
 import { CableTypeCode } from '@/types/appDefinitions';
 
 // ==========================================
@@ -17,12 +12,17 @@ const emit = defineEmits<{
 }>();
 
 // ==========================================
-// 状態管理（State）
+// Composable の利用
 // ==========================================
-const areaValue = ref<number>(12);
-const areaUnit = ref<AreaUnit>('tatami');
-const roomType = ref<RoomType>('living');
-const showSpecTable = ref<boolean>(false);
+const {
+  areaValue,
+  areaUnit,
+  roomType,
+  showSpecTable,
+  selectionResult,
+  acMasterSpecs,
+  getCableSelectionPayload
+} = useAirconCable();
 
 // ==========================================
 // 選択肢オプション定義
@@ -34,29 +34,22 @@ const unitOptions: { label: string; value: AreaUnit }[] = [
 ];
 
 const roomOptions: { label: string; value: RoomType; desc: string }[] = [
-  { label: '居間・リビング', value: 'living', desc: '標準的な補正（×1.10）' },
-  { label: 'LDK・吹抜け', value: 'ldk', desc: '吹き抜け・開放空間（×1.20）' },
-  { label: '台所・キッチン', value: 'kitchen', desc: '火気・調理器具あり（×1.30）' },
-  { label: '和室', value: 'japanese', desc: '日当たり等考慮（×1.05）' },
-  { label: '寝室', value: 'bedroom', desc: '夜間主体の洋室（×1.00）' },
-  { label: '子供部屋・書斎', value: 'kids', desc: '標準的な洋室（×1.00）' }
+  { label: '居間・リビング', value: 'living', desc: '標準的な補正 (×1.10)' },
+  { label: 'LDK・吹抜け', value: 'ldk', desc: '吹き抜け・開放空間 (×1.20)' },
+  { label: '台所・キッチン', value: 'kitchen', desc: '火気・調理器具あり (×1.30)' },
+  { label: '和室', value: 'japanese', desc: '日当たり等考慮 (×1.05)' },
+  { label: '寝室', value: 'bedroom', desc: '夜間主体の洋室 (×1.00)' },
+  { label: '子供部屋・書斎', value: 'kids', desc: '標準的な洋室 (×1.00)' }
 ];
-
-// ==========================================
-// 算出プロパティ（Computed）
-// ==========================================
-const selectionResult = computed(() => {
-  return calculateAirconSelection(areaValue.value || 0, areaUnit.value, roomType.value);
-});
 
 // ==========================================
 // イベントハンドラー
 // ==========================================
 const handleSendToWireCalc = () => {
-  const spec = selectionResult.value.selectedSpec;
+  const payload = getCableSelectionPayload();
   emit('select-cable', {
-    cableType: spec.cableTypeCode,
-    wireSize: spec.recommendedWireSize
+    cableType: payload.cableType,
+    wireSize: payload.wireSize
   });
 };
 </script>
@@ -150,10 +143,9 @@ const handleSendToWireCalc = () => {
         <p>{{ selectionResult.recommendationNote }}</p>
       </div>
 
-      <!-- 配線計算への連携ボタン -->
       <div class="action-row">
         <button type="button" class="btn btn-primary" @click="handleSendToWireCalc">
-          この電線サイズで電圧降下・許容電流を計算
+          この電線条件を配線計算に反映
         </button>
       </div>
     </section>
@@ -184,7 +176,7 @@ const handleSendToWireCalc = () => {
           </thead>
           <tbody>
             <tr
-              v-for="spec in AC_SPECS"
+              v-for="spec in acMasterSpecs"
               :key="spec.capacityKw"
               :class="{ 'is-selected': spec.capacityKw === selectionResult.selectedSpec.capacityKw }"
             >
@@ -208,56 +200,54 @@ const handleSendToWireCalc = () => {
   max-width: 800px;
   margin: 0 auto;
   padding: 1.5rem;
-  background-color: #ffffff;
+  background-color: transparent;
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #333333;
+  color: #f8fafc;
 }
 
 .card-header {
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 1px solid #334155;
   padding-bottom: 0.75rem;
+  text-align: center;
 }
 
 .title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 0.25rem 0;
+  color: #ffffff;
+  margin: 0 0 0.4rem 0;
 }
 
 .subtitle {
   font-size: 0.875rem;
-  color: #64748b;
+  color: #94a3b8;
   margin: 0;
 }
 
 /* フォーム関連 */
 .input-section {
-  background-color: #f8fafc;
-  padding: 1.25rem;
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
+  background-color: transparent;
+  padding: 0.5rem 0 1.5rem 0;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.5rem;
 }
 
 .form-label {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #334155;
+  color: #e2e8f0;
 }
 
 .input-with-unit {
@@ -266,16 +256,23 @@ const handleSendToWireCalc = () => {
 }
 
 .form-input, .form-select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  background-color: #223046;
+  border: 1px solid #334155;
+  border-radius: 6px;
   font-size: 0.95rem;
+  color: #ffffff;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input::placeholder {
+  color: #64748b;
 }
 
 .form-input:focus, .form-select:focus {
-  border-color: #2563eb;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
 }
 
 .form-input {
@@ -284,21 +281,26 @@ const handleSendToWireCalc = () => {
 }
 
 .unit-select {
-  width: 110px;
+  width: 120px;
+}
+
+.form-select option {
+  background-color: #1e293b;
+  color: #ffffff;
 }
 
 /* 計算結果カード */
 .result-section {
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 6px;
+  background-color: #131d31;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .result-section.is-warning {
-  background-color: #fffbeb;
-  border-color: #fde68a;
+  border-color: #f59e0b;
 }
 
 .result-header {
@@ -313,14 +315,14 @@ const handleSendToWireCalc = () => {
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 4px;
 }
 
 .result-title {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #0369a1;
+  color: #38bdf8;
   margin: 0;
 }
 
@@ -332,16 +334,18 @@ const handleSendToWireCalc = () => {
 }
 
 .info-pill {
-  font-size: 0.875rem;
-  background-color: #ffffff;
-  padding: 0.375rem 0.75rem;
+  font-size: 0.85rem;
+  background-color: #1e293b;
+  color: #cbd5e1;
+  padding: 0.35rem 0.8rem;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #334155;
 }
 
 .info-pill.highlight {
-  border-color: #38bdf8;
-  color: #0369a1;
+  border-color: #0284c7;
+  color: #38bdf8;
+  background-color: rgba(2, 132, 199, 0.15);
 }
 
 /* スペック格子 */
@@ -349,10 +353,10 @@ const handleSendToWireCalc = () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
-  background-color: #ffffff;
+  background-color: #0f172a;
   padding: 1rem;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #1e293b;
   margin-bottom: 1rem;
 }
 
@@ -364,28 +368,29 @@ const handleSendToWireCalc = () => {
 
 .spec-label {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .spec-value {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #f1f5f9;
 }
 
 .spec-value.emphasize {
-  color: #2563eb;
+  color: #38bdf8;
   font-weight: 700;
 }
 
 .recommendation-note {
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #334155;
-  background-color: rgba(255, 255, 255, 0.7);
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+  color: #cbd5e1;
+  background-color: rgba(30, 41, 59, 0.6);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border-left: 3px solid #0284c7;
+  margin-bottom: 1.25rem;
 }
 
 .recommendation-note p {
@@ -398,27 +403,28 @@ const handleSendToWireCalc = () => {
 }
 
 .btn {
-  padding: 0.6rem 1.2rem;
+  padding: 0.65rem 1.3rem;
   font-size: 0.9rem;
   font-weight: 600;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-primary {
-  background-color: #2563eb;
+  background-color: #0284c7;
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #1d4ed8;
+  background-color: #0369a1;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
 }
 
 /* マスタテーブル（アコーディオン） */
 .master-table-section {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #334155;
   padding-top: 1rem;
 }
 
@@ -432,8 +438,13 @@ const handleSendToWireCalc = () => {
   padding: 0.5rem 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #475569;
+  color: #94a3b8;
   cursor: pointer;
+  transition: color 0.2s;
+}
+
+.accordion-toggle:hover {
+  color: #f8fafc;
 }
 
 .arrow {
@@ -458,18 +469,27 @@ const handleSendToWireCalc = () => {
 }
 
 .spec-table th, .spec-table td {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #334155;
 }
 
 .spec-table th {
-  background-color: #f8fafc;
-  color: #475569;
+  background-color: #1e293b;
+  color: #cbd5e1;
   font-weight: 600;
 }
 
+.spec-table tr {
+  background-color: #0f172a;
+}
+
 .spec-table tr.is-selected {
-  background-color: #eff6ff;
+  background-color: #1e3a5f;
+  color: #38bdf8;
   font-weight: 600;
+}
+
+.spec-table tr.is-selected td {
+  border-color: #0284c7;
 }
 </style>
