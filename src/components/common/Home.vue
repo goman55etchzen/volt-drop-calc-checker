@@ -11,6 +11,7 @@
       >
         許容配線長
       </button>
+
       <button
         type="button"
         class="tab-btn"
@@ -19,6 +20,7 @@
       >
         エアコン選定
       </button>
+
       <button
         type="button"
         class="tab-btn"
@@ -27,6 +29,7 @@
       >
         距離固定 逆算
       </button>
+
       <button
         type="button"
         class="tab-btn"
@@ -37,14 +40,14 @@
       </button>
     </div>
 
-    <!-- モード1: 許容配線長 算出 -->
+    <!-- ==========================================
+         モード1：許容配線長
+         ========================================== -->
     <div v-if="currentMode === 'normal'" class="layout-grid">
-      <!-- スマホでは上、PCでは右に配置 -->
       <div class="result-column">
         <ResultCard :max-len="maxLen" :is-over-current="isOverCurrent" />
       </div>
 
-      <!-- スマホでは下、PCでは左に配置 -->
       <div class="form-column">
         <div class="form-card">
           <CablingSelect v-model="selectedSystemId" />
@@ -70,6 +73,7 @@
           <div class="row-inputs mt-12">
             <div class="input-group">
               <label class="sub-label">電源電圧</label>
+
               <div class="voltage-toggle">
                 <button
                   type="button"
@@ -79,6 +83,7 @@
                 >
                   100V
                 </button>
+
                 <button
                   type="button"
                   class="volt-btn"
@@ -89,8 +94,10 @@
                 </button>
               </div>
             </div>
+
             <div class="input-group">
               <label class="sub-label">目標降下率 (%)</label>
+
               <input
                 v-model.number="targetPercent"
                 type="number"
@@ -105,80 +112,206 @@
       </div>
     </div>
 
-    <!-- モード2: エアコン選定 & 専用回路計算 -->
+    <!-- ==========================================
+         モード2：エアコン選定
+         ========================================== -->
     <AirConditioner
       v-else-if="currentMode === 'aircon'"
       @select-cable="handleAirconCableSelect"
     />
 
-    <!-- モード3: 距離固定 逆算選定 -->
+    <!-- ==========================================
+         モード3：距離固定 逆算
+         ========================================== -->
     <ReversedMode
       v-else-if="currentMode === 'reversed'"
       v-model:voltage="voltage"
       v-model:targetPercent="targetPercent"
     />
 
-    <!-- モード4: 電動機 電流計算 -->
+    <!-- ==========================================
+         モード4：電動機 電流計算
+         ========================================== -->
     <MotorCalc v-else-if="currentMode === 'motor'" />
 
-    <!-- =====================================================
-         全モード共通の画面下部（フッター）に配置するご利用上の注意
-         ===================================================== -->
     <Caution />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { AppMode, CableTypeCode } from '@/types/appDefinitions'
+import { ref } from "vue";
+import {
+  AppMode,
+  CableTypeCode,
+  EquipmentInputMode,
+} from "@/types/appDefinitions";
 
-import { useCabling } from '@/composables/useCabling'
-import { useEquipment } from '@/composables/useEquipment'
-import { useWire } from '@/composables/useWire'
-import { useWireSize } from '@/composables/useWireSize'
+import { useCabling } from "@/composables/useCabling";
+import { useEquipment } from "@/composables/useEquipment";
+import { useWire } from "@/composables/useWire";
+import { useWireSize } from "@/composables/useWireSize";
 
-import CablingSelect from '@/components/cable/CablingSelect.vue'
-import EquipmentSelect from '@/components/Motor/EquipmentSelect.vue'
-import WireTypeSelect from '@/components/cable/WireTypeSelect.vue'
-import WireSizeSelect from '@/components/cable/WireSizeSelect.vue'
-import ResultCard from '@/components/ResultCard.vue'
-import ReversedMode from '@/components/ReversedInputForm.vue'
-import MotorCalc from '@/components/Motor/MotorCalc.vue'
-import AirConditioner from '@/components/AC/AirConditioner.vue'
-import Caution from '@/components/common/Caution.vue'
+import CablingSelect from "@/components/cable/CablingSelect.vue";
+import EquipmentSelect from "@/components/Motor/EquipmentSelect.vue";
+import WireTypeSelect from "@/components/cable/WireTypeSelect.vue";
+import WireSizeSelect from "@/components/cable/WireSizeSelect.vue";
+import ResultCard from "@/components/ResultCard.vue";
+import ReversedMode from "@/components/ReversedInputForm.vue";
+import MotorCalc from "@/components/Motor/MotorCalc.vue";
+import AirConditioner from "@/components/AC/AirConditioner.vue";
+import Caution from "@/components/common/Caution.vue";
 
-type ExtendedAppMode = AppMode | 'aircon'
+type ExtendedAppMode = AppMode | "aircon";
 
-const currentMode = ref<ExtendedAppMode>('normal')
-const voltage = ref<number>(100)
-const targetPercent = ref<number>(2.0)
+/**
+ * 画面モード
+ */
+const currentMode = ref<ExtendedAppMode>("normal");
 
-const { inputMode, unitWatt, unitCount, customDeviceAmp, breakerAmp, totalI } = useEquipment(voltage)
-const { selectedCableId } = useWire()
-const { selectedWireName, isSizePickerOpen, openSizePicker, closeSizePicker } = useWireSize()
+/**
+ * 配線計算条件
+ */
+const voltage = ref<number>(100);
+const targetPercent = ref<number>(2.0);
 
+/**
+ * 設備・負荷
+ */
+const { inputMode, unitWatt, unitCount, customDeviceAmp, breakerAmp, totalI } =
+  useEquipment(voltage);
+
+/**
+ * 電線種類
+ */
+const { selectedCableId } = useWire();
+
+/**
+ * 電線サイズ
+ */
+const { selectedWireName, isSizePickerOpen, openSizePicker, closeSizePicker } =
+  useWireSize();
+
+/**
+ * 配線計算
+ */
 const { selectedSystemId, maxLen, isOverCurrent } = useCabling(
   voltage,
   totalI,
   selectedWireName,
   selectedCableId,
-  targetPercent
-)
+  targetPercent,
+);
 
 /**
- * エアコン選定から「配線計算へ反映」を実行した際のイベントハンドラー
+ * エアコン選定 → 配線計算への連携
+ *
+ * ここで「電線だけ」でなく、
+ *
+ * 1. 電圧
+ * 2. 設備電流入力モード
+ * 3. エアコン最大運転電流
+ * 4. ブレーカー容量
+ * 5. 電線種類
+ * 6. 電線サイズ
+ *
+ * を一括して配線計算側へ反映する。
  */
-const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: string }) => {
-  selectedCableId.value = payload.cableType
-  selectedWireName.value = payload.wireSize
-  currentMode.value = 'normal'
-}
+const handleAirconCableSelect = (payload: {
+  cableType: CableTypeCode;
+  wireSize: string;
+  voltage: 100 | 200;
+  ratedCurrentA: number;
+  maxCurrentA: number;
+  breakerAmp: number;
+  breakerPoles: string;
+}) => {
+  /**
+   * ------------------------------------------
+   * 1. 電源電圧を反映
+   * ------------------------------------------
+   */
+  voltage.value = payload.voltage;
+
+  /**
+   * ------------------------------------------
+   * 2. 電線種類を反映
+   * ------------------------------------------
+   */
+  selectedCableId.value = payload.cableType;
+
+  /**
+   * ------------------------------------------
+   * 3. 電線サイズを反映
+   * ------------------------------------------
+   */
+  selectedWireName.value = payload.wireSize;
+
+  /**
+   * ------------------------------------------
+   * 4. 設備電流を直接指定へ切り替える
+   *
+   * ここが今回の重要修正。
+   *
+   * 旧コードでは inputMode を変更していなかったため、
+   * 「電球W数×台数から算出」のままだった。
+   * ------------------------------------------
+   */
+  inputMode.value = "device_amp" as EquipmentInputMode;
+
+  /**
+   * ------------------------------------------
+   * 5. 配線計算に使用する電流
+   *
+   * エアコンは定格電流ではなく最大運転電流を
+   * 配線計算へ渡す。
+   *
+   * 例：
+   * 18畳用
+   * 定格 8.5A
+   * 最大 20.0A
+   *
+   * → 配線計算 20.0A
+   * ------------------------------------------
+   */
+  customDeviceAmp.value = payload.maxCurrentA;
+
+  /**
+   * ------------------------------------------
+   * 6. ブレーカー容量も反映
+   * ------------------------------------------
+   */
+  breakerAmp.value = payload.breakerAmp;
+
+  /**
+   * ------------------------------------------
+   * 7. エアコンの200V専用回路について
+   *
+   * エアコン側は200Vを使用する。
+   *
+   * ただし、useCabling の電圧降下計算における
+   * 「負荷回路」は2線として計算するため、
+   * selectedSystemId は 1P2W にする。
+   *
+   * 単相3線式(1P3W)は住宅側の電源方式であり、
+   * 200Vエアコンの分岐負荷を3線回路として
+   * 計算するという意味ではない。
+   * ------------------------------------------
+   */
+  selectedSystemId.value = "1P2W";
+
+  /**
+   * ------------------------------------------
+   * 8. 許容配線長モードへ遷移
+   * ------------------------------------------
+   */
+  currentMode.value = "normal";
+};
 </script>
 
 <style scoped>
 .home-container {
   width: 100%;
-  max-width: 480px; /* モバイル用 */
+  max-width: 480px;
   margin: 0 auto;
   padding: 12px 12px 40px 12px;
   background-color: #1e293b;
@@ -186,7 +319,6 @@ const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: 
   box-sizing: border-box;
 }
 
-/* PCレスポンシブ拡張 */
 @media (min-width: 1024px) {
   .home-container {
     max-width: 1200px;
@@ -231,6 +363,7 @@ const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: 
     min-height: 52px;
     font-size: 15px;
   }
+
   .tab-btn:hover {
     border-color: #38bdf8;
     color: #f8fafc;
@@ -243,7 +376,6 @@ const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: 
   border-color: #38bdf8;
 }
 
-/* モード1のレイアウト構成 */
 .layout-grid {
   display: flex;
   flex-direction: column;
@@ -256,13 +388,15 @@ const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: 
     align-items: flex-start;
     gap: 32px;
   }
+
   .form-column {
-    order: 1; /* 左側へ */
+    order: 1;
     flex: 1;
     max-width: 650px;
   }
+
   .result-column {
-    order: 2; /* 右側へ */
+    order: 2;
     width: 400px;
     flex-shrink: 0;
     position: sticky;
@@ -362,12 +496,22 @@ const handleAirconCableSelect = (payload: { cableType: CableTypeCode; wireSize: 
 }
 
 @media (max-width: 360px) {
-  .row-inputs { grid-template-columns: 1fr; }
-}
-@media (min-width: 1024px) {
-  .row-inputs { gap: 20px; }
-  .text-input { min-height: 52px; }
+  .row-inputs {
+    grid-template-columns: 1fr;
+  }
 }
 
-.mt-12 { margin-top: 12px; }
+@media (min-width: 1024px) {
+  .row-inputs {
+    gap: 20px;
+  }
+
+  .text-input {
+    min-height: 52px;
+  }
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
 </style>
