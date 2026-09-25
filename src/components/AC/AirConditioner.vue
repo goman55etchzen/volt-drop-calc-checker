@@ -36,6 +36,7 @@ const {
   acMasterSpecs,
 
   toggleSpecTable,
+  resetInputs,
   getCableSelectionPayload,
 } = useAirconCable();
 
@@ -117,7 +118,18 @@ const handleSendToWireCalc = () => {
          ======================================== -->
 
     <header class="card-header">
-      <h2 class="title">エアコン適合選定 &amp; 専用回路計算</h2>
+      <div class="header-main">
+        <h2 class="title">エアコン適合選定 &amp; 専用回路計算</h2>
+
+        <button
+          type="button"
+          class="btn-reset"
+          title="入力内容を初期状態に戻します"
+          @click="resetInputs"
+        >
+          🔄 設定リセット
+        </button>
+      </div>
 
       <p class="subtitle">
         部屋の広さ・環境条件から エアコン能力と電源回路規格を算定します
@@ -545,17 +557,24 @@ const handleSendToWireCalc = () => {
   margin-bottom: 1.75rem;
   border-bottom: 1px solid #1e293b;
   padding-bottom: 1rem;
-  text-align: center;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .title {
   font-size: 1.35rem;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 0.4rem 0;
+  margin: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
 }
 
@@ -563,6 +582,24 @@ const handleSendToWireCalc = () => {
 .title::before {
   content: "❄️"; /* アイコン演出 */
   font-size: 1.2rem;
+}
+
+.btn-reset {
+  background-color: #1a2638;
+  border: 1px solid #2d3d54;
+  color: #94a3b8;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+  background-color: #2d3d54;
+  color: #f8fafc;
+  border-color: #0284c7;
 }
 
 .subtitle {

@@ -67,45 +67,36 @@ const DEFAULTS: AirconInputParams = {
 };
 
 // ==========================================
+// モジュールスコープの状態（画面を切り替えても値を保持）
+// ==========================================
+
+const areaValue = ref<number>(DEFAULTS.areaValue);
+const areaUnit = ref<AreaUnit>(DEFAULTS.unit!);
+const roomType = ref<RoomType>(DEFAULTS.roomType!);
+const buildingType = ref<BuildingType>(DEFAULTS.buildingType!);
+const personCount = ref<number>(DEFAULTS.personCount!);
+const hasStrongSunlight = ref<boolean>(DEFAULTS.hasStrongSunlight!);
+const isTopFloor = ref<boolean>(DEFAULTS.isTopFloor!);
+const hasHighCeiling = ref<boolean>(DEFAULTS.hasHighCeiling!);
+
+const showSpecTable = ref<boolean>(false);
+
+// ==========================================
 // Composable
 // ==========================================
 
 export function useAirconCable(initialParams?: Partial<AirconInputParams>) {
-  // ==========================================
-  // 入力状態
-  // ==========================================
-
-  const areaValue = ref<number>(initialParams?.areaValue ?? DEFAULTS.areaValue);
-
-  const areaUnit = ref<AreaUnit>(initialParams?.unit ?? DEFAULTS.unit!);
-
-  const roomType = ref<RoomType>(initialParams?.roomType ?? DEFAULTS.roomType!);
-
-  const buildingType = ref<BuildingType>(
-    initialParams?.buildingType ?? DEFAULTS.buildingType!,
-  );
-
-  const personCount = ref<number>(
-    initialParams?.personCount ?? DEFAULTS.personCount!,
-  );
-
-  const hasStrongSunlight = ref<boolean>(
-    initialParams?.hasStrongSunlight ?? DEFAULTS.hasStrongSunlight!,
-  );
-
-  const isTopFloor = ref<boolean>(
-    initialParams?.isTopFloor ?? DEFAULTS.isTopFloor!,
-  );
-
-  const hasHighCeiling = ref<boolean>(
-    initialParams?.hasHighCeiling ?? DEFAULTS.hasHighCeiling!,
-  );
-
-  // ==========================================
-  // UI
-  // ==========================================
-
-  const showSpecTable = ref<boolean>(false);
+  // 初期引数が渡された場合のみ、値を更新する（初期化ロジックの互換性維持）
+  if (initialParams) {
+    if (initialParams.areaValue !== undefined) areaValue.value = initialParams.areaValue;
+    if (initialParams.unit !== undefined) areaUnit.value = initialParams.unit;
+    if (initialParams.roomType !== undefined) roomType.value = initialParams.roomType;
+    if (initialParams.buildingType !== undefined) buildingType.value = initialParams.buildingType;
+    if (initialParams.personCount !== undefined) personCount.value = initialParams.personCount;
+    if (initialParams.hasStrongSunlight !== undefined) hasStrongSunlight.value = initialParams.hasStrongSunlight;
+    if (initialParams.isTopFloor !== undefined) isTopFloor.value = initialParams.isTopFloor;
+    if (initialParams.hasHighCeiling !== undefined) hasHighCeiling.value = initialParams.hasHighCeiling;
+  }
 
   // ==========================================
   // 入力パラメータ
