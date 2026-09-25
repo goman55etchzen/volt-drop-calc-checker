@@ -1,3 +1,4 @@
+// src/composables/useEquipment.ts
 import { ref, computed, Ref } from 'vue';
 import { EquipmentInputMode } from '@/types/appDefinitions';
 

@@ -91,11 +91,11 @@ export interface CableType {
   id: CableTypeCode;
   name: string;
   desc: string;
-  maxTemp: number; // 最高許容温度 (60, 75, 90)
+  maxTemp: number;
   tempCategory: '60' | '75' | '90' | 'outdoor';
   limits: Record<string, number>;
-  isIndoorWiringForbidden?: boolean; // 屋内配線（固定配線）使用不可フラグ
-  warningMessage?: string; // 警告メッセージ
+  isIndoorWiringForbidden?: boolean;
+  warningMessage?: string;
 }
 
 export interface WireSize {
@@ -476,8 +476,8 @@ export const CABLE_SPECS: CableSpec[] = [
   {
     size: '0.75 sq',
     area: 0.75,
-    r: 24.4,     // 導体抵抗 (Ω/km, 20℃)
-    x: 0.110,    // リアクタンス (Ω/km)
+    r: 24.4,
+    x: 0.110,
     baseAllowAmp: {
       vv: 7, vvr: 7, iv: 7, em_eef: 8, em_ief: 8, hiv: 8,
       cv: 0, cvd: 0, cvt: 0, cvq: 0, cv_2c: 0, cv_3c: 0, cv_4c: 0, mlfc: 0,
@@ -487,8 +487,8 @@ export const CABLE_SPECS: CableSpec[] = [
   {
     size: '1.25 sq',
     area: 1.25,
-    r: 14.7,     // 導体抵抗 (Ω/km, 20℃)
-    x: 0.110,    // リアクタンス (Ω/km)
+    r: 14.7,
+    x: 0.110,
     baseAllowAmp: {
       vv: 12, vvr: 12, iv: 12, em_eef: 13, em_ief: 13, hiv: 13,
       cv: 0, cvd: 0, cvt: 0, cvq: 0, cv_2c: 0, cv_3c: 0, cv_4c: 0, mlfc: 0,
