@@ -12,7 +12,6 @@ export type { CapacitorProduct, CapacitorDimensions } from "@/types/capacitorMas
  */
 export async function fetchCapacitorCatalog(): Promise<CapacitorProduct[]> {
   try {
-    // 変更: 静的ファイルではなく、VercelのAPIルートを叩く
     const response = await fetch("/api/capacitors");
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -20,8 +19,7 @@ export async function fetchCapacitorCatalog(): Promise<CapacitorProduct[]> {
     
     const masterData = await response.json();
     
-    // API側でJSONの階層をどう組んだかによりますが、
-    // { products: [...] } で返している前提の処理です
+    // API側で { products: [...] } の形式で返している前提
     return flattenCapacitorMaster(masterData.products);
     
   } catch (error) {
@@ -30,4 +28,34 @@ export async function fetchCapacitorCatalog(): Promise<CapacitorProduct[]> {
   }
 }
 
-// ※ findClosestCapacitorGroup 等の関数はそのまま変更なしで動作します
+/**
+ * 電圧・周波数・目標静電容量(μF)から最も適合する製品群(group_id)を抽出する
+ */
+export function findClosestCapacitorGroup(
+  products: CapacitorProduct[],
+  targetVoltage: number,
+  frequency: number,
+  targetUf: number | null | undefined
+): CapacitorProduct[] {
+  if (!targetUf || targetUf <= 0 || products.length === 0) {
+    return [];
+  }
+
+  // 電圧のフィルタリングを範囲許容（ターゲット電圧以上〜 +10% 程度）
+  // 理由: マスタデータ上の定格電圧が 210V や 220V の場合でも、200V系として抽出できるようにするため
+  const voltMatched = products.filter((p) => {
+    return p.voltage >= targetVoltage && p.voltage <= targetVoltage * 1.1;
+  });
+  
+  if (voltMatched.length === 0) return [];
+
+  // 目標μFに最も近い製品(group_id)を特定
+  const closestProduct = voltMatched.reduce((prev, curr) => {
+    const prevDiff = Math.abs(prev.capacity_uf - targetUf);
+    const currDiff = Math.abs(curr.capacity_uf - targetUf);
+    return currDiff < prevDiff ? curr : prev;
+  });
+
+  // 同一 group_id の全メーカー品を抽出
+  return voltMatched.filter((p) => p.group_id === closestProduct.group_id);
+}
