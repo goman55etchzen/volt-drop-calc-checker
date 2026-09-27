@@ -8,11 +8,12 @@ import { flattenCapacitorMaster } from "@/types/capacitorMaster";
 export type { CapacitorProduct, CapacitorDimensions } from "@/types/capacitorMaster";
 
 /**
- * capacitor_master.json からコンデンサ製品マスターを取得し、フラットなデータ構造に変換して返す
+ * public/data/capacitor_master.json からコンデンサ製品マスターを取得し、フラットなデータ構造に変換して返す
  */
 export async function fetchCapacitorCatalog(): Promise<CapacitorProduct[]> {
   try {
-    const response = await fetch("/capacitor_master.json");
+    // 改修: パスを /data/capacitor_master.json に修正
+    const response = await fetch("/data/capacitor_master.json");
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -37,8 +38,12 @@ export function findClosestCapacitorGroup(
     return [];
   }
 
-  // 1. 電圧が一致する製品をフィルタリング
-  const voltMatched = products.filter((p) => p.voltage === targetVoltage);
+  // 改修: 電圧のフィルタリングを範囲許容（ターゲット電圧以上〜 +10% 程度）に変更
+  // 理由: マスタデータ上の定格電圧が 210V や 220V の場合でも、200V系として抽出できるようにするため
+  const voltMatched = products.filter((p) => {
+    return p.voltage >= targetVoltage && p.voltage <= targetVoltage * 1.1;
+  });
+  
   if (voltMatched.length === 0) return [];
 
   // 2. 目標μFに最も近い製品(group_id)を特定

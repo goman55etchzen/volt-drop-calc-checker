@@ -117,6 +117,7 @@
       </div>
 
       <!-- 2. 右側の算出結果はNotice.vueに一元化 -->
+      <!-- 改修: mc.matchedCapacitors.value を Notice コンポーネントに渡す -->
       <Notice
         v-else
         :drive-mode="formData.driveMode"
@@ -134,7 +135,7 @@
         :breaker-info="mc.breakerInfo.value"
         :elcb-info="mc.elcbInfo.value"
         :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="recommendedCapacitors"
+        :recommended-capacitors="mc.matchedCapacitors.value"
         :thermal-info="thermalInfo"
       />
 
@@ -146,12 +147,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted, toRef } from 'vue';
+// 改修: toRef, useCapacitor のインポートを削除
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import SelectEnvironment from '@/components/Motor/SelectEnvironment.vue';
 import Notice from '@/components/common/Notice.vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useThermal } from '@/composables/useThermal';
-import { useCapacitor } from '@/composables/useCapacitor';
 import { localDb } from '@/utils/localDb';
 import type { 
   PowerFrequency, 
@@ -173,19 +174,10 @@ const formData = reactive({
   breakerMode: null as MotorBreakerType | null,
 });
 
-// useCapacitor の初期化
-const { recommendedCapacitors, loadCapacitorCatalog } = useCapacitor(
-  toRef(formData, 'motorKw'),
-  mc.frequency,
-  mc.voltage,
-  mc.powerFactor,
-  mc.targetPowerFactor,
-  mc.efficiency
-);
+// 改修: 独自に呼び出していた useCapacitor と loadCapacitorCatalog を削除
+// ※マスタデータのロードは useMotorCalc 内の onMounted で実行されます
 
-onMounted(async () => {
-  await loadCapacitorCatalog();
-  
+onMounted(() => {
   const savedFreq = localDb.getFrequency();
   if (savedFreq) {
     formData.frequency = savedFreq;
