@@ -1,12 +1,15 @@
 <!-- src/components/common/Notice.vue -->
 <template>
   <div class="notice-cards-wrapper">
-
     <!-- 1. メイン算出結果カード（タップで拡大） -->
     <div class="result-card-dark clickable-card" @click="openModal('result')">
       <div class="main-result">
         <span class="result-label">
-          {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
+          {{
+            driveMode === "inverter"
+              ? "計算一次定格電流 (インバータ)"
+              : "単体計算定格電流 (1台あたり)"
+          }}
         </span>
         <div class="result-value-group">
           <span class="result-value">{{ calculatedAmp || 0 }}</span>
@@ -29,7 +32,6 @@
 
     <!-- 2. 詳細選定結果（全条件が揃った場合のみ） -->
     <template v-if="showDetails">
-
       <!-- 2-1. 漏電遮断器（ELCB）（タップで拡大） -->
       <div class="clickable-card-wrapper" @click="openModal('elb')">
         <ElbSelectionCard
@@ -53,9 +55,9 @@
       </div>
 
       <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
-      <div 
-        v-if="recommendedCapacitors && recommendedCapacitors.length > 0" 
-        class="clickable-card-wrapper" 
+      <div
+        v-if="recommendedCapacitors && recommendedCapacitors.length > 0"
+        class="clickable-card-wrapper"
         @click="openModal('capacitor')"
       >
         <CapacitorSectionCard
@@ -86,7 +88,6 @@
           <p class="notice-text">{{ breakerInfo.warningNote }}</p>
         </div>
       </div>
-
     </template>
 
     <!-- =====================================================
@@ -101,13 +102,22 @@
 
         <div class="modal-body">
           <!-- 1. メイン結果の拡大 -->
-          <div v-if="activeModal === 'result'" class="result-card-dark modal-inner-card modal-scale-wrapper">
+          <div
+            v-if="activeModal === 'result'"
+            class="result-card-dark modal-inner-card modal-scale-wrapper"
+          >
             <div class="main-result">
               <span class="result-label">
-                {{ driveMode === 'inverter' ? '計算一次定格電流 (インバータ)' : '単体計算定格電流 (1台あたり)' }}
+                {{
+                  driveMode === "inverter"
+                    ? "計算一次定格電流 (インバータ)"
+                    : "単体計算定格電流 (1台あたり)"
+                }}
               </span>
               <div class="result-value-group">
-                <span class="result-value large-num">{{ calculatedAmp || 0 }}</span>
+                <span class="result-value large-num">{{
+                  calculatedAmp || 0
+                }}</span>
                 <span class="result-unit">A</span>
               </div>
             </div>
@@ -166,24 +176,26 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import ElbSelectionCard from '@/components/Motor/ElbSelectionCard.vue';
-import MotorBreakerCard from '@/components/Motor/MotorBreakerCard.vue';
-import MccbSelectCard from '@/components/Motor/MccbSelectCard.vue';
-import Thermal from '@/components/Motor/Thermal.vue';
-import CapacitorSectionCard from '@/components/Motor/CapacitorSectionCard.vue';
+import { ref } from "vue";
+import ElbSelectionCard from "@/components/Motor/ElbSelectionCard.vue";
+import MotorBreakerCard from "@/components/Motor/MotorBreakerCard.vue";
+import MccbSelectCard from "@/components/Motor/MccbSelectCard.vue";
+import Thermal from "@/components/Motor/Thermal.vue";
+import CapacitorSectionCard from "@/components/Motor/CapacitorSectionCard.vue";
 
-import type { MotorBreakerSelectionResult, ElcbSelectionResult } from '@/types/appDefinitions';
-import type { ThermalSelectionResult } from '@/composables/useThermal';
-import type { CapacitorProduct } from '@/utils/capacitor';
+import type {
+  MotorBreakerSelectionResult,
+  ElcbSelectionResult,
+} from "@/types/appDefinitions";
+import type { ThermalSelectionResult } from "@/composables/useThermal";
+import type { CapacitorProduct } from "@/utils/capacitor";
 
 defineProps<{
-  driveMode: 'direct' | 'inverter' | null;
+  driveMode: "direct" | "inverter" | null;
   calculatedAmp: number;
   displayTotalLoadAmp: number;
   motorCount: number;
@@ -203,12 +215,16 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'selectCapacitorCandidate', capacitor: CapacitorProduct): void;
+  (e: "selectCapacitorCandidate", capacitor: CapacitorProduct): void;
 }>();
 
-const activeModal = ref<'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor' | null>(null);
+const activeModal = ref<
+  "result" | "elb" | "breaker" | "thermal" | "capacitor" | null
+>(null);
 
-const openModal = (type: 'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor') => {
+const openModal = (
+  type: "result" | "elb" | "breaker" | "thermal" | "capacitor",
+) => {
   activeModal.value = type;
 };
 
@@ -218,7 +234,7 @@ const closeModal = () => {
 
 // DB候補選択時のイベントハンドラ
 const handleSelectCandidate = (capacitor: CapacitorProduct) => {
-  emit('selectCapacitorCandidate', capacitor);
+  emit("selectCapacitorCandidate", capacitor);
 };
 </script>
 
@@ -235,7 +251,9 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
 .clickable-card-wrapper {
   cursor: pointer;
   position: relative;
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
 }
 .clickable-card:hover,
 .clickable-card-wrapper:hover {
@@ -264,11 +282,33 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   padding: 20px;
   color: #ffffff;
 }
-.main-result { display: flex; flex-direction: column; align-items: center; }
-.result-label { font-size: 14px; color: #38bdf8; font-weight: bold; }
-.result-value-group { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
-.result-value { font-size: 42px; font-weight: 800; color: #f8fafc; line-height: 1; }
-.result-unit { font-size: 20px; font-weight: bold; color: #94a3b8; }
+.main-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.result-label {
+  font-size: 14px;
+  color: #38bdf8;
+  font-weight: bold;
+}
+.result-value-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+}
+.result-value {
+  font-size: 42px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1;
+}
+.result-unit {
+  font-size: 20px;
+  font-weight: bold;
+  color: #94a3b8;
+}
 .sub-results {
   display: grid;
   grid-template-columns: repeat(2, minmax(100px, 1fr));
@@ -284,8 +324,16 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   padding: 12px 8px;
   border-radius: 8px;
 }
-.sub-title { font-size: 11px; color: #cbd5e1; margin-bottom: 4px; }
-.sub-value { font-size: 15px; font-weight: bold; color: #f8fafc; }
+.sub-title {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+.sub-value {
+  font-size: 15px;
+  font-weight: bold;
+  color: #f8fafc;
+}
 
 /* ── 警告ボックス ── */
 .notice-box {
@@ -302,9 +350,16 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   border: 1px solid #d97706;
   color: #fbbf24;
 }
-.notice-icon { font-size: 16px; flex-shrink: 0; }
-.notice-content { flex-grow: 1; }
-.notice-text { margin: 0; }
+.notice-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.notice-content {
+  flex-grow: 1;
+}
+.notice-text {
+  margin: 0;
+}
 
 /* ── 拡大モーダル画面スタイル ── */
 .modal-overlay {
