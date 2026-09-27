@@ -146,24 +146,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, toRef } from 'vue';
 import SelectEnvironment from '@/components/Motor/SelectEnvironment.vue';
 import Notice from '@/components/common/Notice.vue';
 import { useMotorCalc } from '@/composables/useMotorCalc';
 import { useThermal } from '@/composables/useThermal';
+import { useCapacitor } from '@/composables/useCapacitor';
 import { localDb } from '@/utils/localDb';
 import type { 
   PowerFrequency, 
   EnvironmentType, 
   MotorBreakerType 
 } from '@/types/appDefinitions';
-import { fetchCapacitorCatalog, findClosestCapacitorGroup } from '@/utils/capacitor';
-import type { CapacitorProduct } from '@/utils/capacitor';
 
 const mc = useMotorCalc();
 const isFreqSaved = ref(false);
-
-const capacitorCatalog = ref<CapacitorProduct[]>([]);
 
 const formData = reactive({
   frequency: null as PowerFrequency | null,
@@ -176,8 +173,18 @@ const formData = reactive({
   breakerMode: null as MotorBreakerType | null,
 });
 
+// useCapacitor の初期化
+const { recommendedCapacitors, loadCapacitorCatalog } = useCapacitor(
+  toRef(formData, 'motorKw'),
+  mc.frequency,
+  mc.voltage,
+  mc.powerFactor,
+  mc.targetPowerFactor,
+  mc.efficiency
+);
+
 onMounted(async () => {
-  capacitorCatalog.value = await fetchCapacitorCatalog();
+  await loadCapacitorCatalog();
   
   const savedFreq = localDb.getFrequency();
   if (savedFreq) {
@@ -227,28 +234,6 @@ const recommendedInstallation = computed(() => {
     txt += '\n※インバータ駆動時のノイズ対策として、二次側配線にはシールド付きケーブル（CV-S等）の使用と、インバータ専用配線工事を推奨します。';
   }
   return txt;
-});
-
-const recommendedCapacitors = computed(() => {
-  if (!formData.motorKw || !formData.frequency || !mc.voltage.value || capacitorCatalog.value.length === 0) return [];
-  
-  const P = formData.motorKw;
-  const pf1 = mc.powerFactor.value || 0.85;
-  const pf2 = mc.targetPowerFactor.value || 0.95;
-  const f = formData.frequency;
-  const V = mc.voltage.value;
-  const eff = mc.efficiency.value || 0.85;
-  
-  const acos1 = Math.acos(pf1);
-  const acos2 = Math.acos(pf2);
-  const kvar = (P / eff) * (Math.tan(acos1) - Math.tan(acos2));
-  
-  if (kvar <= 0) return [];
-  
-  const cFarad = (kvar * 1000) / (2 * Math.PI * f * Math.pow(V, 2));
-  const targetUf = cFarad * 1000000;
-
-  return findClosestCapacitorGroup(capacitorCatalog.value, V, f, targetUf);
 });
 </script>
 

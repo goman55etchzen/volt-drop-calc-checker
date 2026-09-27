@@ -58,18 +58,12 @@
         class="clickable-card-wrapper" 
         @click="openModal('capacitor')"
       >
-        <div class="capacitor-recommend-card">
-          <h4 class="cap-title">⚡ 推奨進相コンデンサ（力率改善用）</h4>
-          <div class="cap-list">
-            <div v-for="(cap, idx) in recommendedCapacitors" :key="idx" class="cap-item">
-              <span class="cap-name">{{ cap.mfr }} ({{ cap.part_number }})</span>
-              <span class="cap-spec">
-                {{ frequency === 60 ? cap.kvar_60hz : cap.kvar_50hz }} kvar / {{ cap.capacity_uf }} μF
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="tap-hint-bar">🔍 タップして拡大</div>
+        <CapacitorSectionCard
+          :voltage="voltage"
+          :frequency="frequency"
+          :recommended-capacitors="recommendedCapacitors"
+        />
+        <div class="tap-hint-bar">🔍 タップして拡大・DB候補試覧</div>
       </div>
 
       <!-- 2-4. サーマルリレー選定（タップで拡大） -->
@@ -148,18 +142,6 @@
                 v-else-if="driveMode === 'inverter'"
                 :breaker-info="breakerInfo"
               />
-              <!-- モーダル内でも保護遮断器の直下にコンデンサを表示（既存コード維持） -->
-              <div v-if="recommendedCapacitors && recommendedCapacitors.length > 0" class="capacitor-recommend-card mt-3">
-                <h4 class="cap-title">⚡ 推奨進相コンデンサ（力率改善用）</h4>
-                <div class="cap-list">
-                  <div v-for="(cap, idx) in recommendedCapacitors" :key="idx" class="cap-item">
-                    <span class="cap-name">{{ cap.mfr }} ({{ cap.part_number }})</span>
-                    <span class="cap-spec">
-                      {{ frequency === 60 ? cap.kvar_60hz : cap.kvar_50hz }} kvar / {{ cap.capacity_uf }} μF
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           </template>
 
@@ -172,17 +154,14 @@
             />
           </div>
 
-          <!-- 5. コンデンサ単体の拡大（新設） -->
-          <div v-if="activeModal === 'capacitor'" class="capacitor-recommend-card modal-inner-card modal-scale-wrapper">
-            <h4 class="cap-title">⚡ 推奨進相コンデンサ（力率改善用）</h4>
-            <div class="cap-list">
-              <div v-for="(cap, idx) in recommendedCapacitors" :key="idx" class="cap-item">
-                <span class="cap-name">{{ cap.mfr }} ({{ cap.part_number }})</span>
-                <span class="cap-spec">
-                  {{ frequency === 60 ? cap.kvar_60hz : cap.kvar_50hz }} kvar / {{ cap.capacity_uf }} μF
-                </span>
-              </div>
-            </div>
+          <!-- 5. コンデンサ単体の拡大 -->
+          <div v-if="activeModal === 'capacitor'" class="modal-scale-wrapper">
+            <CapacitorSectionCard
+              :voltage="voltage"
+              :frequency="frequency"
+              :recommended-capacitors="recommendedCapacitors"
+              @select-candidate="handleSelectCandidate"
+            />
           </div>
         </div>
       </div>
@@ -197,6 +176,8 @@ import ElbSelectionCard from '@/components/Motor/ElbSelectionCard.vue';
 import MotorBreakerCard from '@/components/Motor/MotorBreakerCard.vue';
 import MccbSelectCard from '@/components/Motor/MccbSelectCard.vue';
 import Thermal from '@/components/Motor/Thermal.vue';
+import CapacitorSectionCard from '@/components/Motor/CapacitorSectionCard.vue';
+
 import type { MotorBreakerSelectionResult, ElcbSelectionResult } from '@/types/appDefinitions';
 import type { ThermalSelectionResult } from '@/composables/useThermal';
 import type { CapacitorProduct } from '@/utils/capacitor';
@@ -221,6 +202,10 @@ defineProps<{
   recommendedCapacitors: CapacitorProduct[];
 }>();
 
+const emit = defineEmits<{
+  (e: 'selectCapacitorCandidate', capacitor: CapacitorProduct): void;
+}>();
+
 const activeModal = ref<'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor' | null>(null);
 
 const openModal = (type: 'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor') => {
@@ -229,6 +214,11 @@ const openModal = (type: 'result' | 'elb' | 'breaker' | 'thermal' | 'capacitor')
 
 const closeModal = () => {
   activeModal.value = null;
+};
+
+// DB候補選択時のイベントハンドラ
+const handleSelectCandidate = (capacitor: CapacitorProduct) => {
+  emit('selectCapacitorCandidate', capacitor);
 };
 </script>
 
@@ -296,35 +286,6 @@ const closeModal = () => {
 }
 .sub-title { font-size: 11px; color: #cbd5e1; margin-bottom: 4px; }
 .sub-value { font-size: 15px; font-weight: bold; color: #f8fafc; }
-
-/* ── コンデンサ推奨カード ── */
-.capacitor-recommend-card {
-  background-color: #0f172a;
-  border: 1px solid #10b981;
-  border-radius: 12px;
-  padding: 14px;
-}
-.cap-title {
-  font-size: 13px;
-  font-weight: bold;
-  color: #34d399;
-  margin: 0 0 8px 0;
-}
-.cap-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.cap-item {
-  display: flex;
-  justify-content: space-between;
-  background-color: #1e293b;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-.cap-name { color: #f8fafc; font-weight: bold; }
-.cap-spec { color: #38bdf8; font-weight: bold; }
 
 /* ── 警告ボックス ── */
 .notice-box {
@@ -399,9 +360,6 @@ const closeModal = () => {
 }
 .large-num {
   font-size: 52px !important;
-}
-.mt-3 {
-  margin-top: 12px;
 }
 
 /* ── 比率による適度な拡大用ラッパー ── */
