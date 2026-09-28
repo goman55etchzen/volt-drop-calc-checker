@@ -1,4 +1,4 @@
-<!-- src/views/MotorCalc.vue -->
+<!-- src/Motor/MotorCalc.vue -->
 <template>
   <div class="motor-calc-container">
     <!-- 左側：入力フォームセクション（全開放型） -->
