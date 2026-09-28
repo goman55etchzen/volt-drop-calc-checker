@@ -56,39 +56,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // ② capacitors テーブルから製品を取得
       // 許容誤差範囲（±10%）を設定して検索
-      const minUf = targetUf * 0.90;
-      const maxUf = targetUf * 1.10;
+      const minUf = targetUf * 0.9;
+      const maxUf = targetUf * 1.1;
 
       let products = await sql`
         SELECT 
-          group_id,
+          id AS group_id,
           manufacturer,
-          voltage,
+          rated_voltage_v AS voltage,
           capacity_uf,
-          model_name,
-          width_mm,
-          height_mm,
-          depth_mm
+          model AS model_name,
+          dimension_a_mm AS width_mm,
+          dimension_b_mm AS height_mm,
+          dimension_c_mm AS depth_mm
         FROM capacitors
-        WHERE voltage = ${v}
+        WHERE rated_voltage_v = ${v}
           AND capacity_uf BETWEEN ${minUf} AND ${maxUf}
-        ORDER BY ABS(capacity_uf - ${targetUf}) ASC, manufacturer ASC, model_name ASC
+        ORDER BY ABS(capacity_uf - ${targetUf}) ASC, manufacturer ASC, model ASC
       `;
 
       // ③ ±10% 以内に完全一致・該当品がない場合、最も容量が近い上位5件を抽出（50μF以上の大型容量対策）
       if (products.length === 0) {
         products = await sql`
           SELECT 
-            group_id,
+            id AS group_id,
             manufacturer,
-            voltage,
+            rated_voltage_v AS voltage,
             capacity_uf,
-            model_name,
-            width_mm,
-            height_mm,
-            depth_mm
+            model AS model_name,
+            dimension_a_mm AS width_mm,
+            dimension_b_mm AS height_mm,
+            dimension_c_mm AS depth_mm
           FROM capacitors
-          WHERE voltage = ${v}
+          WHERE rated_voltage_v = ${v}
           ORDER BY ABS(capacity_uf - ${targetUf}) ASC
           LIMIT 5
         `;
@@ -109,16 +109,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // パラメータがない場合は従来の「全製品一覧取得モード」
     const products = await sql`
       SELECT 
-        group_id,
+        id AS group_id,
         manufacturer,
-        voltage,
+        rated_voltage_v AS voltage,
         capacity_uf,
-        model_name,
-        width_mm,
-        height_mm,
-        depth_mm
+        model AS model_name,
+        dimension_a_mm AS width_mm,
+        dimension_b_mm AS height_mm,
+        dimension_c_mm AS depth_mm
       FROM capacitors
-      ORDER BY capacity_uf ASC, voltage ASC
+      ORDER BY capacity_uf ASC, rated_voltage_v ASC
     `;
 
     res.setHeader(
