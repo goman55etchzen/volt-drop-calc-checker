@@ -224,7 +224,7 @@ export interface CapacitorProduct {
   status?: string;
 }
 
-/** Neon DB (capacitors テーブル / APIレスポンス) の生データ構造 */
+/** Neon DB (capacitors テーブル / APIレスポンス) の生データ構造[cite: 51] */
 export interface DbCapacitorProduct {
   id?: string | number;
   group_id?: string;
@@ -237,7 +237,7 @@ export interface DbCapacitorProduct {
   depth_mm?: number;
 }
 
-/** API レスポンスの型定義 */
+/** API レスポンスの型定義[cite: 51] */
 export interface CapacitorApiResponse {
   mode: "recommendation" | "all";
   target_capacity_uf?: number | null;
@@ -247,7 +247,7 @@ export interface CapacitorApiResponse {
 }
 
 /**
- * DBモデル(DbCapacitorProduct)から アプリ標準(CapacitorProduct) への変換ヘルパー
+ * DBモデル(DbCapacitorProduct)から アプリ標準(CapacitorProduct) への変換ヘルパー[cite: 51]
  */
 export function mapDbProductToUi(dbItem: DbCapacitorProduct): CapacitorProduct {
   const modelName = dbItem.model_name || "UNKNOWN";
@@ -282,7 +282,7 @@ export function mapDbProductToUi(dbItem: DbCapacitorProduct): CapacitorProduct {
 }
 
 /**
- * Master Database の products 配列をアプリ標準の CapacitorProduct[] に変換・正規化するアダプター関数
+ * Master Database の products 配列をアプリ標準の CapacitorProduct[] に変換・正規化するアダプター関数[cite: 51]
  */
 export function flattenCapacitorMaster(
   products: ProductMaster[],

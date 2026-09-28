@@ -2,6 +2,46 @@
 import { neon } from "@neondatabase/serverless";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
+// capacitors テーブルの全属性を網羅した型定義
+export interface CapacitorRecord {
+  id: number;
+  family: string | null;
+  model: string;
+  competitor_model: string | null;
+  rated_voltage_v: number;
+  phase: string;
+  capacity_uf: number;
+  current_50hz_a: number | null;
+  current_60hz_a: number | null;
+  kvar_50hz: number | null;
+  kvar_60hz: number | null;
+  dimension_a_mm: number | null;
+  dimension_b_mm: number | null;
+  dimension_c_mm: number | null;
+  dimension_d_mm: number | null;
+  dimension_e_mm: number | null;
+  dimension_f_mm: number | null;
+  mass_kg: number | null;
+  source_file: string;
+  manufacturer: string;
+  product: string | null;
+  page: string | null;
+  type: string | null;
+  circuit_voltage_v: number | null;
+  frequency_hz: number | null;
+  current_a: number | null;
+  kvar: number | null;
+  terminal_structure: string | null;
+  l6_percent: string | null;
+  single_phase_100v_usable: boolean | null;
+  voltage_note: string | null;
+  terminal_type: string | null;
+  drawing_no: string | null;
+  status: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -52,16 +92,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const minUf = targetUf * 0.9;
       const maxUf = targetUf * 1.1;
 
-      let products = await sql`
+      let products = await sql<CapacitorRecord[]>`
         SELECT 
-          id AS group_id,
-          manufacturer,
-          rated_voltage_v AS voltage,
+          id,
+          family,
+          model,
+          competitor_model,
+          rated_voltage_v,
+          phase,
           capacity_uf,
-          model AS model_name,
-          dimension_a_mm AS width_mm,
-          dimension_b_mm AS height_mm,
-          dimension_c_mm AS depth_mm
+          current_50hz_a,
+          current_60hz_a,
+          kvar_50hz,
+          kvar_60hz,
+          dimension_a_mm,
+          dimension_b_mm,
+          dimension_c_mm,
+          dimension_d_mm,
+          dimension_e_mm,
+          dimension_f_mm,
+          mass_kg,
+          source_file,
+          manufacturer,
+          product,
+          page,
+          type,
+          circuit_voltage_v,
+          frequency_hz,
+          current_a,
+          kvar,
+          terminal_structure,
+          l6_percent,
+          single_phase_100v_usable,
+          voltage_note,
+          terminal_type,
+          drawing_no,
+          status,
+          created_at,
+          updated_at
         FROM capacitors
         WHERE rated_voltage_v = ${v}
           AND capacity_uf BETWEEN ${minUf} AND ${maxUf}
@@ -70,16 +138,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // 範囲内に該当品がない場合のフォールバック（上位5件）
       if (products.length === 0) {
-        products = await sql`
+        products = await sql<CapacitorRecord[]>`
           SELECT 
-            id AS group_id,
-            manufacturer,
-            rated_voltage_v AS voltage,
+            id,
+            family,
+            model,
+            competitor_model,
+            rated_voltage_v,
+            phase,
             capacity_uf,
-            model AS model_name,
-            dimension_a_mm AS width_mm,
-            dimension_b_mm AS height_mm,
-            dimension_c_mm AS depth_mm
+            current_50hz_a,
+            current_60hz_a,
+            kvar_50hz,
+            kvar_60hz,
+            dimension_a_mm,
+            dimension_b_mm,
+            dimension_c_mm,
+            dimension_d_mm,
+            dimension_e_mm,
+            dimension_f_mm,
+            mass_kg,
+            source_file,
+            manufacturer,
+            product,
+            page,
+            type,
+            circuit_voltage_v,
+            frequency_hz,
+            current_a,
+            kvar,
+            terminal_structure,
+            l6_percent,
+            single_phase_100v_usable,
+            voltage_note,
+            terminal_type,
+            drawing_no,
+            status,
+            created_at,
+            updated_at
           FROM capacitors
           WHERE rated_voltage_v = ${v}
           ORDER BY ABS(capacity_uf - ${targetUf}) ASC
@@ -100,16 +196,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // パラメータがない場合：全件取得モード
-    const products = await sql`
+    const products = await sql<CapacitorRecord[]>`
       SELECT 
-        id AS group_id,
-        manufacturer,
-        rated_voltage_v AS voltage,
+        id,
+        family,
+        model,
+        competitor_model,
+        rated_voltage_v,
+        phase,
         capacity_uf,
-        model AS model_name,
-        dimension_a_mm AS width_mm,
-        dimension_b_mm AS height_mm,
-        dimension_c_mm AS depth_mm
+        current_50hz_a,
+        current_60hz_a,
+        kvar_50hz,
+        kvar_60hz,
+        dimension_a_mm,
+        dimension_b_mm,
+        dimension_c_mm,
+        dimension_d_mm,
+        dimension_e_mm,
+        dimension_f_mm,
+        mass_kg,
+        source_file,
+        manufacturer,
+        product,
+        page,
+        type,
+        circuit_voltage_v,
+        frequency_hz,
+        current_a,
+        kvar,
+        terminal_structure,
+        l6_percent,
+        single_phase_100v_usable,
+        voltage_note,
+        terminal_type,
+        drawing_no,
+        status,
+        created_at,
+        updated_at
       FROM capacitors
       ORDER BY capacity_uf ASC, rated_voltage_v ASC
     `;

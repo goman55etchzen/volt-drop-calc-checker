@@ -13,20 +13,22 @@
       <div v-if="recommendedCapacitors.length > 0" class="recommended-list">
         <ul class="item-list">
           <li
-            v-for="cap in recommendedCapacitors"
-            :key="cap.model"
+            v-for="(cap, index) in recommendedCapacitors"
+            :key="cap.id || `${cap.model}_${index}`"
             class="item-row"
           >
-            <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
-            <span class="spec"
-              >({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)</span
-            >
+            <div class="item-info">
+              <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
+              <span class="spec">
+                ({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)
+              </span>
+            </div>
           </li>
         </ul>
       </div>
 
       <!-- 推奨容量自体はあるが、一致する型番がDBに存在しない場合 -->
-      <div v-else-if="targetUf !== null" class="empty-msg">
+      <div v-else-if="targetUf !== null && targetUf > 0" class="empty-msg">
         <p>
           推奨基準容量: <strong>{{ targetUf }} μF</strong>
         </p>
@@ -59,15 +61,18 @@
 
         <ul v-else-if="candidateCapacitors.length > 0" class="item-list">
           <li
-            v-for="cap in candidateCapacitors"
-            :key="cap.model"
+            v-for="(cap, index) in candidateCapacitors"
+            :key="cap.id || `candidate_${cap.model}_${index}`"
             class="item-row clickable"
             @click="selectCandidate(cap)"
           >
-            <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
-            <span class="spec"
-              >({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)</span
-            >
+            <div class="item-info">
+              <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
+              <span class="spec">
+                ({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)
+              </span>
+            </div>
+            <span class="action-hint">選択</span>
           </li>
         </ul>
         <p v-else class="empty-msg-sm">条件に一致する候補製品がありません。</p>
@@ -85,7 +90,7 @@ import {
 } from "@/types/capacitorMaster";
 import { fetchCapacitorCatalog } from "@/utils/capacitor";
 
-// Props の定義 (親コンポーネントからのモータ条件受取)
+// Props の定義
 const props = withDefaults(
   defineProps<{
     voltage?: number;
@@ -93,10 +98,10 @@ const props = withDefaults(
     frequency?: number;
     outputKw?: number;
     motorType?: string;
+    hz?: number;
+    targetUf?: number;
     catalog?: CapacitorProduct[];
     recommendedCapacitors?: CapacitorProduct[];
-    targetUf?: number;
-    hz?: number;
   }>(),
   {
     voltage: 200,
@@ -104,6 +109,10 @@ const props = withDefaults(
     frequency: 50,
     outputKw: 3.7,
     motorType: "standard",
+    hz: 50,
+    targetUf: 0,
+    catalog: () => [],
+    recommendedCapacitors: () => [],
   },
 );
 
@@ -116,7 +125,7 @@ const loading = ref(false);
 const candidatesLoading = ref(false);
 const showCandidates = ref(false);
 
-const targetUf = ref<number | null>(props.targetUf ?? null);
+const targetUf = ref<number | null>(props.targetUf > 0 ? props.targetUf : null);
 const recommendedCapacitors = ref<CapacitorProduct[]>(
   props.recommendedCapacitors ?? [],
 );
@@ -129,10 +138,10 @@ const fetchRecommendation = async () => {
   try {
     const params = new URLSearchParams({
       voltage: String(props.voltage),
-      poles: String(props.poles),
+      poles: String(props.poles ?? 4),
       frequency: String(props.frequency || props.hz || 50),
-      output_kw: String(props.outputKw),
-      motor_type: props.motorType,
+      output_kw: String(props.outputKw ?? 3.7),
+      motor_type: props.motorType ?? "standard",
     });
 
     const res = await fetch(`/api/capacitorDb?${params.toString()}`);
@@ -144,7 +153,7 @@ const fetchRecommendation = async () => {
     recommendedCapacitors.value = (data.products || []).map(mapDbProductToUi);
   } catch (err) {
     console.error("fetchRecommendation error:", err);
-    targetUf.value = props.targetUf ?? null;
+    targetUf.value = props.targetUf > 0 ? props.targetUf : null;
     recommendedCapacitors.value = props.recommendedCapacitors ?? [];
   } finally {
     loading.value = false;
@@ -248,6 +257,7 @@ watch(
   align-items: center;
   padding: 10px 12px;
   background-color: #1e293b;
+  border: 1px solid #334155;
   border-radius: 6px;
   font-size: 14px;
   color: #f8fafc;
@@ -255,11 +265,18 @@ watch(
 
 .item-row.clickable {
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .item-row.clickable:hover {
   background-color: #334155;
+  border-color: #475569;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .maker-model {
@@ -290,8 +307,9 @@ watch(
 }
 
 .toggle-btn {
+  width: 100%;
   margin-top: 12px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background-color: #0284c7;
   color: #ffffff;
   border: none;
@@ -320,5 +338,11 @@ watch(
   color: #f8fafc;
   margin-top: 0;
   margin-bottom: 12px;
+}
+
+.action-hint {
+  font-size: 12px;
+  color: #38bdf8;
+  font-weight: 500;
 }
 </style>
