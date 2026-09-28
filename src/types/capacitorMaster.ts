@@ -224,8 +224,9 @@ export interface CapacitorProduct {
   status?: string;
 }
 
-/** Neon DB (capacitors テーブル) の生データ構造 */
+/** Neon DB (capacitors テーブル / APIレスポンス) の生データ構造 */
 export interface DbCapacitorProduct {
+  id?: string | number;
   group_id?: string;
   manufacturer: string;
   voltage: number;
@@ -255,7 +256,7 @@ export function mapDbProductToUi(dbItem: DbCapacitorProduct): CapacitorProduct {
   const volt = Number(dbItem.voltage) || 200;
 
   return {
-    id: `${modelName}_3P`,
+    id: String(dbItem.id || `${modelName}_3P`),
     group_id: dbItem.group_id || `${volt}V_${uf}uF`,
     mfr: mfr,
     maker: mfr,

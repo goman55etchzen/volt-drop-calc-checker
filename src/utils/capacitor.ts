@@ -1,37 +1,32 @@
 // src/utils/capacitor.ts
-import type {
-  CapacitorProduct,
-  CapacitorApiResponse,
-  DbCapacitorProduct,
+import {
+  type CapacitorProduct,
+  type CapacitorApiResponse,
+  mapDbProductToUi,
 } from '@/types/capacitorMaster';
-import { mapDbProductToUi } from '@/types/capacitorMaster';
 
 export type { CapacitorProduct };
 
 /**
- * DB(API)からコンデンサのマスターデータを取得しフラット化して返す
+ * DB(API)からコンデンサのマスターデータを取得し、UI標準型(CapacitorProduct[])に変換して返す
  */
 export const fetchCapacitorCatalog = async (): Promise<CapacitorProduct[]> => {
-  const res = await fetch('/api/capacitors');
-  const data: CapacitorApiResponse | DbCapacitorProduct[] | CapacitorProduct[] = await res.json();
-
-  // 1. レスポンスがAPIオブジェクト形式 ({ mode, products: [...] }) の場合は products 配列を取り出す
-  //    直で配列が返ってきた場合にも対応できるように互換性を保持
-  let rawProducts: (DbCapacitorProduct | CapacitorProduct)[] = [];
-  if (Array.isArray(data)) {
-    rawProducts = data;
-  } else if (data && Array.isArray(data.products)) {
-    rawProducts = data.products;
-  }
-
-  // 2. DBから取得したデータ (DbCapacitorProduct) を UI用のデータ構造 (CapacitorProduct) にマッピング変換
-  //    すでに CapacitorProduct の形式になっているデータはそのまま通過させる
-  return rawProducts.map((item) => {
-    if ('model_name' in item || 'manufacturer' in item) {
-      return mapDbProductToUi(item as DbCapacitorProduct);
+  try {
+    const res = await fetch('/api/capacitorDb');
+    if (!res.ok) {
+      throw new Error(`Failed to fetch capacitor catalog: ${res.statusText}`);
     }
-    return item as CapacitorProduct;
-  });
+    const data: CapacitorApiResponse = await res.json();
+    
+    // APIレスポンス内の products 配列を UI 用の CapacitorProduct[] にマッピング
+    if (data && Array.isArray(data.products)) {
+      return data.products.map(mapDbProductToUi);
+    }
+    return [];
+  } catch (error) {
+    console.error('fetchCapacitorCatalog error:', error);
+    return [];
+  }
 };
 
 /**
@@ -64,10 +59,10 @@ export const findClosestCapacitorGroup = (
 
   // 2. 目標静電容量(μF)に最も近い製品を探す
   let closest = filtered[0];
-  let minDiff = Math.abs((closest.uf ?? closest.capacity_uf) - targetUf);
+  let minDiff = Math.abs((closest.uf ?? closest.capacity_uf ?? 0) - targetUf);
 
   for (const p of filtered) {
-    const curUf = p.uf ?? p.capacity_uf;
+    const curUf = p.uf ?? p.capacity_uf ?? 0;
     const diff = Math.abs(curUf - targetUf);
     if (diff < minDiff) {
       closest = p;
@@ -76,7 +71,12 @@ export const findClosestCapacitorGroup = (
   }
 
   // 3. 最も近い製品と同じ group_id を持つ製品群（他メーカー同等品）を返す
-  return filtered.filter((p) => p.group_id === closest.group_id);
+  const targetGroupId = closest.group_id;
+  if (!targetGroupId) {
+    return [closest];
+  }
+
+  return filtered.filter((p) => p.group_id === targetGroupId);
 };
 
 /**
@@ -94,7 +94,7 @@ export const findCandidateCapacitors = (
   return catalog.filter((p) => {
     const voltMatch = isVoltageMatch(p.voltage, targetVoltage);
     const hzMatch = p.hz === undefined || p.hz === targetHz;
-    const curUf = p.uf ?? p.capacity_uf;
+    const curUf = p.uf ?? p.capacity_uf ?? 0;
     const diffRatio = Math.abs(curUf - targetUf) / targetUf;
     const ufMatch = diffRatio <= tolerance;
     

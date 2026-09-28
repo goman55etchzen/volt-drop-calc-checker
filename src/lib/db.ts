@@ -1,16 +1,33 @@
-import { neon } from '@neondatabase/serverless';
+// db.ts
+import { neon } from "@neondatabase/serverless";
 
 // 環境変数から接続クライアントを作成
 const sql = neon(process.env.DATABASE_URL!);
 
-// データベースからデータ一覧を取得する関数例
+/**
+ * データベースからコンデンサ一覧データを取得する関数
+ */
 export async function getCapacitorsFromDb() {
   try {
-    // クエリを実行してデータを取得
-    const data = await sql`SELECT * FROM capacitors`;
+    const data = await sql`
+      SELECT 
+        id,
+        manufacturer,
+        rated_voltage_v,
+        capacity_uf,
+        model,
+        dimension_a_mm,
+        dimension_b_mm,
+        dimension_c_mm,
+        status,
+        created_at,
+        updated_at
+      FROM capacitors
+      ORDER BY capacity_uf ASC, rated_voltage_v ASC
+    `;
     return data;
   } catch (error) {
-    console.error('Database fetch error:', error);
+    console.error("Database fetch error:", error);
     throw error;
   }
 }
