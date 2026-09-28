@@ -55,8 +55,9 @@
       </div>
 
       <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
+      <!-- 修正点: .length > 0 ガードを削除し、データ空時もカード表示＆下位コンポーネントの「対象なし」画面を可視化 -->
       <div
-        v-if="recommendedCapacitors && recommendedCapacitors.length > 0"
+        v-if="recommendedCapacitors"
         class="clickable-card-wrapper"
         @click="openModal('capacitor')"
       >

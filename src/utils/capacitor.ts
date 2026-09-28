@@ -1,15 +1,6 @@
-// capacitor_2.ts
-
-export interface CapacitorProduct {
-  maker: string;
-  model: string;
-  group_id: string;
-  voltage: number;
-  hz: number;
-  uf: number;
-  kvar: number;
-  price?: number;
-}
+// src/utils/capacitor.ts
+import type { CapacitorProduct } from '@/types/capacitorMaster';
+export type { CapacitorProduct };
 
 /**
  * DB(API)からコンデンサのマスターデータを取得しフラット化して返す
@@ -17,7 +8,6 @@ export interface CapacitorProduct {
 export const fetchCapacitorCatalog = async (): Promise<CapacitorProduct[]> => {
   const res = await fetch('/api/capacitors');
   const data = await res.json();
-  // 必要なフラット化処理などをここに記述
   return data;
 };
 
@@ -40,17 +30,22 @@ export const findClosestCapacitorGroup = (
 ): CapacitorProduct[] => {
   if (!catalog.length || targetUf <= 0) return [];
 
-  // 1. 電圧と周波数でフィルタリング
-  const filtered = catalog.filter((p) => isVoltageMatch(p.voltage, targetVoltage) && p.hz === targetHz);
+  // 1. 電圧と周波数でフィルタリング（hz プロパティ未指定時は全周波数対応として受容）
+  const filtered = catalog.filter((p) => {
+    const voltOk = isVoltageMatch(p.voltage, targetVoltage);
+    const hzOk = p.hz === undefined || p.hz === targetHz;
+    return voltOk && hzOk;
+  });
 
   if (!filtered.length) return [];
 
   // 2. 目標静電容量(μF)に最も近い製品を探す
   let closest = filtered[0];
-  let minDiff = Math.abs(closest.uf - targetUf);
+  let minDiff = Math.abs((closest.uf ?? closest.capacity_uf) - targetUf);
 
   for (const p of filtered) {
-    const diff = Math.abs(p.uf - targetUf);
+    const curUf = p.uf ?? p.capacity_uf;
+    const diff = Math.abs(curUf - targetUf);
     if (diff < minDiff) {
       closest = p;
       minDiff = diff;
@@ -75,8 +70,9 @@ export const findCandidateCapacitors = (
 
   return catalog.filter((p) => {
     const voltMatch = isVoltageMatch(p.voltage, targetVoltage);
-    const hzMatch = p.hz === targetHz;
-    const diffRatio = Math.abs(p.uf - targetUf) / targetUf;
+    const hzMatch = p.hz === undefined || p.hz === targetHz;
+    const curUf = p.uf ?? p.capacity_uf;
+    const diffRatio = Math.abs(curUf - targetUf) / targetUf;
     const ufMatch = diffRatio <= tolerance;
     
     return voltMatch && hzMatch && ufMatch;

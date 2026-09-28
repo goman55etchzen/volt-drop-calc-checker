@@ -117,7 +117,7 @@
       </div>
 
       <!-- 2. 結果表示（Notice一元化） -->
-      <!-- 連携修正: catalog, targetUf のプロパティ渡しを追加し、イベントのキャメルケース/ケバブケースを網羅 -->
+      <!-- 修正点: Nullish Coalescing (??) による安全なフォールバック処理を適用 -->
       <Notice
         v-else
         :drive-mode="formData.driveMode"
@@ -136,9 +136,9 @@
         :elcb-info="mc.elcbInfo.value"
         :thermal-info="thermalInfo"
         :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="mc.matchedCapacitors?.value || mc.recommendedCapacitors?.value || []"
-        :catalog="mc.capacitorCatalog?.value || []"
-        :target-uf="mc.targetUf?.value || 0"
+        :recommended-capacitors="mc.matchedCapacitors?.value ?? mc.recommendedCapacitors?.value ?? []"
+        :catalog="mc.capacitorCatalog?.value ?? []"
+        :target-uf="mc.targetUf?.value ?? 0"
         @select-capacitor-candidate="handleCapacitorSelect"
         @selectCapacitorCandidate="handleCapacitorSelect"
       />

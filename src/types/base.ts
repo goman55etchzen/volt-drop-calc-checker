@@ -66,6 +66,7 @@ export interface ReversedResultProps {
   installationType: InstallationType;
   isContinuous: boolean;
 }
+
 export interface CapacitorSectionCardProps {
   voltage: number;
   hz: number;
