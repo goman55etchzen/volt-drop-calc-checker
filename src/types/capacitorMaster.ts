@@ -277,3 +277,29 @@ export interface MasterMetadata {
   
     return result;
   }
+  // src/types/capacitorMaster.ts の末尾に追加・補完
+
+// =================================================================
+// 既存アプリUIコンポーネント（CapacitorSectionCard.vue等）との互換モデル
+// =================================================================
+
+export interface CapacitorDimensions {
+  w: number;
+  d: number;
+  h: number;
+}
+
+/**
+ * UIおよび選定ロジックで使用するフラット化されたコンデンサ製品型
+ */
+export interface CapacitorProduct {
+  maker: string;
+  model: string;
+  group_id: string;
+  voltage: number;
+  hz: number;
+  uf: number;
+  kvar: number;
+  price?: number;
+  dimensions?: CapacitorDimensions;
+}

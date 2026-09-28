@@ -62,7 +62,9 @@
       >
         <CapacitorSectionCard
           :voltage="voltage"
-          :frequency="frequency"
+          :hz="frequency"
+          :target-uf="targetUf"
+          :catalog="catalog"
           :recommended-capacitors="recommendedCapacitors"
         />
         <div class="tap-hint-bar">🔍 タップして拡大・DB候補試覧</div>
@@ -168,7 +170,9 @@
           <div v-if="activeModal === 'capacitor'" class="modal-scale-wrapper">
             <CapacitorSectionCard
               :voltage="voltage"
-              :frequency="frequency"
+              :hz="frequency"
+              :target-uf="targetUf"
+              :catalog="catalog"
               :recommended-capacitors="recommendedCapacitors"
               @select-candidate="handleSelectCandidate"
             />
@@ -212,6 +216,8 @@ defineProps<{
   efficiency: number;
   recommendedInstallation: string;
   recommendedCapacitors: CapacitorProduct[];
+  catalog: CapacitorProduct[];
+  targetUf: number;
 }>();
 
 const emit = defineEmits<{

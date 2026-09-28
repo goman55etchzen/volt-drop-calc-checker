@@ -116,8 +116,8 @@
         <p class="mt-4 text-sm text-slate-500">「周波数」「相・電圧」「出力 (kW)」を選択すると定格電流が計算されます。</p>
       </div>
 
-      <!-- 2. 右側の算出結果はNotice.vueに一元化 -->
-      <!-- 改修: mc.matchedCapacitors.value を Notice コンポーネントに渡す -->
+      <!-- 2. 結果表示（Notice一元化） -->
+      <!-- 連携修正: catalog, targetUf のプロパティ渡しを追加し、イベントのキャメルケース/ケバブケースを網羅 -->
       <Notice
         v-else
         :drive-mode="formData.driveMode"
@@ -129,14 +129,18 @@
         :motor-kw="formData.motorKw || 0"
         :frequency="formData.frequency || 50"
         :show-details="canCalculateFull"
-        v-model:powerFactor="mc.powerFactor.value"
-        v-model:targetPowerFactor="mc.targetPowerFactor.value"
-        v-model:efficiency="mc.efficiency.value"
+        :power-factor="mc.powerFactor.value"
+        :target-power-factor="mc.targetPowerFactor.value"
+        :efficiency="mc.efficiency.value"
         :breaker-info="mc.breakerInfo.value"
         :elcb-info="mc.elcbInfo.value"
-        :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="mc.matchedCapacitors.value"
         :thermal-info="thermalInfo"
+        :recommended-installation="recommendedInstallation"
+        :recommended-capacitors="mc.matchedCapacitors?.value || mc.recommendedCapacitors?.value || []"
+        :catalog="mc.capacitorCatalog?.value || []"
+        :target-uf="mc.targetUf?.value || 0"
+        @select-capacitor-candidate="handleCapacitorSelect"
+        @selectCapacitorCandidate="handleCapacitorSelect"
       />
 
       <div v-if="canCalculateBasic && !canCalculateFull" class="info-card mt-3">
@@ -147,7 +151,6 @@
 </template>
 
 <script setup lang="ts">
-// 改修: toRef, useCapacitor のインポートを削除
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import SelectEnvironment from '@/components/Motor/SelectEnvironment.vue';
 import Notice from '@/components/common/Notice.vue';
@@ -159,6 +162,7 @@ import type {
   EnvironmentType, 
   MotorBreakerType 
 } from '@/types/appDefinitions';
+import type { CapacitorProduct } from '@/types/capacitorMaster';
 
 const mc = useMotorCalc();
 const isFreqSaved = ref(false);
@@ -174,15 +178,16 @@ const formData = reactive({
   breakerMode: null as MotorBreakerType | null,
 });
 
-// 改修: 独自に呼び出していた useCapacitor と loadCapacitorCatalog を削除
-// ※マスタデータのロードは useMotorCalc 内の onMounted で実行されます
-
 onMounted(() => {
   const savedFreq = localDb.getFrequency();
   if (savedFreq) {
     formData.frequency = savedFreq;
     mc.frequency.value = savedFreq;
     isFreqSaved.value = true;
+  }
+  // コンデンサマスターカタログの初期ロード（必要に応じて呼び出し）
+  if (typeof mc.loadCapacitorCatalog === 'function') {
+    mc.loadCapacitorCatalog();
   }
 });
 
@@ -193,6 +198,7 @@ const updateFrequency = (freq: PowerFrequency) => {
   isFreqSaved.value = true;
 };
 
+// フォーム値と Composable（useMotorCalc）状態の一括バインド・同期監視
 watch(() => formData.motorKw, (val) => { mc.outputKw.value = val ?? 0; });
 watch(() => formData.quantity, (val) => { mc.motorCount.value = val ?? 1; });
 watch(() => formData.otherLoadIr, (val) => { mc.otherLoadAmp.value = val ?? 0; });
@@ -227,6 +233,13 @@ const recommendedInstallation = computed(() => {
   }
   return txt;
 });
+
+/**
+ * モーダル内等でコンデンサ候補が選択された際のハンドラ
+ */
+const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
+  console.log('Selected Capacitor:', capacitor);
+};
 </script>
 
 <style scoped>

@@ -1,61 +1,84 @@
-// src/utils/capacitor.ts
-import type {
-  CapacitorProduct,
-  CapacitorMasterDatabase,
-} from "@/types/capacitorMaster";
-import { flattenCapacitorMaster } from "@/types/capacitorMaster";
+// capacitor_2.ts
 
-export type { CapacitorProduct, CapacitorDimensions } from "@/types/capacitorMaster";
-
-/**
- * NeonDB (API) からコンデンサ製品マスターを取得する
- */
-export async function fetchCapacitorCatalog(): Promise<CapacitorProduct[]> {
-  try {
-    const response = await fetch("/api/capacitors");
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const masterData = await response.json();
-    
-    // API側で { products: [...] } の形式で返している前提
-    return flattenCapacitorMaster(masterData.products);
-    
-  } catch (error) {
-    console.error("コンデンサカタログの取得に失敗しました:", error);
-    return [];
-  }
+export interface CapacitorProduct {
+  maker: string;
+  model: string;
+  group_id: string;
+  voltage: number;
+  hz: number;
+  uf: number;
+  kvar: number;
+  price?: number;
 }
 
 /**
- * 電圧・周波数・目標静電容量(μF)から最も適合する製品群(group_id)を抽出する
+ * DB(API)からコンデンサのマスターデータを取得しフラット化して返す
  */
-export function findClosestCapacitorGroup(
-  products: CapacitorProduct[],
+export const fetchCapacitorCatalog = async (): Promise<CapacitorProduct[]> => {
+  const res = await fetch('/api/capacitors');
+  const data = await res.json();
+  // 必要なフラット化処理などをここに記述
+  return data;
+};
+
+/**
+ * 共通の電圧マッチングロジック
+ * （要求電圧に対して +10% までの定格電圧を持つ製品を許容する）
+ */
+const isVoltageMatch = (productVoltage: number, targetVoltage: number): boolean => {
+  return productVoltage >= targetVoltage && productVoltage <= targetVoltage * 1.1;
+};
+
+/**
+ * 目標値に最も近い推奨コンデンサ（同等品のグループ）を抽出
+ */
+export const findClosestCapacitorGroup = (
+  catalog: CapacitorProduct[],
   targetVoltage: number,
-  frequency: number,
-  targetUf: number | null | undefined
-): CapacitorProduct[] {
-  if (!targetUf || targetUf <= 0 || products.length === 0) {
-    return [];
+  targetHz: number,
+  targetUf: number
+): CapacitorProduct[] => {
+  if (!catalog.length || targetUf <= 0) return [];
+
+  // 1. 電圧と周波数でフィルタリング
+  const filtered = catalog.filter((p) => isVoltageMatch(p.voltage, targetVoltage) && p.hz === targetHz);
+
+  if (!filtered.length) return [];
+
+  // 2. 目標静電容量(μF)に最も近い製品を探す
+  let closest = filtered[0];
+  let minDiff = Math.abs(closest.uf - targetUf);
+
+  for (const p of filtered) {
+    const diff = Math.abs(p.uf - targetUf);
+    if (diff < minDiff) {
+      closest = p;
+      minDiff = diff;
+    }
   }
 
-  // 電圧のフィルタリングを範囲許容（ターゲット電圧以上〜 +10% 程度）
-  // 理由: マスタデータ上の定格電圧が 210V や 220V の場合でも、200V系として抽出できるようにするため
-  const voltMatched = products.filter((p) => {
-    return p.voltage >= targetVoltage && p.voltage <= targetVoltage * 1.1;
-  });
-  
-  if (voltMatched.length === 0) return [];
+  // 3. 最も近い製品と同じ group_id を持つ製品群（他メーカー同等品）を返す
+  return filtered.filter((p) => p.group_id === closest.group_id);
+};
 
-  // 目標μFに最も近い製品(group_id)を特定
-  const closestProduct = voltMatched.reduce((prev, curr) => {
-    const prevDiff = Math.abs(prev.capacity_uf - targetUf);
-    const currDiff = Math.abs(curr.capacity_uf - targetUf);
-    return currDiff < prevDiff ? curr : prev;
-  });
+/**
+ * その他の適応製品候補を抽出（デフォルトで目標μFの ±35% 以内）
+ */
+export const findCandidateCapacitors = (
+  catalog: CapacitorProduct[],
+  targetVoltage: number,
+  targetHz: number,
+  targetUf: number,
+  tolerance: number = 0.35
+): CapacitorProduct[] => {
+  if (!catalog.length || targetUf <= 0) return [];
 
-  // 同一 group_id の全メーカー品を抽出
-  return voltMatched.filter((p) => p.group_id === closestProduct.group_id);
-}
+  return catalog.filter((p) => {
+    const voltMatch = isVoltageMatch(p.voltage, targetVoltage);
+    const hzMatch = p.hz === targetHz;
+    const diffRatio = Math.abs(p.uf - targetUf) / targetUf;
+    const ufMatch = diffRatio <= tolerance;
+    
+    return voltMatch && hzMatch && ufMatch;
+  });
+};

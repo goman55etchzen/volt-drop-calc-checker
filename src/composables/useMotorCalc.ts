@@ -198,5 +198,6 @@ export function useMotorCalc() {
     capacitorInfo,
     matchedCapacitors,
     setPreset,
+    capacitorCatalog
   };
 }
