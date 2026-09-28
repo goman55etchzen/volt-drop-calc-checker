@@ -3,77 +3,213 @@
   <div class="capacitor-card">
     <h3 class="card-title">推奨進相コンデンサ</h3>
 
-    <!-- 推奨製品の表示 -->
-    <div v-if="recommendedCapacitors.length > 0" class="recommended-list">
-      <ul class="item-list">
-        <li v-for="cap in recommendedCapacitors" :key="cap.model" class="item-row">
-          <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
-          <span class="spec">({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)</span>
-        </li>
-      </ul>
-    </div>
-    <div v-else class="empty-msg">
-      <p>条件に合致する推奨製品が見つかりません。</p>
+    <!-- ローディング表示 -->
+    <div v-if="loading" class="loading-state">
+      <span>データを読み込み中...</span>
     </div>
 
-    <!-- 候補リストトグルボタン -->
-    <button
-      type="button"
-      class="toggle-btn"
-      @click="showCandidates = !showCandidates"
-    >
-      {{ showCandidates ? '候補リストを閉じる' : 'DBから他の適応製品候補を表示する' }}
-    </button>
+    <template v-else>
+      <!-- 推奨製品の表示 -->
+      <div v-if="recommendedCapacitors.length > 0" class="recommended-list">
+        <ul class="item-list">
+          <li
+            v-for="cap in recommendedCapacitors"
+            :key="cap.model"
+            class="item-row"
+          >
+            <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
+            <span class="spec"
+              >({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)</span
+            >
+          </li>
+        </ul>
+      </div>
 
-    <!-- その他の適応製品候補 (±35%以内) -->
-    <div v-if="showCandidates" class="candidates-list">
-      <h4 class="candidates-title">その他の候補 (目標の±35%以内)</h4>
-      <ul v-if="candidateCapacitors.length > 0" class="item-list">
-        <li
-          v-for="cap in candidateCapacitors"
-          :key="cap.model"
-          class="item-row clickable"
-          @click="selectCandidate(cap)"
-        >
-          <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
-          <span class="spec">({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)</span>
-        </li>
-      </ul>
-      <p v-else class="empty-msg-sm">条件に一致する候補製品がありません。</p>
-    </div>
+      <!-- 推奨容量自体はあるが、一致する型番がDBに存在しない場合 -->
+      <div v-else-if="targetUf !== null" class="empty-msg">
+        <p>
+          推奨基準容量: <strong>{{ targetUf }} μF</strong>
+        </p>
+        <p class="sub-text">（※DB内に完全一致する型番が登録されていません）</p>
+      </div>
+
+      <!-- 条件に合致するルールがない場合 -->
+      <div v-else class="empty-msg">
+        <p>条件に合致する推奨製品が見つかりません。</p>
+      </div>
+
+      <!-- 候補リストトグルボタン -->
+      <button type="button" class="toggle-btn" @click="handleToggleCandidates">
+        {{
+          showCandidates
+            ? "候補リストを閉じる"
+            : "DBから他の適応製品候補を表示する"
+        }}
+      </button>
+
+      <!-- その他の適応製品候補 (目標の±35%以内) -->
+      <div v-if="showCandidates" class="candidates-list">
+        <h4 class="candidates-title">
+          その他の候補 (推奨 {{ targetUf ?? "基準" }} μF の ±35% 以内)
+        </h4>
+
+        <div v-if="candidatesLoading" class="loading-state-sm">
+          候補データを取得中...
+        </div>
+
+        <ul v-else-if="candidateCapacitors.length > 0" class="item-list">
+          <li
+            v-for="cap in candidateCapacitors"
+            :key="cap.model"
+            class="item-row clickable"
+            @click="selectCandidate(cap)"
+          >
+            <span class="maker-model">{{ cap.maker }} - {{ cap.model }}</span>
+            <span class="spec"
+              >({{ cap.uf.toFixed(1) }} μF / {{ cap.voltage }}V)</span
+            >
+          </li>
+        </ul>
+        <p v-else class="empty-msg-sm">条件に一致する候補製品がありません。</p>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { findCandidateCapacitors, type CapacitorProduct } from '@/utils/capacitor';
+import { ref, computed, watch } from "vue";
+import {
+  type CapacitorProduct,
+  type CapacitorApiResponse,
+  mapDbProductToUi,
+} from "@/types/capacitorMaster";
 
-const props = defineProps<{
-  catalog: CapacitorProduct[];
-  recommendedCapacitors: CapacitorProduct[];
-  voltage: number;
-  hz: number;
-  targetUf: number;
-}>();
+// Props の定義 (親コンポーネントからのモータ条件受取)
+const props = withDefaults(
+  defineProps<{
+    voltage?: number;
+    poles?: number;
+    frequency?: number;
+    outputKw?: number;
+    motorType?: string;
+    catalog?: CapacitorProduct[];
+    recommendedCapacitors?: CapacitorProduct[];
+    targetUf?: number;
+    hz?: number;
+  }>(),
+  {
+    voltage: 200,
+    poles: 4,
+    frequency: 50,
+    outputKw: 3.7,
+    motorType: "standard",
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'select-candidate', capacitor: CapacitorProduct): void;
+  (e: "select-candidate", capacitor: CapacitorProduct): void;
 }>();
 
+// ステート定義
+const loading = ref(false);
+const candidatesLoading = ref(false);
 const showCandidates = ref(false);
 
+const targetUf = ref<number | null>(props.targetUf ?? null);
+const recommendedCapacitors = ref<CapacitorProduct[]>(
+  props.recommendedCapacitors ?? [],
+);
+const allCatalog = ref<CapacitorProduct[]>(props.catalog ?? []);
+
+// ① APIからの推奨コンデンサ取得
+const fetchRecommendation = async () => {
+  loading.value = true;
+  showCandidates.value = false;
+  try {
+    const params = new URLSearchParams({
+      voltage: String(props.voltage),
+      poles: String(props.poles),
+      frequency: String(props.frequency || props.hz || 50),
+      output_kw: String(props.outputKw),
+      motor_type: props.motorType,
+    });
+
+    const res = await fetch(`/api/capacitorDb?${params.toString()}`);
+    if (!res.ok) throw new Error("推奨データの取得に失敗しました");
+
+    const data: CapacitorApiResponse = await res.json();
+
+    targetUf.value = data.target_capacity_uf ?? null;
+    recommendedCapacitors.value = (data.products || []).map(mapDbProductToUi);
+  } catch (err) {
+    console.error("fetchRecommendation error:", err);
+    targetUf.value = props.targetUf ?? null;
+    recommendedCapacitors.value = props.recommendedCapacitors ?? [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+// ② DBからの全件（候補参照用）取得
+const fetchAllCatalog = async () => {
+  if (allCatalog.value.length > 0) return;
+
+  candidatesLoading.value = true;
+  try {
+    const res = await fetch("/api/capacitorDb");
+    if (!res.ok) throw new Error("全件データの取得に失敗しました");
+
+    const data: CapacitorApiResponse = await res.json();
+    allCatalog.value = (data.products || []).map(mapDbProductToUi);
+  } catch (err) {
+    console.error("fetchAllCatalog error:", err);
+  } finally {
+    candidatesLoading.value = false;
+  }
+};
+
+// ③ ±35% 以内の候補フィルター計算
 const candidateCapacitors = computed(() => {
-  return findCandidateCapacitors(
-    props.catalog,
-    props.voltage,
-    props.hz,
-    props.targetUf
-  );
+  if (!targetUf.value || allCatalog.value.length === 0) return [];
+
+  const baseUf = targetUf.value;
+  const minUf = baseUf * 0.65; // -35%
+  const maxUf = baseUf * 1.35; // +35%
+
+  return allCatalog.value.filter((item) => {
+    return (
+      item.voltage === props.voltage && item.uf >= minUf && item.uf <= maxUf
+    );
+  });
 });
 
-const selectCandidate = (cap: CapacitorProduct) => {
-  emit('select-candidate', cap);
+// 候補ボタン押下処理
+const handleToggleCandidates = async () => {
+  showCandidates.value = !showCandidates.value;
+  if (showCandidates.value) {
+    await fetchAllCatalog();
+  }
 };
+
+const selectCandidate = (cap: CapacitorProduct) => {
+  emit("select-candidate", cap);
+};
+
+// モータ条件の変化を監視して即時再計算
+watch(
+  () => [
+    props.voltage,
+    props.poles,
+    props.frequency,
+    props.hz,
+    props.outputKw,
+    props.motorType,
+  ],
+  () => {
+    fetchRecommendation();
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped>
@@ -91,6 +227,13 @@ const selectCandidate = (cap: CapacitorProduct) => {
   color: #38bdf8;
   margin-top: 0;
   margin-bottom: 12px;
+}
+
+.loading-state,
+.loading-state-sm {
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 12px 0;
 }
 
 .item-list {
@@ -135,6 +278,12 @@ const selectCandidate = (cap: CapacitorProduct) => {
   color: #cbd5e1;
   font-size: 14px;
   margin-bottom: 12px;
+}
+
+.sub-text {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
 }
 
 .empty-msg-sm {

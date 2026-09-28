@@ -1,28 +1,89 @@
-// api/capacitors.ts
-import { neon } from '@neondatabase/serverless';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+// api/capacitorDb.ts
+import { neon } from "@neondatabase/serverless";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 1. GET以外のメソッドをブロック
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
+  if (req.method !== "GET") {
+    res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 
   // 2. 環境変数チェック
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    console.error('DATABASE_URL is missing in environment variables.');
-    return res.status(500).json({ error: 'DATABASE_URL is not configured' });
+    console.error("DATABASE_URL is missing in environment variables.");
+    return res.status(500).json({ error: "DATABASE_URL is not configured" });
   }
 
   try {
     const sql = neon(connectionString);
 
-    // 3. capacitorsテーブルからデータを取得
+    // クエリパラメーターの取得
+    const { voltage, poles, frequency, output_kw, motor_type } = req.query;
+
+    // パラメータが指定されている場合は「条件検索・推奨選定モード」
+    if (voltage && poles && frequency && output_kw) {
+      const v = Number(voltage);
+      const p = Number(poles);
+      const f = Number(frequency);
+      const kw = Number(output_kw);
+      const mType = String(motor_type || "standard");
+
+      // ① motor_selection_rules から 推奨μF (capacity_uf) を取得
+      const rules = await sql`
+        SELECT capacity_uf 
+        FROM motor_selection_rules
+        WHERE voltage_v = ${v}
+          AND motor_type = ${mType}
+          AND poles = ${p}
+          AND frequency_hz = ${f}
+          AND output_kw = ${kw}
+        LIMIT 1
+      `;
+
+      // ルールにヒットしない場合
+      if (rules.length === 0 || rules[0].capacity_uf === null) {
+        return res.status(200).json({
+          mode: "recommendation",
+          target_capacity_uf: null,
+          products: [],
+          message: "条件に合致する推奨基準データが存在しません。",
+        });
+      }
+
+      const targetUf = Number(rules[0].capacity_uf);
+
+      // ② capacitors テーブルから推奨μF・電圧に適合する製品を取得
+      const products = await sql`
+        SELECT 
+          group_id,
+          manufacturer,
+          voltage,
+          capacity_uf,
+          model_name,
+          width_mm,
+          height_mm,
+          depth_mm
+        FROM capacitors
+        WHERE voltage = ${v}
+          AND capacity_uf = ${targetUf}
+        ORDER BY manufacturer ASC, model_name ASC
+      `;
+
+      res.setHeader(
+        "Cache-Control",
+        "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      );
+
+      return res.status(200).json({
+        mode: "recommendation",
+        target_capacity_uf: targetUf,
+        products,
+      });
+    }
+
+    // パラメータがない場合は従来の「全製品一覧取得モード」
     const products = await sql`
       SELECT 
         group_id,
@@ -34,23 +95,24 @@ export default async function handler(
         height_mm,
         depth_mm
       FROM capacitors
-      ORDER BY capacity_uf ASC
+      ORDER BY capacity_uf ASC, voltage ASC
     `;
 
-    // 4. Vercel エッジキャッシュヘッダーの付与（1時間キャッシュ / DB負荷軽減）
     res.setHeader(
-      'Cache-Control',
-      'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400'
+      "Cache-Control",
+      "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
     );
 
-    // 5. { products: [...] } 形式で返却
-    return res.status(200).json({ products });
-
+    return res.status(200).json({
+      mode: "all",
+      products,
+    });
   } catch (error) {
-    console.error('Database connection / query error:', error);
+    console.error("Database connection / query error:", error);
     return res.status(500).json({
-      error: 'Failed to fetch capacitor data from Neon DB',
-      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      error: "Failed to fetch capacitor data from Neon DB",
+      details:
+        process.env.NODE_ENV === "development" ? String(error) : undefined,
     });
   }
 }

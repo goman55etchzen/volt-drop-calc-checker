@@ -197,7 +197,7 @@ export interface CapacitorDimensions {
 export interface CapacitorProduct {
   id: string;
   group_id: string;
-  
+
   // マスタDB・旧UI互換プロパティ
   mfr: string;
   part_number: string;
@@ -206,7 +206,7 @@ export interface CapacitorProduct {
   kvar_60hz: number;
   current_50hz: number;
   current_60hz: number;
-  
+
   // 検索・選定ロジック（capacitor.ts / useCapacitor.ts）互換プロパティ
   maker: string;
   model: string;
@@ -224,10 +224,68 @@ export interface CapacitorProduct {
   status?: string;
 }
 
+/** Neon DB (capacitors テーブル) の生データ構造 */
+export interface DbCapacitorProduct {
+  group_id?: string;
+  manufacturer: string;
+  voltage: number;
+  capacity_uf: number;
+  model_name: string;
+  width_mm?: number;
+  height_mm?: number;
+  depth_mm?: number;
+}
+
+/** API レスポンスの型定義 */
+export interface CapacitorApiResponse {
+  mode: "recommendation" | "all";
+  target_capacity_uf?: number | null;
+  products: DbCapacitorProduct[];
+  message?: string;
+  error?: string;
+}
+
+/**
+ * DBモデル(DbCapacitorProduct)から アプリ標準(CapacitorProduct) への変換ヘルパー
+ */
+export function mapDbProductToUi(dbItem: DbCapacitorProduct): CapacitorProduct {
+  const modelName = dbItem.model_name || "UNKNOWN";
+  const mfr = dbItem.manufacturer || "UNKNOWN";
+  const uf = Number(dbItem.capacity_uf) || 0;
+  const volt = Number(dbItem.voltage) || 200;
+
+  return {
+    id: `${modelName}_3P`,
+    group_id: dbItem.group_id || `${volt}V_${uf}uF`,
+    mfr: mfr,
+    maker: mfr,
+    part_number: modelName,
+    model: modelName,
+    phase: "三相",
+    voltage: volt,
+    capacity_uf: uf,
+    uf: uf,
+    kvar_50hz: 0,
+    kvar_60hz: 0,
+    current_50hz: 0,
+    current_60hz: 0,
+    dimensions: {
+      w: dbItem.width_mm ?? 0,
+      d: dbItem.depth_mm ?? 0,
+      h: dbItem.height_mm ?? 0,
+    },
+    terminal: "",
+    mount: "",
+    weight_kg: 0,
+  };
+}
+
 /**
  * Master Database の products 配列をアプリ標準の CapacitorProduct[] に変換・正規化するアダプター関数
  */
-export function flattenCapacitorMaster(products: ProductMaster[]): CapacitorProduct[] {
+export function flattenCapacitorMaster(
+  products: ProductMaster[],
+): CapacitorProduct[] {
   const result: CapacitorProduct[] = [];
 
   for (const p of products) {
