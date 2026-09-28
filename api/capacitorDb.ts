@@ -54,8 +54,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const targetUf = Number(rules[0].capacity_uf);
 
-      // ② capacitors テーブルから推奨μF・電圧に適合する製品を取得
-      const products = await sql`
+      // ② capacitors テーブルから製品を取得
+      // 許容誤差範囲（±10%）を設定して検索
+      const minUf = targetUf * 0.90;
+      const maxUf = targetUf * 1.10;
+
+      let products = await sql`
         SELECT 
           group_id,
           manufacturer,
@@ -67,9 +71,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           depth_mm
         FROM capacitors
         WHERE voltage = ${v}
-          AND capacity_uf = ${targetUf}
-        ORDER BY manufacturer ASC, model_name ASC
+          AND capacity_uf BETWEEN ${minUf} AND ${maxUf}
+        ORDER BY ABS(capacity_uf - ${targetUf}) ASC, manufacturer ASC, model_name ASC
       `;
+
+      // ③ ±10% 以内に完全一致・該当品がない場合、最も容量が近い上位5件を抽出（50μF以上の大型容量対策）
+      if (products.length === 0) {
+        products = await sql`
+          SELECT 
+            group_id,
+            manufacturer,
+            voltage,
+            capacity_uf,
+            model_name,
+            width_mm,
+            height_mm,
+            depth_mm
+          FROM capacitors
+          WHERE voltage = ${v}
+          ORDER BY ABS(capacity_uf - ${targetUf}) ASC
+          LIMIT 5
+        `;
+      }
 
       res.setHeader(
         "Cache-Control",
