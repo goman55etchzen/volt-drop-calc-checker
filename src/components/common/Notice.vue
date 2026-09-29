@@ -55,9 +55,8 @@
       </div>
 
       <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
-      <!-- 修正点: null/undefinedを厳密に判定し、空配列[]時もカード表示と下位コンポーネントの「対象なし」UIを可視化 -->
       <div
-        v-if="recommendedCapacitors !== null && recommendedCapacitors !== undefined"
+        v-if="recommendedCapacitors || recommendedCapacitors.length > 0"
         class="clickable-card-wrapper"
         @click="openModal('capacitor')"
       >
@@ -67,7 +66,6 @@
           :target-uf="targetUf"
           :catalog="catalog"
           :recommended-capacitors="recommendedCapacitors"
-          @select-candidate="handleSelectCandidate"
         />
         <div class="tap-hint-bar">🔍 タップして拡大・DB候補試覧</div>
       </div>
@@ -191,7 +189,7 @@ import ElbSelectionCard from "@/components/Motor/ElbSelectionCard.vue";
 import MotorBreakerCard from "@/components/Motor/MotorBreakerCard.vue";
 import MccbSelectCard from "@/components/Motor/MccbSelectCard.vue";
 import Thermal from "@/components/Motor/Thermal.vue";
-import CapacitorSectionCard from "@/components/Motor/CapacitorSectionCard.vue";
+import CapacitorSectionCard from "@/components/Motor/card.vue";
 
 import type {
   MotorBreakerSelectionResult,
@@ -240,20 +238,21 @@ const closeModal = () => {
   activeModal.value = null;
 };
 
-// DB候補選択時のイベントハンドラ（通常枠・モーダル枠共通）
+// DB候補選択時のイベントハンドラ
 const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   emit("selectCapacitorCandidate", capacitor);
 };
 </script>
 
 <style scoped>
-/* 既存のスタイルを維持 */
 .notice-cards-wrapper {
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
 }
+
+/* ── タップ可能カードの共通スタイル ── */
 .clickable-card,
 .clickable-card-wrapper {
   cursor: pointer;
@@ -280,6 +279,8 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   padding: 2px 8px;
   font-weight: bold;
 }
+
+/* ── メイン結果カード ── */
 .result-card-dark {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;
@@ -339,6 +340,8 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   font-weight: bold;
   color: #f8fafc;
 }
+
+/* ── 警告ボックス ── */
 .notice-box {
   display: flex;
   align-items: flex-start;
@@ -363,6 +366,8 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
 .notice-text {
   margin: 0;
 }
+
+/* ── 拡大モーダル画面スタイル ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -417,6 +422,8 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
 .large-num {
   font-size: 52px !important;
 }
+
+/* ── 比率による適度な拡大用ラッパー ── */
 .modal-scale-wrapper {
   transform: scale(1.08);
   transform-origin: center;

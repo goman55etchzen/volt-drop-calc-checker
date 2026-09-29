@@ -1,4 +1,4 @@
-<!-- src/Motor/MotorCalc.vue -->
+<!-- src/views/MotorCalc.vue -->
 <template>
   <div class="motor-calc-container">
     <!-- 左側：入力フォームセクション（全開放型） -->
@@ -116,28 +116,29 @@
         <p class="mt-4 text-sm text-slate-500">「周波数」「相・電圧」「出力 (kW)」を選択すると定格電流が計算されます。</p>
       </div>
 
-      <!-- 2. 結果表示（Notice一元化：安全な数値変換を適用） -->
+      <!-- 2. 結果表示（Notice一元化） -->
+      <!-- 連携修正: catalog, targetUf のプロパティ渡しを追加し、イベントのキャメルケース/ケバブケースを網羅 -->
       <Notice
         v-else
-        :drive-mode="formData.driveMode ?? 'direct'"
-        :calculated-amp="Number(mc.calculatedAmp.value) || 0"
-        :display-total-load-amp="Number(mc.totalLoadAmp.value) || 0"
-        :motor-count="Number(formData.quantity) || 1"
-        :other-load-amp="Number(formData.otherLoadIr) || 0"
-        :voltage="Number(mc.voltage.value) || 0"
-        :motor-kw="Number(formData.motorKw) || 0"
-        :frequency="Number(formData.frequency) || 50"
+        :drive-mode="formData.driveMode"
+        :calculated-amp="mc.calculatedAmp.value"
+        :display-total-load-amp="mc.totalLoadAmp.value"
+        :motor-count="formData.quantity || 1"
+        :other-load-amp="formData.otherLoadIr || 0"
+        :voltage="mc.voltage.value"
+        :motor-kw="formData.motorKw || 0"
+        :frequency="formData.frequency || 50"
         :show-details="canCalculateFull"
-        :power-factor="Number(mc.powerFactor?.value) || 0"
-        :target-power-factor="Number(mc.targetPowerFactor?.value) || 0"
-        :efficiency="Number(mc.efficiency?.value) || 0"
+        :power-factor="mc.powerFactor.value"
+        :target-power-factor="mc.targetPowerFactor.value"
+        :efficiency="mc.efficiency.value"
         :breaker-info="mc.breakerInfo.value"
         :elcb-info="mc.elcbInfo.value"
         :thermal-info="thermalInfo"
         :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="mc.matchedCapacitors?.value ?? mc.recommendedCapacitors?.value ?? []"
-        :catalog="mc.capacitorCatalog?.value ?? []"
-        :target-uf="Number(mc.targetUf?.value) || 0"
+        :recommended-capacitors="mc.matchedCapacitors?.value || mc.recommendedCapacitors?.value || []"
+        :catalog="mc.capacitorCatalog?.value || []"
+        :target-uf="mc.targetUf?.value || 0"
         @select-capacitor-candidate="handleCapacitorSelect"
         @selectCapacitorCandidate="handleCapacitorSelect"
       />
@@ -162,7 +163,6 @@ import type {
   MotorBreakerType 
 } from '@/types/appDefinitions';
 import type { CapacitorProduct } from '@/types/capacitorMaster';
-
 const mc = useMotorCalc();
 const isFreqSaved = ref(false);
 
@@ -184,6 +184,7 @@ onMounted(() => {
     mc.frequency.value = savedFreq;
     isFreqSaved.value = true;
   }
+  // コンデンサマスターカタログの初期ロード（必要に応じて呼び出し）
   if (typeof mc.loadCapacitorCatalog === 'function') {
     mc.loadCapacitorCatalog();
   }
@@ -232,6 +233,9 @@ const recommendedInstallation = computed(() => {
   return txt;
 });
 
+/**
+ * モーダル内等でコンデンサ候補が選択された際のハンドラ
+ */
 const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
   console.log('Selected Capacitor:', capacitor);
 };

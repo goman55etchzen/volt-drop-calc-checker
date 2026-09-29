@@ -40,13 +40,8 @@ export function useMotorCalc() {
   // カタログデータ状態
   const capacitorCatalog = ref<CapacitorProduct[]>([]);
 
-  // カタログロード関数
-  const loadCapacitorCatalog = async () => {
-    capacitorCatalog.value = await fetchCapacitorCatalog();
-  };
-
   onMounted(async () => {
-    await loadCapacitorCatalog();
+    capacitorCatalog.value = await fetchCapacitorCatalog();
   });
 
   // 駆動モード変更時の自動切替（インバータ時はMCCB固定）
@@ -101,7 +96,7 @@ export function useMotorCalc() {
 
   const groundingInfo = computed(() => currentCalcResult.value.groundingInfo);
 
-  // 進相コンデンサ情報（1台あたりの容量を維持しつつ、必要台数情報を付与）
+  // 【追加】進相コンデンサ情報（1台あたりの容量を維持しつつ、必要台数情報を付与）
   const capacitorInfo = computed(() => {
     const base = currentCalcResult.value.capacitorInfo;
     const count = motorCount.value;
@@ -114,11 +109,6 @@ export function useMotorCalc() {
     };
   });
 
-  // 目標静電容量 (μF)
-  const targetUf = computed(() => {
-    return capacitorInfo.value?.recommendedMicroFarad ?? 0;
-  });
-
   // 適合コンデンサ検索（1台あたりの必要容量でマッチング）
   const matchedCapacitors = computed(() => {
     if (driveMode.value === 'inverter') return [];
@@ -126,7 +116,7 @@ export function useMotorCalc() {
       capacitorCatalog.value,
       voltage.value,
       frequency.value,
-      targetUf.value
+      capacitorInfo.value.recommendedMicroFarad
     );
   });
 
@@ -206,10 +196,8 @@ export function useMotorCalc() {
     groundingInfo,
     elcbInfo,
     capacitorInfo,
-    targetUf,
     matchedCapacitors,
-    capacitorCatalog,
-    loadCapacitorCatalog,
     setPreset,
+    capacitorCatalog
   };
 }
