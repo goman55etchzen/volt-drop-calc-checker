@@ -2,23 +2,20 @@
 
 import { computed, ref, Ref } from 'vue'
 import {
-  CalculationInputMode,
-  LoadType,
+  CalculationInputMode, LoadType,BreakerStatusResult,CalculationIssue,} from '@/types/appDefinitions'
+import {
   InstallationType,
   CableTypeCode,
   SystemType,
   AvailableWireResult,
-  BreakerStatusResult,
-  CalculationIssue,
   SYSTEM_DEFINITIONS,
-  MOTOR_SPECS,
   CABLE_SPECS,
   CABLE_TYPES,
-  BREAKER_SIZES,
-  THREE_PHASE_BREAKER_SIZES,
   calculateAllowableCurrent,
   calculateK2
-} from '@/types/appDefinitions'
+} from '@/base/cableBase'
+import {MOTOR_SPECS,} from '@/base/motorBase'
+import {BREAKER_SIZES, THREE_PHASE_BREAKER_SIZES, } from '@/base/breakerBase'
 
 export interface ExtendedAvailableWireResult extends AvailableWireResult {
   limiter: 'drop' | 'heat' | 'none'; // ボトルネック要因

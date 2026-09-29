@@ -1,5 +1,4 @@
-// src/base/airconBase.ts
-import type { CableTypeCode } from "@/types/appDefinitions";
+import type { CableTypeCode } from "./appDefinitions";
 
 // ==========================================
 // 1. 型定義 (Types & Interfaces)
@@ -20,37 +19,26 @@ export type BuildingType = "wooden" | "reinforced";
 export interface AcSpec {
   /** 冷房定格能力(kW) */
   capacityKw: number;
-
   /** 目安畳数表記 */
   tatamiStandard: string;
-
   /** 最小適合畳数（木造基準） */
   minTatami: number;
-
   /** 最大適合畳数（鉄筋基準） */
   maxTatami: number;
-
-  /** 定格電圧 */
+  /** 定格電圧 [V] */
   voltage: 100 | 200;
-
   /** 電源方式 */
   phase: "1P2W" | "1P3W";
-
-  /** 定格運転電流 */
+  /** 定格運転電流 [A] */
   ratedCurrentA: number;
-
-  /** 最大運転電流 */
+  /** 最大運転電流 [A] */
   maxCurrentA: number;
-
-  /** 推奨専用回路ブレーカー容量 */
+  /** 推奨専用回路ブレーカー容量 [A] */
   breakerAmp: number;
-
   /** ブレーカー極数 */
   breakerPoles: string;
-
   /** 推奨電線サイズ */
   recommendedWireSize: string;
-
   /** 配線計算連携用ケーブル種別 */
   cableTypeCode: CableTypeCode;
 }
@@ -58,71 +46,136 @@ export interface AcSpec {
 export interface AirconInputParams {
   /** 面積数値 */
   areaValue: number;
-
   /** 面積単位 */
   unit?: AreaUnit;
-
   /** 部屋種別 */
   roomType?: RoomType;
-
   /** 建物構造 */
   buildingType?: BuildingType;
-
   /** 在室人数 */
   personCount?: number;
-
   /** 日当たり・大開口窓 */
   hasStrongSunlight?: boolean;
-
   /** 最上階・屋根直下 */
   isTopFloor?: boolean;
-
   /** 吹き抜け・高天井 */
   hasHighCeiling?: boolean;
+  /** 基準許容電圧降下率 (%) ※デフォルト 2.0% */
+  targetVoltageDropRatio?: number;
+  /** 指定配線長 [m]（オプション指定） */
+  wiringDistanceMeters?: number;
+}
+
+/** 電圧降下連携による最大亘長（許容限界長）計算結果 */
+export interface AirconMaxDistanceResult {
+  /** 適用電線サイズ名 */
+  wireSize: string;
+  /** 断面積 [mm^2] */
+  crossSectionArea: number;
+  /** 設計電流 [A] (maxCurrentA) */
+  currentA: number;
+  /** 許容電圧降下率 [%] */
+  dropRatioPercent: number;
+  /** 許容電圧降下値 [V] */
+  allowableDropVolts: number;
+  /** 基準降下率(2.0%)における最大亘長 [m] */
+  maxDistanceMeters: number;
+  /** 3.0% 降下時における最大亘長 [m] */
+  maxDistance3PercentMeters: number;
+  /** 計算に関する注記 */
+  note: string;
+}
+
+/** 指定配線長における電圧降下検証結果 */
+export interface AirconVoltageDropCheckResult {
+  /** 配線長 [m] */
+  distanceMeters: number;
+  /** 適用電線サイズ */
+  wireSize: string;
+  /** 算術電圧降下 [V] */
+  dropVolts: number;
+  /** 電圧降下率 [%] */
+  dropRatioPercent: number;
+  /** 2.0%以内クリア判定 */
+  isOk2Percent: boolean;
+  /** 3.0%以内クリア判定 */
+  isOk3Percent: boolean;
+  /** 評価判定メッセージ */
+  statusNote: string;
+}
+
+/** 配線長に応じた必要ケーブル選定結果 */
+export interface AirconRequiredWireSelectionResult {
+  /** 対象配線長 [m] */
+  distanceMeters: number;
+  /** 目標電圧降下率 [%] */
+  targetDropRatio: number;
+  /** 必要最小断面積 [mm^2] */
+  requiredArea: number;
+  /** 選定電線サイズ名（例: "2.0mm", "3.5sq"） */
+  selectedWireSize: string;
+  /** 選定電線断面積 [mm^2] */
+  selectedArea: number;
+  /** 選定電線での実際の電圧降下 [V] */
+  actualDropVolts: number;
+  /** 選定電線での実際の電圧降下率 [%] */
+  actualDropRatio: number;
+  /** 判定コメント */
+  selectionNote: string;
 }
 
 export interface AirconSelectionResult {
   /** 補正後実効畳数 */
   effectiveTatami: number;
-
   /** 換算後基本畳数 */
   baseTatami: number;
-
-  /** 人熱による加算熱負荷 */
+  /** 人熱による加算熱負荷 [kW] */
   personHeatLoadKw: number;
-
   /** 人熱による換算畳数加算 */
   personHeatTatami: number;
-
-  /** 選定されたエアコン */
+  /** 選定されたエアコンスペック */
   selectedSpec: AcSpec;
-
-  /** 最大スペック超過 */
+  /** 最大スペック超過フラグ */
   isOverCapacity: boolean;
-
+  /** 電圧降下連携による最大亘長結果 */
+  maxDistanceInfo: AirconMaxDistanceResult;
+  /** 配線長が指定されている場合の電圧降下チェック結果 */
+  voltageDropCheckInfo?: AirconVoltageDropCheckResult;
+  /** 配線長に応じた最適なケーブル選定結果 */
+  requiredWireSelectionInfo?: AirconRequiredWireSelectionResult;
   /** 推奨コメント */
   recommendationNote: string;
-
-  /** 計算根拠 */
+  /** 計算根拠メッセージ一覧 */
   breakdownNotes: string[];
 }
 
-/** 配線計算（電圧降下計算）連携用ペイロード */
+/** 
+ * 配線計算（電圧降下・許容電流計算）連携用統一ペイロード
+ */
 export interface AirconCableSelectionPayload {
-  wireSizeName: string;
-  cableTypeCode: CableTypeCode;
-  targetVoltage: number;
-  targetCurrent: number;
+  cableType: CableTypeCode;
+  wireSize: string;
+  voltage: number;
   systemId: string;
+  currentA: number;
+  ratedCurrentA: number;
+  maxCurrentA: number;
   breakerAmp: number;
+  breakerPoles: string;
+  capacityKw: number;
+  tatamiStandard: string;
+  /** 電圧降下基準による最大亘長 [m] */
+  maxDistanceMeters: number;
+  /** 指定配線長 [m]（オプション） */
+  wiringDistanceMeters?: number;
 }
 
 // ==========================================
-// 2. 定数・UIオプション定義
+// 2. 定数・UIオプション・マスタデータ定義
 // ==========================================
 
 export const DEFAULT_AIRCON_INPUTS: Required<AirconInputParams> = {
-  areaValue: 10,
+  areaValue: 12,
   unit: "tatami",
   roomType: "living",
   buildingType: "wooden",
@@ -130,55 +183,48 @@ export const DEFAULT_AIRCON_INPUTS: Required<AirconInputParams> = {
   hasStrongSunlight: false,
   isTopFloor: false,
   hasHighCeiling: false,
+  targetVoltageDropRatio: 2.0,
+  wiringDistanceMeters: 0,
 };
 
 export const UNIT_OPTIONS = [
-  {
-    label: "畳（帖）",
-    value: "tatami",
-  },
-  {
-    label: "㎡（平米）",
-    value: "sqm",
-  },
-  {
-    label: "坪",
-    value: "tsubo",
-  },
+  { label: "畳（帖）", value: "tatami" },
+  { label: "㎡（平米）", value: "sqm" },
+  { label: "坪", value: "tsubo" },
 ] as const;
 
 export const ROOM_OPTIONS = [
-  {
-    label: "居間・リビング",
-    value: "living",
-    desc: "標準補正 ×1.10",
-  },
-  {
-    label: "LDK・吹抜け",
-    value: "ldk",
-    desc: "開放空間 ×1.20",
-  },
-  {
-    label: "台所・キッチン",
-    value: "kitchen",
-    desc: "火気・熱源あり ×1.30",
-  },
-  {
-    label: "和室",
-    value: "japanese",
-    desc: "標準和室 ×1.05",
-  },
-  {
-    label: "寝室",
-    value: "bedroom",
-    desc: "夜間主体 ×1.00",
-  },
-  {
-    label: "子供部屋・書斎",
-    value: "kids",
-    desc: "標準洋室 ×1.00",
-  },
+  { label: "居間・リビング", value: "living", desc: "標準補正 ×1.10" },
+  { label: "LDK・吹抜け", value: "ldk", desc: "開放空間 ×1.20" },
+  { label: "台所・キッチン", value: "kitchen", desc: "火気・熱源あり ×1.30" },
+  { label: "和室", value: "japanese", desc: "標準和室 ×1.05" },
+  { label: "寝室", value: "bedroom", desc: "夜間主体 ×1.00" },
+  { label: "子供部屋・書斎", value: "kids", desc: "標準洋室 ×1.00" },
 ] as const;
+
+/** 導体断面積マスタ (単芯/単線・より線表記からの換算用) */
+export const WIRE_AREA_MAP: Record<string, number> = {
+  "1.6mm": 2.01,
+  "2.0mm": 3.14,
+  "2.6mm": 5.31,
+  "2.0sq": 2.0,
+  "3.5sq": 3.5,
+  "5.5sq": 5.5,
+  "8.0sq": 8.0,
+  "14.0sq": 14.0,
+  "22.0sq": 22.0,
+};
+
+/** 電圧降下計算用・電線サイズ優先順位マスタ */
+export const WIRE_SIZE_CANDIDATES = [
+  { name: "1.6mm", area: 2.01 },
+  { name: "2.0mm", area: 3.14 },
+  { name: "2.6mm", area: 5.31 },
+  { name: "3.5sq", area: 3.5 },
+  { name: "5.5sq", area: 5.5 },
+  { name: "8.0sq", area: 8.0 },
+  { name: "14.0sq", area: 14.0 },
+];
 
 // エアコン能力マスタ
 export const AC_SPECS: AcSpec[] = [
@@ -323,158 +369,3 @@ export const AC_SPECS: AcSpec[] = [
     cableTypeCode: "vv",
   },
 ];
-
-// ==========================================
-// 3. ユーティリティ・補助関数
-// ==========================================
-
-export function extractWireSizeName(wireSizeStr: string): string {
-  if (!wireSizeStr) {
-    return "1.6mm";
-  }
-  return wireSizeStr.replace(/^[A-Za-z0-9\-]+\s*/, "");
-}
-
-export function convertToTatami(
-  value: number,
-  unit: AreaUnit = "tatami",
-): number {
-  if (value <= 0) {
-    return 0;
-  }
-
-  switch (unit) {
-    case "sqm":
-      return value / 1.65;
-    case "tsubo":
-      return value * 2.0;
-    case "tatami":
-    default:
-      return value;
-  }
-}
-
-export function getRoomMultiplier(roomType: RoomType = "living"): number {
-  switch (roomType) {
-    case "kitchen":
-      return 1.3;
-    case "ldk":
-      return 1.2;
-    case "living":
-      return 1.1;
-    case "japanese":
-      return 1.05;
-    case "bedroom":
-    case "kids":
-    default:
-      return 1.0;
-  }
-}
-
-// ==========================================
-// 4. エアコン適合選定コア計算ロジック
-// ==========================================
-
-export function calculateAirconSelection(
-  params: AirconInputParams,
-): AirconSelectionResult {
-  const {
-    areaValue,
-    unit = "tatami",
-    roomType = "living",
-    buildingType = "wooden",
-    personCount = 2,
-    hasStrongSunlight = false,
-    isTopFloor = false,
-    hasHighCeiling = false,
-  } = params;
-
-  const baseTatami = convertToTatami(areaValue, unit);
-  const breakdownNotes: string[] = [];
-
-  // 1. 部屋用途補正
-  const roomMult = getRoomMultiplier(roomType);
-  if (roomMult !== 1.0) {
-    breakdownNotes.push(`部屋用途補正 (${roomType}): ×${roomMult.toFixed(2)}`);
-  }
-
-  // 2. 日当たり・構造・天井高補正
-  let envMult = 1.0;
-  if (hasStrongSunlight) {
-    envMult += 0.1;
-    breakdownNotes.push("日当たり強 / 大開口窓補正: +10%");
-  }
-  if (isTopFloor) {
-    envMult += 0.1;
-    breakdownNotes.push("最上階 / 屋根直下補正: +10%");
-  }
-  if (hasHighCeiling) {
-    envMult += 0.15;
-    breakdownNotes.push("吹き抜け / 高天井補正: +15%");
-  }
-
-  let calculatedTatami = baseTatami * roomMult * envMult;
-
-  // 3. 在室人数による人熱負荷加算
-  const BASE_PERSONS = 2;
-  const extraPersons = Math.max(0, personCount - BASE_PERSONS);
-  const personHeatLoadKw = Math.round(extraPersons * 0.1 * 100) / 100;
-  const personHeatTatami = Math.round(extraPersons * 0.5 * 10) / 10;
-
-  if (extraPersons > 0) {
-    calculatedTatami += personHeatTatami;
-    breakdownNotes.push(
-      `人熱負荷 (${personCount}人 / 標準${BASE_PERSONS}人比+${extraPersons}人): +${personHeatTatami}畳分 (+${personHeatLoadKw}kW)`,
-    );
-  }
-
-  const effectiveTatami = Math.round(calculatedTatami * 10) / 10;
-
-  // 4. マスタ適合判定
-  let selectedSpec = AC_SPECS[0];
-  let isOverCapacity = false;
-
-  for (let i = 0; i < AC_SPECS.length; i++) {
-    const spec = AC_SPECS[i];
-    const thresholdTatami =
-      buildingType === "reinforced" ? spec.maxTatami : spec.minTatami;
-
-    if (effectiveTatami <= thresholdTatami) {
-      selectedSpec = spec;
-      break;
-    }
-
-    if (i === AC_SPECS.length - 1 && effectiveTatami > thresholdTatami) {
-      selectedSpec = spec;
-      isOverCapacity = true;
-    }
-  }
-
-  // 5. アドバイスコメントの生成
-  let recommendationNote = `実効負荷 ${effectiveTatami} 畳（${
-    buildingType === "wooden" ? "木造" : "鉄筋マンション"
-  }基準）に対し【${selectedSpec.tatamiStandard}（冷房能力 ${
-    selectedSpec.capacityKw
-  }kW）】が最適です。`;
-
-  if (selectedSpec.voltage === 200) {
-    recommendationNote += ` 電源は単相200V専用回路（2P2Eブレーカー、推奨線径 VVF ${selectedSpec.recommendedWireSize}）が必要です。`;
-  } else {
-    recommendationNote += ` 電源は単相100V専用回路（推奨線径 VVF ${selectedSpec.recommendedWireSize}）が必要です。`;
-  }
-
-  if (isOverCapacity) {
-    recommendationNote += ` ※負荷が家庭用最大クラス（29畳用）を超えているため、複数台設置またはパッケージエアコンの導入をご検討ください。`;
-  }
-
-  return {
-    effectiveTatami,
-    baseTatami: Math.round(baseTatami * 10) / 10,
-    personHeatLoadKw,
-    personHeatTatami,
-    selectedSpec,
-    isOverCapacity,
-    recommendationNote,
-    breakdownNotes,
-  };
-}

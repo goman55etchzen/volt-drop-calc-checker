@@ -6,9 +6,10 @@ import type {
     MotorBreakerSelectionResult,
     ElcbSelectionResult,
     GroundingResult,
-    CapacitorSelectionResult,
   } from '@/types/appDefinitions';
-  
+  import { 
+    CapacitorSelectionResult } from '@/base/capacitorBase'
+
   /**
    * 電動機標準仕様エントリー
    */

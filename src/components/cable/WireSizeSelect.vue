@@ -37,18 +37,31 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { WireSizeSelectProps, WireSizeSelectEmits } from '@/types/base';
-import { WIRE_SIZES, CABLE_TYPES, CableTypeCode } from '@/types/appDefinitions';
+import {
+  WIRE_SIZES,
+  CABLE_TYPES,
+  type CableTypeCode
+} from '@/base/cableBase';
 
-interface Props extends WireSizeSelectProps {
+// Props型を直接定義
+type Props = {
+  selectedWireName: string;
+  isOpen: boolean;
   selectedCableId?: CableTypeCode;
-}
+};
 
 const props = withDefaults(defineProps<Props>(), {
   selectedCableId: 'vvf'
 });
 
-const emit = defineEmits<WireSizeSelectEmits>();
+// Emits型も直接定義して外部型参照エラーを解消
+type Emits = {
+  (e: 'update:selectedWireName', name: string): void;
+  (e: 'open'): void;
+  (e: 'close'): void;
+};
+
+const emit = defineEmits<Emits>();
 
 // 選択中のケーブル種別に応じた電線サイズ・許容電流リストを取得
 const currentWireList = computed(() => {

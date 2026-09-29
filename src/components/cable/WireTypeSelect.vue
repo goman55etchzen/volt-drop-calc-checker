@@ -41,7 +41,7 @@ import {
   CableTypeCode,
   CABLE_TYPES,
   CABLE_TEMP_GROUPS,
-} from '@/types/appDefinitions';
+} from '@/base/cableBase';
 
 interface Props {
   modelValue: CableTypeCode;

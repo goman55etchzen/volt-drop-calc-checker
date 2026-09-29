@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { SYSTEM_DEFINITIONS } from '@/types/appDefinitions';
+import { SYSTEM_DEFINITIONS } from '@/base/cableBase';
 
 const selectedSystem = defineModel<string>({ required: true });
 </script>

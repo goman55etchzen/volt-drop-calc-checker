@@ -1,13 +1,19 @@
 // src/utils/breakerSelect.ts
+
 import {
   BreakerSelectParams,
   MotorBreakerSelectionResult,
   ElcbSelectionResult,
-  EnvironmentType
-} from '@/types/appDefinitions';
+  EnvironmentType,
+  GeneralBreakerParams,
+  GeneralBreakerResult,
+  BreakerBaseComprehensiveResult
+} from '@/base/breakerBase';
 import {
   selectExtendedMotorBreaker,
-  selectExtendedElcb
+  selectExtendedElcb,
+  selectGeneralBreaker as baseSelectGeneralBreaker,
+  selectComprehensiveBreakers as baseSelectComprehensiveBreakers
 } from '@/base/breakerBase';
 
 /**
@@ -42,4 +48,18 @@ export function selectElcb(params: {
     isMandatory: ext.isMandatory,
     description: ext.description
   };
+}
+
+/**
+ * 一般負荷用配線用遮断器選定
+ */
+export function selectGeneralBreaker(params: GeneralBreakerParams): GeneralBreakerResult {
+  return baseSelectGeneralBreaker(params);
+}
+
+/**
+ * 総合一括選定関数
+ */
+export function selectComprehensiveBreakers(params: BreakerSelectParams): BreakerBaseComprehensiveResult {
+  return baseSelectComprehensiveBreakers(params);
 }

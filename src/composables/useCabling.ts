@@ -1,11 +1,15 @@
-import { ref, computed, type Ref } from 'vue';
-import { CableBase, type VoltageDropParams, type WireSelectionParams } from '@/base/cableBase';
-import {
+// src/composables/useCabling.ts
+import { ref, computed, type Ref } from "vue";
+import CableBase, {
   SYSTEM_DEFINITIONS,
+  CABLE_TYPES,
+  type VoltageDropParams,
+  type WireSelectionParams,
   type SystemType,
   type CableTypeCode,
-  type AvailableWireResult
-} from '@/types/appDefinitions';
+  type AvailableWireResult,
+  type CableType,
+} from "@/base/cableBase";
 
 export const SYSTEM_TYPES: SystemType[] = SYSTEM_DEFINITIONS;
 
@@ -30,10 +34,10 @@ export function useCabling(
   selectedWireName: Ref<string>,
   selectedCableId: Ref<string | CableTypeCode>,
   targetPercent: Ref<number>,
-  options: UseCablingOptions = {}
+  options: UseCablingOptions = {},
 ) {
   // 選択中の配線方式ID
-  const selectedSystemId = ref<string>('1P2W');
+  const selectedSystemId = ref<string>("1P2W");
 
   // オプショナルパラメータの参照（未指定時はデフォルト値）
   const ambientTemp = options.ambientTemp ?? ref(30);
@@ -46,39 +50,36 @@ export function useCabling(
   // ----------------------------------------------------------------
   // 1. CableBase マスタ参照のリアクティブ化
   // ----------------------------------------------------------------
-  const currentSystem = computed(() => CableBase.getSystem(selectedSystemId.value));
+  const currentSystem = computed(() =>
+    CableBase.getSystem(selectedSystemId.value),
+  );
 
-  const currentCable = computed(() => {
+  const currentCable = computed<CableType | undefined>(() => {
     const cableId = selectedCableId.value as CableTypeCode;
-    return (
-      CableBase.getCableSpec(selectedWireName.value)
-        ? (SYSTEM_DEFINITIONS as any) // 安全なフォールバック
-        : null
-    ) ?? undefined;
+    return CABLE_TYPES.find((c) => c.id === cableId);
   });
 
-  // CableType定義の直接取得
-  const cableTypeDefinition = computed(() => {
-    const cableId = selectedCableId.value as CableTypeCode;
-    return (
-      import('@/types/appDefinitions').then ? 
-      null : null
-    );
+  const cableTypeDefinition = computed<CableType | undefined>(() => {
+    return currentCable.value;
   });
 
   const currentWire = computed(() => {
-    return CableBase.getWireSize(selectedWireName.value) || {
-      name: selectedWireName.value,
-      area: CableBase.getCableSpec(selectedWireName.value)?.area ?? 0,
-      amp: 0
-    };
+    return (
+      CableBase.getWireSize(selectedWireName.value) || {
+        name: selectedWireName.value,
+        area: CableBase.getCableSpec(selectedWireName.value)?.area ?? 0,
+        amp: 0,
+      }
+    );
   });
 
   // ----------------------------------------------------------------
   // 2. 電圧降下・配線長計算 (CableBase 連携)
   // ----------------------------------------------------------------
   /** 許容電圧降下 (V) */
-  const allowDropV = computed(() => voltage.value * (targetPercent.value / 100));
+  const allowDropV = computed(
+    () => voltage.value * (targetPercent.value / 100),
+  );
 
   /** 最大許容配線長 L (m) */
   const maxLen = computed(() => {
@@ -87,7 +88,7 @@ export function useCabling(
       targetPercent.value,
       totalI.value,
       selectedWireName.value,
-      selectedSystemId.value
+      selectedSystemId.value,
     );
   });
 
@@ -100,7 +101,7 @@ export function useCabling(
       distance: distance.value,
       wireSizeName: selectedWireName.value,
       powerFactor: powerFactor.value,
-      useImpedance: useImpedance.value
+      useImpedance: useImpedance.value,
     };
     return CableBase.calculateVoltageDrop(params);
   });
@@ -114,7 +115,7 @@ export function useCabling(
   // ----------------------------------------------------------------
   // 3. 許容電流・過電流判定 (CableBase 連携)
   // ----------------------------------------------------------------
-  /** 選択された電線サイズが対象ケーブルの limits またはスペックに存在するか */
+  /** 選択された電線サイズが有効か */
   const isWireSizeValidForCable = computed(() => {
     return CableBase.isValidWireSize(selectedWireName.value);
   });
@@ -127,7 +128,7 @@ export function useCabling(
       selectedWireName.value,
       ambientTemp.value,
       wireCount.value,
-      parallelCount.value
+      parallelCount.value,
     );
   });
 
@@ -157,7 +158,7 @@ export function useCabling(
     ambientTemp: ambientTemp.value,
     wireCount: wireCount.value,
     parallelCount: parallelCount.value,
-    powerFactor: powerFactor.value
+    powerFactor: powerFactor.value,
   }));
 
   /** 全サイズの一覧評価 */
@@ -174,29 +175,31 @@ export function useCabling(
   // 5. 屋内固定配線不可判定および警告
   // ----------------------------------------------------------------
   const isIndoorWiringForbidden = computed(() => {
-    const forbiddenCables: CableTypeCode[] = ['vct', 'vctf', 'vff'];
+    const cable = currentCable.value;
+    if (cable && cable.isIndoorWiringForbidden !== undefined) {
+      return cable.isIndoorWiringForbidden;
+    }
+    const forbiddenCables: CableTypeCode[] = ["vct", "vctf", "vff"];
     return forbiddenCables.includes(selectedCableId.value as CableTypeCode);
   });
 
   const indoorWiringWarning = computed(() => {
-    if (!isIndoorWiringForbidden.value) return '';
-    if (selectedCableId.value === 'vct') {
-      return 'VCTは機器への電源供給・延長用です。壁内や天井などの屋内固定配線には使用できません（電気設備技術基準）。';
+    if (!isIndoorWiringForbidden.value) return "";
+    const cable = currentCable.value;
+    if (cable?.warningMessage) {
+      return cable.warningMessage;
     }
-    if (selectedCableId.value === 'vctf') {
-      return 'VCTFは小型機器電源供給・延長コード専用です。壁内等の固定配線には使用できません（内線規程）。';
-    }
-    if (selectedCableId.value === 'vff') {
-      return '小判コード(VFF)は器具電源・延長用です。壁内や造営物への固定配線には使用できません。';
-    }
-    return '屋内固定配線には使用できません。';
+    return "屋内固定配線には使用できません。";
   });
 
   // ----------------------------------------------------------------
   // 6. 電線サイズステップ変更ヘルパー
   // ----------------------------------------------------------------
-  const stepWireSize = (step: 'next' | 'prev') => {
-    const nextName = CableBase.getAdjacentWireSize(selectedWireName.value, step);
+  const stepWireSize = (step: "next" | "prev") => {
+    const nextName = CableBase.getAdjacentWireSize(
+      selectedWireName.value,
+      step,
+    );
     selectedWireName.value = nextName;
   };
 
@@ -206,6 +209,7 @@ export function useCabling(
     SYSTEM_TYPES,
     currentSystem,
     currentCable,
+    cableTypeDefinition,
     currentWire,
     maxLen,
     isOverCurrent,
@@ -213,7 +217,7 @@ export function useCabling(
     isIndoorWiringForbidden,
     indoorWiringWarning,
 
-    // CableBase 連携による拡張プロパティ
+    // CableBase 連携拡張プロパティ
     allowDropV,
     voltageDrop,
     voltageDropPercent,
@@ -221,6 +225,6 @@ export function useCabling(
     allowableCurrentInfo,
     allWireEvaluations,
     suitableWire,
-    stepWireSize
+    stepWireSize,
   };
 }

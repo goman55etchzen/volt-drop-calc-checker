@@ -431,6 +431,13 @@ const handleSendToWireCalc = () => {
             {{ selectionResult.selectedSpec.recommendedWireSize }}
           </span>
         </div>
+        <!-- ★追加: 電圧降下限界最大亘長 -->
+        <div class="spec-item highlight-item">
+          <span class="spec-label"> 許容最大配線長 (2.0%降下時) </span>
+          <span class="spec-value emphasize">
+           約 {{ selectionResult.maxDistanceInfo.maxDistanceMeters }} m
+          </span>
+        </div>
       </div>
 
       <!-- 注意 -->
