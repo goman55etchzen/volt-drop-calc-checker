@@ -2,7 +2,11 @@
 
 import { computed, ref, Ref } from 'vue'
 import {
-  CalculationInputMode, LoadType,BreakerStatusResult,CalculationIssue,} from '@/types/appDefinitions'
+  CalculationInputMode, 
+  LoadType,
+  BreakerStatusResult,
+  CalculationIssue,
+} from '@/types/appDefinitions'
 import {
   InstallationType,
   CableTypeCode,
@@ -14,8 +18,8 @@ import {
   calculateAllowableCurrent,
   calculateK2
 } from '@/base/cableBase'
-import {MOTOR_SPECS,} from '@/base/motorBase'
-import {BREAKER_SIZES, THREE_PHASE_BREAKER_SIZES, } from '@/base/breakerBase'
+import { STANDARD_MOTOR_SPECS } from '@/base/motorBase'
+import { BREAKER_SIZES, THREE_PHASE_BREAKER_SIZES } from '@/base/breakerBase'
 
 export interface ExtendedAvailableWireResult extends AvailableWireResult {
   limiter: 'drop' | 'heat' | 'none'; // ボトルネック要因
@@ -61,11 +65,17 @@ export function useReversedCallc(
     return ignorePowerFactor.value ? 1.0 : powerFactor.value
   })
 
+  // モーターのスペックエントリー取得
+  const currentMotorSpec = computed(() => {
+    return STANDARD_MOTOR_SPECS.find((m) => m.kw === motorKw.value)
+  })
+
   // 負荷電流 (W入力、A直接入力、モーター規約電流を自動分岐算出)
   const calculatedLoadCurrent = computed(() => {
     if (loadType.value === 'motor') {
-      const spec = MOTOR_SPECS.find((m) => m.kw === motorKw.value)
-      return spec ? spec.amp : 4.8
+      const spec = currentMotorSpec.value
+      if (!spec) return 4.8
+      return voltage.value >= 380 ? spec.amp400V : spec.amp200V
     }
 
     if (inputMode.value === 'watt') {
@@ -88,7 +98,7 @@ export function useReversedCallc(
     return voltage.value * (targetPercent.value / 100)
   })
 
-  // 敷設本数に応じた電流減少係数 (一貫して calculateK2 を利用)
+  // 敷設本数に応じた電流減少係数
   const currentReductionFactor = computed(() => {
     return calculateK2(wireCount.value)
   })
@@ -137,8 +147,8 @@ export function useReversedCallc(
     }
 
     if (loadType.value === 'motor') {
-      const spec = MOTOR_SPECS.find((m) => m.kw === motorKw.value)
-      const pfText = spec ? spec.defaultCosTheta.toString() : '0.80'
+      const spec = currentMotorSpec.value
+      const pfText = spec ? spec.defaultPowerFactor.toString() : '0.80'
       issues.push({
         level: 'info',
         code: 'MOTOR_SPEC_APPLIED',
@@ -161,7 +171,7 @@ export function useReversedCallc(
     calculationIssues.value.some((issue) => issue.level === 'error')
   )
 
-  // 電線サイズごとの判定算出（精密計算エンジン）
+  // 電線サイズごとの判定算出
   const availableWires = computed<ExtendedAvailableWireResult[]>(() => {
     if (hasError.value) return []
 
@@ -180,7 +190,6 @@ export function useReversedCallc(
       requiredWireAmp = I * 1.25
     }
 
-    // 全サイズ計算
     const rawResults = CABLE_SPECS.map((spec) => {
       // 1. 電圧降下限界電流の計算
       const z = ignorePowerFactor.value
@@ -188,9 +197,9 @@ export function useReversedCallc(
         : spec.r * cosTheta + spec.x * sinTheta
 
       const maxAmpereByDrop =
-        z > 0 ? (e_allow * 1000) / (sys.kFactor * z * L) : 0
+        z > 0 && L > 0 ? (e_allow * 1000) / (sys.kFactor * z * L) : 0
 
-      // 2. 熱的許容電流の精密計算 (calculateAllowableCurrent使用)
+      // 2. 熱的許容電流の計算
       const baseAllow = spec.baseAllowAmp[selectedCableType.value] ?? 0
       
       let allowAmpereByHeat = 0
@@ -208,7 +217,6 @@ export function useReversedCallc(
       const isOkForLoad =
         effectiveMaxAmp >= I && allowAmpereByHeat >= requiredWireAmp
 
-      // 支配的制限要因 (ボトルネック)
       let limiter: 'drop' | 'heat' | 'none' = 'none'
       if (maxAmpereByDrop < allowAmpereByHeat) {
         limiter = 'drop'
@@ -228,7 +236,6 @@ export function useReversedCallc(
       }
     })
 
-    // 推奨最小サイズ（条件を満たす最小の断面積）を特定
     const okWires = rawResults.filter((w) => w.isOkForLoad)
     let minArea = Infinity
     if (okWires.length > 0) {
@@ -241,12 +248,10 @@ export function useReversedCallc(
     }))
   })
 
-  // おすすめ最小電線
   const recommendedWire = computed(() => {
     return availableWires.value.find((w) => w.isRecommended) || null
   })
 
-  // 送る側ブレーカー判定
   const breakerStatus = computed<BreakerStatusResult | null>(() => {
     if (hasError.value) return null
 
@@ -259,7 +264,6 @@ export function useReversedCallc(
       requiredCapacity = I * 1.25
     }
 
-    // 三相 / 単相 でブレーカー規格サイズを分岐
     const breakerList =
       selectedSystemId.value === '3P3W' || loadType.value === 'motor'
         ? THREE_PHASE_BREAKER_SIZES
@@ -291,6 +295,6 @@ export function useReversedCallc(
     calculationIssues,
     hasError,
     SYSTEM_DEFINITIONS,
-    MOTOR_SPECS
+    MOTOR_SPECS: STANDARD_MOTOR_SPECS
   }
 }

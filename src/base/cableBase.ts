@@ -31,6 +31,37 @@ export type CableTypeCode =
   | "vctf"
   | "vff";
 
+export interface SystemType {
+  id: string;
+  label: string;
+  defaultVoltage: number;
+  k: number;
+  kFactor: number;
+}
+
+export interface VoltageDropParams {
+  systemId: string;
+  current: number;
+  distance: number;
+  wireSizeName: string;
+  powerFactor?: number;
+  useImpedance?: boolean;
+}
+
+export interface WireSelectionParams {
+  systemId: string;
+  voltage: number;
+  targetDropPercent: number;
+  current: number;
+  distance: number;
+  cableType: CableTypeCode;
+  ambientTemp: number;
+  wireCount: number;
+  parallelCount?: number;
+  powerFactor?: number;
+  useImpedance?: boolean;
+}
+
 export interface CableType {
   id: CableTypeCode;
   name: string;
@@ -580,6 +611,37 @@ export const CABLE_TEMP_GROUPS = [
   {
     label: "機器電源・延長コード (※屋内固定配線不可)",
     items: ["vct", "vctf", "vff"],
+  },
+];
+
+export const SYSTEM_DEFINITIONS: SystemType[] = [
+  {
+    id: "1P2W",
+    label: "単相2線式 / 直流2線",
+    defaultVoltage: 100,
+    k: 35.6,
+    kFactor: 2.0,
+  },
+  {
+    id: "1P3W_100V",
+    label: "単相3線式 (100V負荷)",
+    defaultVoltage: 100,
+    k: 17.8,
+    kFactor: 1.0,
+  },
+  {
+    id: "1P3W_200V",
+    label: "単相3線式 (200V負荷)",
+    defaultVoltage: 200,
+    k: 35.6,
+    kFactor: 2.0,
+  },
+  {
+    id: "3P3W",
+    label: "三相3線式 (線間)",
+    defaultVoltage: 200,
+    k: 30.8,
+    kFactor: 1.732,
   },
 ];
 
@@ -1141,3 +1203,194 @@ export function calculateAllowableCurrent(params: {
     totalAllowAmp,
   };
 }
+
+function normalizeWireSpecName(name: string): string {
+  return name
+    .replace(/\s*\([^)]*\)$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findCableSpec(wireSizeName: string): CableSpec | undefined {
+  const exact = CABLE_SPECS.find((spec) => spec.size === wireSizeName);
+  if (exact) return exact;
+
+  const normalized = normalizeWireSpecName(wireSizeName);
+  const normalizedMatch = CABLE_SPECS.find(
+    (spec) => normalizeWireSpecName(spec.size) === normalized,
+  );
+  if (normalizedMatch) return normalizedMatch;
+
+  const wire = WIRE_SIZES.find((item) => item.name === wireSizeName);
+  return wire
+    ? CABLE_SPECS.find((spec) => Math.abs(spec.area - wire.area) < 1e-9)
+    : undefined;
+}
+
+function getEffectiveImpedance(spec: CableSpec, powerFactor: number, useImpedance: boolean): number {
+  const pf = Math.min(1, Math.max(0, powerFactor));
+  if (useImpedance) {
+    return Math.sqrt(spec.r * spec.r + spec.x * spec.x);
+  }
+  const sinPhi = Math.sqrt(Math.max(0, 1 - pf * pf));
+  return spec.r * pf + spec.x * sinPhi;
+}
+
+export class CableBase {
+  static getSystem(systemId: string): SystemType | undefined {
+    return SYSTEM_DEFINITIONS.find((system) => system.id === systemId);
+  }
+
+  static getCableType(cableTypeId: CableTypeCode): CableType | undefined {
+    return CABLE_TYPES.find((cable) => cable.id === cableTypeId);
+  }
+
+  static getWireSize(wireSizeName: string): WireSize | undefined {
+    return WIRE_SIZES.find((wire) => wire.name === wireSizeName);
+  }
+
+  static getCableSpec(wireSizeName: string): CableSpec | undefined {
+    return findCableSpec(wireSizeName);
+  }
+
+  static isValidWireSize(wireSizeName: string): boolean {
+    return WIRE_SIZES.some((wire) => wire.name === wireSizeName);
+  }
+
+  static isIndoorWiringForbidden(cableTypeId: CableTypeCode): boolean {
+    return this.getCableType(cableTypeId)?.isIndoorWiringForbidden === true;
+  }
+
+  static getAllowableCurrent(
+    cableTypeId: CableTypeCode,
+    wireSizeName: string,
+    ambientTemp: number,
+    wireCount: number,
+    parallelCount = 1,
+  ) {
+    const cable = this.getCableType(cableTypeId);
+    if (!cable) {
+      return { k1: 0, k2: 0, singleAllowAmp: 0, totalAllowAmp: 0 };
+    }
+
+    const baseAllowAmp = cable.limits[wireSizeName] ?? 0;
+    if (baseAllowAmp <= 0) {
+      return { k1: 0, k2: 0, singleAllowAmp: 0, totalAllowAmp: 0 };
+    }
+
+    return calculateAllowableCurrent({
+      baseAllowAmp,
+      maxTemp: cable.maxTemp,
+      ambientTemp,
+      wireCount,
+      parallelCount,
+    });
+  }
+
+  static calculateVoltageDrop(params: VoltageDropParams): number {
+    const system = this.getSystem(params.systemId);
+    const spec = this.getCableSpec(params.wireSizeName);
+    if (!system || !spec || params.current <= 0 || params.distance <= 0) {
+      return 0;
+    }
+
+    const powerFactor = params.powerFactor ?? 1;
+    const useImpedance = params.useImpedance ?? false;
+    const resistanceEquivalent = getEffectiveImpedance(
+      spec,
+      powerFactor,
+      useImpedance,
+    );
+
+    return (
+      params.current *
+      params.distance *
+      resistanceEquivalent *
+      system.kFactor /
+      1000
+    );
+  }
+
+  static calculateMaxDistance(
+    voltage: number,
+    targetDropPercent: number,
+    current: number,
+    wireSizeName: string,
+    systemId: string,
+  ): number {
+    const system = this.getSystem(systemId);
+    const spec = this.getCableSpec(wireSizeName);
+    if (!system || !spec || voltage <= 0 || targetDropPercent <= 0 || current <= 0) {
+      return 0;
+    }
+
+    const allowableDropV = voltage * (targetDropPercent / 100);
+    return (allowableDropV * 1000) / (current * spec.r * system.kFactor);
+  }
+
+  static getAdjacentWireSize(
+    wireSizeName: string,
+    step: 'next' | 'prev',
+  ): string {
+    const index = WIRE_SIZES.findIndex((wire) => wire.name === wireSizeName);
+    if (index < 0) return wireSizeName;
+
+    const delta = step === 'next' ? 1 : -1;
+    const nextIndex = Math.min(
+      Math.max(0, index + delta),
+      WIRE_SIZES.length - 1,
+    );
+    return WIRE_SIZES[nextIndex].name;
+  }
+
+  static evaluateAllWireSizes(params: WireSelectionParams): AvailableWireResult[] {
+    return WIRE_SIZES.map((wire) => {
+      const allowableCurrentInfo = this.getAllowableCurrent(
+        params.cableType,
+        wire.name,
+        params.ambientTemp,
+        params.wireCount,
+        params.parallelCount ?? 1,
+      );
+
+      const maxAmpereByDrop =
+        params.distance <= 0 || params.voltage <= 0 || params.targetDropPercent <= 0
+          ? Infinity
+          : (() => {
+              const system = this.getSystem(params.systemId);
+              const spec = this.getCableSpec(wire.name);
+              if (!system || !spec) return 0;
+              const allowableDropV = params.voltage * (params.targetDropPercent / 100);
+              const pf = params.powerFactor ?? 1;
+              const z = getEffectiveImpedance(spec, pf, params.useImpedance ?? false);
+              if (z <= 0) return Infinity;
+              return (allowableDropV * 1000) / (params.distance * z * system.kFactor);
+            })();
+
+      const allowAmpereByHeat = allowableCurrentInfo.totalAllowAmp;
+      const effectiveMaxAmp = Math.min(maxAmpereByDrop, allowAmpereByHeat);
+      const isOkForLoad =
+        allowAmpereByHeat > 0 &&
+        Number.isFinite(effectiveMaxAmp) &&
+        params.current <= effectiveMaxAmp;
+
+      return {
+        wireName: wire.name,
+        area: wire.area,
+        maxAmpereByDrop,
+        allowAmpereByHeat,
+        effectiveMaxAmp,
+        isOkForLoad,
+      };
+    });
+  }
+
+  static selectSuitableWireSize(
+    params: WireSelectionParams,
+  ): AvailableWireResult | null {
+    const evaluations = this.evaluateAllWireSizes(params);
+    return evaluations.find((result) => result.isOkForLoad) ?? null;
+  }
+}
+
+export default CableBase;
