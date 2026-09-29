@@ -7,10 +7,12 @@ import {
   type AirconInputParams,
   type AirconCableSelectionPayload,
   DEFAULT_AIRCON_INPUTS,
-  calculateAirconSelection,
-  getAirconSystemId,
   AC_SPECS,
 } from "@/base/airconBase";
+import {
+  calculateAirconSelection,
+  getAirconSystemId,
+} from "@/utils/airconCalc";
 
 export type { AirconCableSelectionPayload } from "@/base/airconBase";
 

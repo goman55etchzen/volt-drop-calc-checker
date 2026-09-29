@@ -1,4 +1,4 @@
-import type { CableTypeCode } from "./appDefinitions";
+import type { CableTypeCode } from "./cableBase";
 
 // ==========================================
 // 1. 型定義 (Types & Interfaces)

@@ -1204,30 +1204,53 @@ export function calculateAllowableCurrent(params: {
   };
 }
 
-function normalizeWireSpecName(name: string): string {
+function normalizeWireSizeName(name: string): string {
   return name
-    .replace(/\s*\([^)]*\)$/, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\s+/g, "")
+    .replace(/sq$/i, "sq")
+    .toLowerCase();
+}
+
+function findWireSize(wireSizeName: string): WireSize | undefined {
+  const exact = WIRE_SIZES.find((wire) => wire.name === wireSizeName);
+  if (exact) return exact;
+  const normalized = normalizeWireSizeName(wireSizeName);
+  return WIRE_SIZES.find(
+    (wire) => normalizeWireSizeName(wire.name) === normalized,
+  );
 }
 
 function findCableSpec(wireSizeName: string): CableSpec | undefined {
   const exact = CABLE_SPECS.find((spec) => spec.size === wireSizeName);
   if (exact) return exact;
 
-  const normalized = normalizeWireSpecName(wireSizeName);
+  const normalized = normalizeWireSizeName(wireSizeName);
   const normalizedMatch = CABLE_SPECS.find(
-    (spec) => normalizeWireSpecName(spec.size) === normalized,
+    (spec) => normalizeWireSizeName(spec.size) === normalized,
   );
   if (normalizedMatch) return normalizedMatch;
 
-  const wire = WIRE_SIZES.find((item) => item.name === wireSizeName);
-  return wire
-    ? CABLE_SPECS.find((spec) => Math.abs(spec.area - wire.area) < 1e-9)
-    : undefined;
+  const wire = findWireSize(wireSizeName);
+  if (!wire) return undefined;
+  return CABLE_SPECS.find((spec) => Math.abs(spec.area - wire.area) < 1e-9);
 }
 
-function getEffectiveImpedance(spec: CableSpec, powerFactor: number, useImpedance: boolean): number {
+function findCableLimit(cable: CableType, wireSizeName: string): number {
+  const exact = cable.limits[wireSizeName];
+  if (exact !== undefined) return exact;
+
+  const normalized = normalizeWireSizeName(wireSizeName);
+  const entry = Object.entries(cable.limits).find(
+    ([name]) => normalizeWireSizeName(name) === normalized,
+  );
+  return entry?.[1] ?? 0;
+}
+
+function getEffectiveImpedance(
+  spec: CableSpec,
+  powerFactor: number,
+  useImpedance: boolean,
+): number {
   const pf = Math.min(1, Math.max(0, powerFactor));
   if (useImpedance) {
     return Math.sqrt(spec.r * spec.r + spec.x * spec.x);
@@ -1246,7 +1269,7 @@ export class CableBase {
   }
 
   static getWireSize(wireSizeName: string): WireSize | undefined {
-    return WIRE_SIZES.find((wire) => wire.name === wireSizeName);
+    return findWireSize(wireSizeName);
   }
 
   static getCableSpec(wireSizeName: string): CableSpec | undefined {
@@ -1254,7 +1277,7 @@ export class CableBase {
   }
 
   static isValidWireSize(wireSizeName: string): boolean {
-    return WIRE_SIZES.some((wire) => wire.name === wireSizeName);
+    return findWireSize(wireSizeName) !== undefined;
   }
 
   static isIndoorWiringForbidden(cableTypeId: CableTypeCode): boolean {
@@ -1267,13 +1290,13 @@ export class CableBase {
     ambientTemp: number,
     wireCount: number,
     parallelCount = 1,
-  ) {
+  ): ReturnType<typeof calculateAllowableCurrent> {
     const cable = this.getCableType(cableTypeId);
     if (!cable) {
       return { k1: 0, k2: 0, singleAllowAmp: 0, totalAllowAmp: 0 };
     }
 
-    const baseAllowAmp = cable.limits[wireSizeName] ?? 0;
+    const baseAllowAmp = findCableLimit(cable, wireSizeName);
     if (baseAllowAmp <= 0) {
       return { k1: 0, k2: 0, singleAllowAmp: 0, totalAllowAmp: 0 };
     }
@@ -1296,16 +1319,12 @@ export class CableBase {
 
     const powerFactor = params.powerFactor ?? 1;
     const useImpedance = params.useImpedance ?? false;
-    const resistanceEquivalent = getEffectiveImpedance(
-      spec,
-      powerFactor,
-      useImpedance,
-    );
+    const equivalent = getEffectiveImpedance(spec, powerFactor, useImpedance);
 
     return (
       params.current *
       params.distance *
-      resistanceEquivalent *
+      equivalent *
       system.kFactor /
       1000
     );
@@ -1317,25 +1336,46 @@ export class CableBase {
     current: number,
     wireSizeName: string,
     systemId: string,
+    powerFactor = 1,
+    useImpedance = false,
   ): number {
     const system = this.getSystem(systemId);
     const spec = this.getCableSpec(wireSizeName);
-    if (!system || !spec || voltage <= 0 || targetDropPercent <= 0 || current <= 0) {
+    if (
+      !system ||
+      !spec ||
+      voltage <= 0 ||
+      targetDropPercent <= 0 ||
+      current <= 0
+    ) {
       return 0;
     }
 
     const allowableDropV = voltage * (targetDropPercent / 100);
-    return (allowableDropV * 1000) / (current * spec.r * system.kFactor);
+    const equivalent = getEffectiveImpedance(
+      spec,
+      powerFactor,
+      useImpedance,
+    );
+    if (equivalent <= 0) return 0;
+
+    return (
+      (allowableDropV * 1000) /
+      (current * equivalent * system.kFactor)
+    );
   }
 
   static getAdjacentWireSize(
     wireSizeName: string,
-    step: 'next' | 'prev',
+    step: "next" | "prev",
   ): string {
-    const index = WIRE_SIZES.findIndex((wire) => wire.name === wireSizeName);
+    const normalized = normalizeWireSizeName(wireSizeName);
+    const index = WIRE_SIZES.findIndex(
+      (wire) => normalizeWireSizeName(wire.name) === normalized,
+    );
     if (index < 0) return wireSizeName;
 
-    const delta = step === 'next' ? 1 : -1;
+    const delta = step === "next" ? 1 : -1;
     const nextIndex = Math.min(
       Math.max(0, index + delta),
       WIRE_SIZES.length - 1,
@@ -1343,7 +1383,9 @@ export class CableBase {
     return WIRE_SIZES[nextIndex].name;
   }
 
-  static evaluateAllWireSizes(params: WireSelectionParams): AvailableWireResult[] {
+  static evaluateAllWireSizes(
+    params: WireSelectionParams,
+  ): AvailableWireResult[] {
     return WIRE_SIZES.map((wire) => {
       const allowableCurrentInfo = this.getAllowableCurrent(
         params.cableType,
@@ -1354,21 +1396,35 @@ export class CableBase {
       );
 
       const maxAmpereByDrop =
-        params.distance <= 0 || params.voltage <= 0 || params.targetDropPercent <= 0
+        params.distance <= 0 ||
+        params.voltage <= 0 ||
+        params.targetDropPercent <= 0
           ? Infinity
           : (() => {
               const system = this.getSystem(params.systemId);
               const spec = this.getCableSpec(wire.name);
               if (!system || !spec) return 0;
-              const allowableDropV = params.voltage * (params.targetDropPercent / 100);
-              const pf = params.powerFactor ?? 1;
-              const z = getEffectiveImpedance(spec, pf, params.useImpedance ?? false);
-              if (z <= 0) return Infinity;
-              return (allowableDropV * 1000) / (params.distance * z * system.kFactor);
+
+              const allowableDropV =
+                params.voltage * (params.targetDropPercent / 100);
+              const equivalent = getEffectiveImpedance(
+                spec,
+                params.powerFactor ?? 1,
+                params.useImpedance ?? false,
+              );
+              if (equivalent <= 0) return Infinity;
+
+              return (
+                (allowableDropV * 1000) /
+                (params.distance * equivalent * system.kFactor)
+              );
             })();
 
       const allowAmpereByHeat = allowableCurrentInfo.totalAllowAmp;
-      const effectiveMaxAmp = Math.min(maxAmpereByDrop, allowAmpereByHeat);
+      const effectiveMaxAmp = Math.min(
+        maxAmpereByDrop,
+        allowAmpereByHeat,
+      );
       const isOkForLoad =
         allowAmpereByHeat > 0 &&
         Number.isFinite(effectiveMaxAmp) &&

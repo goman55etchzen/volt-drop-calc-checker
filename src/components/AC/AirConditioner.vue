@@ -6,7 +6,6 @@ import {
   type AirconCableSelectionPayload,
 } from "@/composables/useAirconCable";
 
-import type { CableTypeCode } from "@/types/appDefinitions";
 
 // ==========================================
 // Emits

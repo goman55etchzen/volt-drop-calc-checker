@@ -1,15 +1,17 @@
 // src/types/appDefinitions.ts
 
 // ==========================================
-// アプリ固有の状態・ロジック型定義
+// 1. アプリ状態・ロジック型定義
 // ==========================================
 
 export type AppMode = "normal" | "reversed" | "motor";
 export type EquipmentInputMode = "device_watt" | "device_amp" | "breaker_limit";
 export type CalculationInputMode = "amp" | "watt";
 export type LoadType = "general" | "motor";
+
 export type EnvironmentType = "normal" | "enclosure" | "wet";
 export type PowerFrequency = 50 | 60;
+
 export type MotorBreakerType = "auto" | "motor_breaker" | "mccb";
 
 export interface MotorBreakerSelectionResult {
@@ -59,7 +61,12 @@ export interface SelectBreakerParams {
   environment?: EnvironmentType;
 }
 
+// BreakerSelectParams との表記揺れを統一解決
 export type BreakerSelectParams = SelectBreakerParams;
+
+// ==========================================
+// 2. 配線・計算用 データインターフェース
+// ==========================================
 
 export interface MotorSpec {
   kw: number;
@@ -118,10 +125,6 @@ export {
   calculateK2,
   calculateAllowableCurrent,
 } from "@/base/cableBase";
-
-// ==========================================
-// アプリ固有の定数・マスタデータ
-// ==========================================
 
 export const MOTOR_SPECS: MotorSpec[] = [
   { kw: 0.2, amp: 1.8, defaultCosTheta: 0.8 },

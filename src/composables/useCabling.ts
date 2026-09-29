@@ -3,7 +3,6 @@ import { ref, computed, type Ref } from "vue";
 import CableBase, {
   SYSTEM_DEFINITIONS,
   CABLE_TYPES,
-  CABLE_SPECS,
   type VoltageDropParams,
   type WireSelectionParams,
   type SystemType,
@@ -57,7 +56,7 @@ export function useCabling(
     const wire = CableBase.getWireSize(selectedWireName.value);
     if (wire) return wire;
 
-    const spec = CABLE_SPECS.find((s) => s.size === selectedWireName.value);
+    const spec = CableBase.getCableSpec(selectedWireName.value);
     return {
       name: selectedWireName.value,
       area: spec?.area ?? 0,
@@ -76,6 +75,8 @@ export function useCabling(
       totalI.value,
       selectedWireName.value,
       selectedSystemId.value,
+      powerFactor.value,
+      useImpedance.value,
     );
   });
 
@@ -144,11 +145,9 @@ export function useCabling(
     return CableBase.selectSuitableWireSize(selectionParams.value);
   });
 
-  const isIndoorWiringForbidden = computed(() => {
-    return CableBase.isIndoorWiringForbidden(
-      selectedCableId.value as CableTypeCode,
-    );
-  });
+  const isIndoorWiringForbidden = computed(() =>
+    CableBase.isIndoorWiringForbidden(selectedCableId.value as CableTypeCode),
+  );
 
   const indoorWiringWarning = computed(() => {
     if (!isIndoorWiringForbidden.value) return "";
