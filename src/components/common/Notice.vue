@@ -189,7 +189,7 @@ import ElbSelectionCard from "@/components/Motor/ElbSelectionCard.vue";
 import MotorBreakerCard from "@/components/Motor/MotorBreakerCard.vue";
 import MccbSelectCard from "@/components/Motor/MccbSelectCard.vue";
 import Thermal from "@/components/Motor/Thermal.vue";
-import CapacitorSectionCard from "@/components/Motor/card.vue";
+import CapacitorSectionCard from "@/components/Motor/CapacitorSectionCard.vue";
 
 import type {
   MotorBreakerSelectionResult,

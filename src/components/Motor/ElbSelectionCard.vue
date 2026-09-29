@@ -22,14 +22,10 @@
         </div>
       </div>
 
-      <!-- 施工推奨仕様・解説文表示（両方の情報を結合して確実に表示） -->
-      <div v-if="recommendedInstallation || elcbInfo?.description" class="installation-note mt-3">
+      <!-- 施工推奨仕様・解説文表示 -->
+      <div v-if="displayText" class="installation-note mt-3">
         <span class="note-label">施工推奨仕様 / 解説：</span>
-        <p class="note-text">
-          <span v-if="recommendedInstallation">{{ recommendedInstallation }}</span>
-          <span v-if="recommendedInstallation && elcbInfo?.description"><br></span>
-          <span v-if="elcbInfo?.description">{{ elcbInfo.description }}</span>
-        </p>
+        <p class="note-text">{{ displayText }}</p>
       </div>
     </div>
   </div>
@@ -44,18 +40,28 @@ const props = defineProps<{
   recommendedInstallation?: string;
 }>();
 
-/** 基準ブレーカー容量の表示整形 */
 const displayFrameAndAmp = computed(() => {
   if (!props.elcbInfo) return '-';
   const amp = props.elcbInfo.recommendedAmp;
   return amp ? `${amp} A` : '-';
 });
 
-/** 要求定格感度電流の表示整形 */
 const displaySensitivity = computed(() => {
   if (!props.elcbInfo) return '-';
   const sensitivity = props.elcbInfo.sensitivityCurrent;
   return sensitivity ? `${sensitivity} mA` : '-';
+});
+
+/** 推奨仕様と解説文の統合テキスト（重複排除） */
+const displayText = computed(() => {
+  const rec = props.recommendedInstallation?.trim();
+  const desc = props.elcbInfo?.description?.trim();
+
+  if (rec && desc) {
+    if (rec === desc) return rec;
+    return `${rec}\n${desc}`;
+  }
+  return rec || desc || '';
 });
 </script>
 
@@ -143,7 +149,6 @@ const displaySensitivity = computed(() => {
   margin-top: 12px;
 }
 
-/* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
   .category-card {
     padding: 20px;

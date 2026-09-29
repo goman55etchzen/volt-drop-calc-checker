@@ -23,7 +23,7 @@
         モーターブレーカー
       </button>
 
-      <!-- 配線用遮断器 (MCCB) ボタン (複数台・他負荷時も選択可能) -->
+      <!-- 配線用遮断器 (MCCB) ボタン -->
       <button
         type="button"
         :class="['chip-btn', modelValue === 'mccb' ? 'active' : '']"
@@ -59,11 +59,12 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: MotorBreakerType): void;
 }>();
 
-// 単体モーター専用保護（MB）のみ、複数台や他負荷時にボタンを非活性化
+// 単体モーター専用保護（MB）のみ、複数台・15kW超・インバータ・他負荷時に非活性化
 const isMotorBreakerDisabled = computed(() => {
   return (
     props.isOver15kW ||
     props.driveMode === 'inverter' ||
+    props.motorCount > 1 ||
     props.otherLoadAmp > 0
   );
 });
@@ -114,7 +115,6 @@ const updateMode = (mode: MotorBreakerType) => {
   border-color: #38bdf8;
 }
 
-/* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
   .preset-chips {
     flex-wrap: nowrap;
