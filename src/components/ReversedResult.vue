@@ -135,14 +135,14 @@
 </template>
 
 <script setup lang="ts">
-import { toRefs, computed } from 'vue'
+import { toRefs } from 'vue'
 import {
   CalculationInputMode,
   CableTypeCode,
   LoadType,
   InstallationType
 } from '@/types/appDefinitions'
-import { useReversedCallc } from '@/composables/useReversedCallc'
+import { useReversedResult } from '@/composables/useReversedResult'
 
 interface Props {
   voltage: number
@@ -168,61 +168,19 @@ const props = withDefaults(defineProps<Props>(), {
   wireCount: 3
 })
 
-const {
-  voltage,
-  targetPercent,
-  inputMode,
-  loadWatt,
-  loadCurrent,
-  oneWayDistance,
-  selectedSystemId,
-  selectedCableType,
-  powerFactor,
-  ignorePowerFactor,
-  loadType,
-  motorKw,
-  installationType,
-  isContinuous,
-  ambientTemp,
-  wireCount
-} = toRefs(props)
+// props をリアクティブな Ref群に分解して Composable へ受け渡し
+const propsRefs = toRefs(props)
 
 const {
   calculatedLoadCurrent,
   currentCableType,
   calculationIssues,
   hasError,
-  availableWires,
   recommendedWire,
-  breakerStatus
-} = useReversedCallc(
-  voltage,
-  targetPercent,
-  inputMode,
-  loadWatt,
-  loadCurrent,
-  oneWayDistance,
-  selectedSystemId,
-  selectedCableType,
-  powerFactor,
-  ignorePowerFactor,
-  loadType,
-  motorKw,
-  installationType,
-  isContinuous,
-  ambientTemp,
-  wireCount
-)
-
-const isSmallWire = (area: number): boolean => area <= 1.25
-
-const mainAvailableWires = computed(() => {
-  return availableWires.value.filter((w) => !isSmallWire(w.area))
-})
-
-const smallAvailableWires = computed(() => {
-  return availableWires.value.filter((w) => isSmallWire(w.area))
-})
+  breakerStatus,
+  mainAvailableWires,
+  smallAvailableWires
+} = useReversedResult(propsRefs)
 </script>
 
 <style scoped>
