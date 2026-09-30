@@ -5,7 +5,7 @@ import {
   LoadType,
   InstallationType
 } from '@/types/appDefinitions';
-import type { CapacitorProduct } from '@/types/capacitorMaster';
+import type { CapacitorProduct } from '@/base/capacitorBase';
 import type { 
   MotorBreakerSelectionResult, 
   ElcbSelectionResult 
@@ -66,18 +66,19 @@ export interface ReversedResultProps {
   installationType: InstallationType;
   isContinuous: boolean;
 }
+
 export interface CapacitorSectionCardProps {
   voltage: number;
   hz: number;
   targetUf: number;
   catalog: CapacitorProduct[];
   recommendedCapacitors: CapacitorProduct[];
+  loading?: boolean;
 }
 
 export interface NoticeProps {
   driveMode: 'direct' | 'inverter' | null;
   calculatedAmp: number;
-  displayTotalLoadAmp: number;
   motorCount: number;
   otherLoadAmp: number;
   voltage: number;
@@ -87,9 +88,6 @@ export interface NoticeProps {
   breakerInfo: MotorBreakerSelectionResult;
   elcbInfo: ElcbSelectionResult;
   thermalInfo: any;
-  powerFactor: number;
-  targetPowerFactor: number;
-  efficiency: number;
   recommendedInstallation: string;
   recommendedCapacitors: CapacitorProduct[];
   catalog: CapacitorProduct[];

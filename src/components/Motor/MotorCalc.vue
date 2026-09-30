@@ -117,7 +117,6 @@
       </div>
 
       <!-- 2. 結果表示（Notice一元化） -->
-      <!-- 連携修正: catalog, targetUf のプロパティ渡しを追加し、イベントのキャメルケース/ケバブケースを網羅 -->
       <Notice
         v-else
         :drive-mode="formData.driveMode"
@@ -136,9 +135,9 @@
         :elcb-info="mc.elcbInfo.value"
         :thermal-info="thermalInfo"
         :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="mc.matchedCapacitors?.value || mc.recommendedCapacitors?.value || []"
-        :catalog="mc.capacitorCatalog?.value || []"
-        :target-uf="mc.targetUf?.value || 0"
+        :recommended-capacitors="mc.matchedCapacitors.value || []"
+        :catalog="mc.capacitorCatalog.value || []"
+        :target-uf="mc.targetUf.value || 0"
         @select-capacitor-candidate="handleCapacitorSelect"
         @selectCapacitorCandidate="handleCapacitorSelect"
       />
@@ -162,7 +161,8 @@ import type {
   EnvironmentType, 
   MotorBreakerType 
 } from '@/types/appDefinitions';
-import type { CapacitorProduct } from '@/types/capacitorMaster';
+import type { CapacitorProduct } from '@/utils/capacitor';
+
 const mc = useMotorCalc();
 const isFreqSaved = ref(false);
 
@@ -184,7 +184,6 @@ onMounted(() => {
     mc.frequency.value = savedFreq;
     isFreqSaved.value = true;
   }
-  // コンデンサマスターカタログの初期ロード（必要に応じて呼び出し）
   if (typeof mc.loadCapacitorCatalog === 'function') {
     mc.loadCapacitorCatalog();
   }
@@ -359,7 +358,7 @@ const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
 .chip-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  border-color: #334155;
+  border-color: #333155;
   background-color: #0f172a;
   color: #64748b;
   box-shadow: none;

@@ -56,7 +56,7 @@
 
       <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
       <div
-        v-if="recommendedCapacitors || recommendedCapacitors.length > 0"
+        v-if="recommendedCapacitors && recommendedCapacitors.length > 0"
         class="clickable-card-wrapper"
         @click="openModal('capacitor')"
       >
@@ -92,9 +92,7 @@
       </div>
     </template>
 
-    <!-- =====================================================
-         全画面ポップアップ拡大モーダル（比率拡大適用）
-         ===================================================== -->
+    <!-- 全画面ポップアップ拡大モーダル -->
     <div v-if="activeModal" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -196,12 +194,11 @@ import type {
   ElcbSelectionResult,
 } from "@/types/appDefinitions";
 import type { ThermalSelectionResult } from "@/composables/useThermal";
-import type { CapacitorProduct } from "@/utils/capacitor";
+import type { CapacitorProduct } from "@/base/capacitorBase";
 
 defineProps<{
   driveMode: "direct" | "inverter" | null;
   calculatedAmp: number;
-  displayTotalLoadAmp: number;
   motorCount: number;
   otherLoadAmp: number;
   voltage: number;
@@ -211,9 +208,6 @@ defineProps<{
   breakerInfo: MotorBreakerSelectionResult;
   elcbInfo: ElcbSelectionResult;
   thermalInfo: ThermalSelectionResult;
-  powerFactor: number;
-  targetPowerFactor: number;
-  efficiency: number;
   recommendedInstallation: string;
   recommendedCapacitors: CapacitorProduct[];
   catalog: CapacitorProduct[];
@@ -238,7 +232,6 @@ const closeModal = () => {
   activeModal.value = null;
 };
 
-// DB候補選択時のイベントハンドラ
 const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   emit("selectCapacitorCandidate", capacitor);
 };
@@ -252,7 +245,6 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   width: 100%;
 }
 
-/* ── タップ可能カードの共通スタイル ── */
 .clickable-card,
 .clickable-card-wrapper {
   cursor: pointer;
@@ -280,7 +272,6 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   font-weight: bold;
 }
 
-/* ── メイン結果カード ── */
 .result-card-dark {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 2px solid #38bdf8;
@@ -341,7 +332,6 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   color: #f8fafc;
 }
 
-/* ── 警告ボックス ── */
 .notice-box {
   display: flex;
   align-items: flex-start;
@@ -367,7 +357,6 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   margin: 0;
 }
 
-/* ── 拡大モーダル画面スタイル ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -423,7 +412,6 @@ const handleSelectCandidate = (capacitor: CapacitorProduct) => {
   font-size: 52px !important;
 }
 
-/* ── 比率による適度な拡大用ラッパー ── */
 .modal-scale-wrapper {
   transform: scale(1.08);
   transform-origin: center;
