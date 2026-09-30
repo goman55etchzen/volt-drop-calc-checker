@@ -1,5 +1,8 @@
 <template>
   <div class="reversed-result-container">
+    <!-- 共通 ResultCard コンポーネントの組み込み -->
+    <ResultCard :max-len="maxLen" :is-over-current="isOverCurrent" />
+
     <!-- エラー・警告・情報メッセージ表示 -->
     <div v-if="calculationIssues.length" class="issues-card">
       <h3 class="issues-title">計算上の問題点・注意事項</h3>
@@ -136,6 +139,7 @@
 
 <script setup lang="ts">
 import { toRefs } from 'vue'
+import ResultCard from '@/components/ResultCard.vue'
 import {
   CalculationInputMode,
   CableTypeCode,
@@ -172,6 +176,8 @@ const props = withDefaults(defineProps<Props>(), {
 const propsRefs = toRefs(props)
 
 const {
+  maxLen,
+  isOverCurrent,
   calculatedLoadCurrent,
   currentCableType,
   calculationIssues,
@@ -478,13 +484,11 @@ const {
 
 /* PC向けレスポンシブ拡張 */
 @media (min-width: 768px) {
-  .reversed-result-container,
-  .result-sticky-card {
+  .reversed-result-container {
     width: 100%;
     margin-left: 0;
     margin-right: 0;
   }
-}
   .wire-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -501,5 +505,5 @@ const {
   .accordion-summary:hover {
     background-color: #1e293b;
   }
-
+}
 </style>

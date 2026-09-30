@@ -67,8 +67,25 @@ export function useReversedResult(params: UseReversedResultParams) {
     return availableWires.value.filter((w) => isSmallWire(w.area))
   })
 
-  // 3. コンポーネントへ返すデータオブジェクト
+  // 3. ResultCard 向け統合プロパティの集約
+  /** 最大許容配線長 (m) */
+  const maxLen = computed<number>(() => {
+    if (recommendedWire.value && 'maxDistance' in recommendedWire.value) {
+      return (recommendedWire.value as { maxDistance?: number }).maxDistance ?? params.oneWayDistance.value
+    }
+    return params.oneWayDistance.value
+  })
+
+  /** 過電流・エラー判定フラグ */
+  const isOverCurrent = computed<boolean>(() => {
+    if (hasError.value || !recommendedWire.value) return true
+    return calculationIssues.value.some((issue) => issue.level === 'error')
+  })
+
+  // 4. コンポーネントへ返すデータオブジェクト
   return {
+    maxLen,
+    isOverCurrent,
     calculatedLoadCurrent,
     currentCableType,
     calculationIssues,
