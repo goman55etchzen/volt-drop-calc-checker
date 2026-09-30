@@ -7,25 +7,27 @@
         <div class="card-header mb-4">
           <span class="card-title">⚙️ 電動機（モーター）負荷計算</span>
         </div>
-        
+
         <div class="form-list">
           <!-- 1. 周波数 (localDb連携) -->
           <div class="input-group">
             <label class="sub-label">
               1. 周波数
-              <span class="saved-badge" v-if="isFreqSaved">（地域設定保存済み）</span>
+              <span class="saved-badge" v-if="isFreqSaved"
+                >（地域設定保存済み）</span
+              >
             </label>
             <div class="preset-chips">
-              <button 
-                type="button" 
-                :class="['chip-btn', formData.frequency === 50 ? 'active' : '']" 
+              <button
+                type="button"
+                :class="['chip-btn', formData.frequency === 50 ? 'active' : '']"
                 @click="updateFrequency(50)"
               >
                 50Hz
               </button>
-              <button 
-                type="button" 
-                :class="['chip-btn', formData.frequency === 60 ? 'active' : '']" 
+              <button
+                type="button"
+                :class="['chip-btn', formData.frequency === 60 ? 'active' : '']"
                 @click="updateFrequency(60)"
               >
                 60Hz
@@ -37,9 +39,36 @@
           <div class="input-group">
             <label class="sub-label">2. 相・線間電圧</label>
             <div class="preset-chips">
-              <button type="button" :class="['chip-btn', formData.systemId === '1P3W_100V' ? 'active' : '']" @click="formData.systemId = '1P3W_100V'">単相100V</button>
-              <button type="button" :class="['chip-btn', formData.systemId === '1P3W_200V' ? 'active' : '']" @click="formData.systemId = '1P3W_200V'">単相200V</button>
-              <button type="button" :class="['chip-btn', formData.systemId === '3P3W' ? 'active' : '']" @click="formData.systemId = '3P3W'">三相200V (動力)</button>
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.systemId === '1P3W_100V' ? 'active' : '',
+                ]"
+                @click="formData.systemId = '1P3W_100V'"
+              >
+                単相100V
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.systemId === '1P3W_200V' ? 'active' : '',
+                ]"
+                @click="formData.systemId = '1P3W_200V'"
+              >
+                単相200V
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.systemId === '3P3W' ? 'active' : '',
+                ]"
+                @click="formData.systemId = '3P3W'"
+              >
+                三相200V (動力)
+              </button>
             </div>
           </div>
 
@@ -47,43 +76,89 @@
           <div class="input-group">
             <label class="sub-label">3. 電動機定格出力 (kW)</label>
             <div class="preset-chips mb-2">
-              <button v-for="kw in [0.4, 0.75, 1.5, 2.2, 3.7, 5.5]" :key="kw" 
-                      type="button" 
-                      :class="['chip-btn', formData.motorKw === kw ? 'active' : '']" 
-                      @click="formData.motorKw = kw">{{ kw }}</button>
+              <button
+                v-for="kw in [0.4, 0.75, 1.5, 2.2, 3.7, 5.5]"
+                :key="kw"
+                type="button"
+                :class="['chip-btn', formData.motorKw === kw ? 'active' : '']"
+                @click="formData.motorKw = kw"
+              >
+                {{ kw }}
+              </button>
             </div>
-            <input type="number" class="text-input" v-model.number="formData.motorKw" step="0.1" placeholder="直接入力 (例: 3.7)">
+            <input
+              type="number"
+              class="text-input"
+              v-model.number="formData.motorKw"
+              step="0.1"
+              placeholder="直接入力 (例: 3.7)"
+            />
           </div>
 
           <!-- 4. 台数 -->
           <div class="input-group">
             <label class="sub-label">4. 電動機台数</label>
             <div class="preset-chips mb-2">
-              <button v-for="cnt in [1, 2, 3, 4, 5]" :key="cnt" 
-                      type="button" 
-                      :class="['chip-btn', formData.quantity === cnt ? 'active' : '']" 
-                      @click="formData.quantity = cnt">{{ cnt }}台</button>
+              <button
+                v-for="cnt in [1, 2, 3, 4, 5]"
+                :key="cnt"
+                type="button"
+                :class="['chip-btn', formData.quantity === cnt ? 'active' : '']"
+                @click="formData.quantity = cnt"
+              >
+                {{ cnt }}台
+              </button>
             </div>
-            <input type="number" class="text-input" v-model.number="formData.quantity" min="1" placeholder="直接入力 (例: 1)">
+            <input
+              type="number"
+              class="text-input"
+              v-model.number="formData.quantity"
+              min="1"
+              placeholder="直接入力 (例: 1)"
+            />
           </div>
 
           <!-- 5. その他合算負荷 -->
           <div class="input-group">
             <label class="sub-label">5. その他一般負荷 Ir (A)</label>
-            <input type="number" class="text-input" v-model.number="formData.otherLoadIr" min="0" placeholder="ない場合は 0 を入力">
+            <input
+              type="number"
+              class="text-input"
+              v-model.number="formData.otherLoadIr"
+              min="0"
+              placeholder="ない場合は 0 を入力"
+            />
           </div>
 
           <!-- 6. 環境条件 -->
           <div class="input-group">
-             <SelectEnvironment v-model="formData.environment" />
+            <SelectEnvironment v-model="formData.environment" />
           </div>
 
           <!-- 7. 駆動方式 -->
           <div class="input-group">
             <label class="sub-label">7. 駆動方式選択</label>
             <div class="preset-chips">
-              <button type="button" :class="['chip-btn', formData.driveMode === 'direct' ? 'active' : '']" @click="formData.driveMode = 'direct'">商用電源直結 (通常)</button>
-              <button type="button" :class="['chip-btn', formData.driveMode === 'inverter' ? 'active' : '']" @click="formData.driveMode = 'inverter'">インバータ駆動</button>
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.driveMode === 'direct' ? 'active' : '',
+                ]"
+                @click="setDriveMode('direct')"
+              >
+                商用電源直結 (通常)
+              </button>
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.driveMode === 'inverter' ? 'active' : '',
+                ]"
+                @click="setDriveMode('inverter')"
+              >
+                インバータ駆動
+              </button>
             </div>
           </div>
 
@@ -91,17 +166,44 @@
           <div class="input-group">
             <label class="sub-label">8. 保護遮断器 種別</label>
             <div class="preset-chips">
-              <button type="button" :class="['chip-btn', formData.breakerMode === 'auto' ? 'active' : '']" @click="formData.breakerMode = 'auto'">自動選定</button>
-              
-              <button type="button" 
-                      :class="['chip-btn', formData.breakerMode === 'motor_breaker' ? 'active' : '']" 
-                      :disabled="formData.driveMode === 'inverter'"
-                      :title="formData.driveMode === 'inverter' ? 'インバータ駆動時は選択できません' : ''"
-                      @click="formData.driveMode !== 'inverter' && (formData.breakerMode = 'motor_breaker')">
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.breakerMode === 'auto' ? 'active' : '',
+                ]"
+                @click="setBreakerMode('auto')"
+              >
+                自動選定
+              </button>
+
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.breakerMode === 'motor_breaker' ? 'active' : '',
+                ]"
+                :disabled="formData.driveMode === 'inverter'"
+                :title="
+                  formData.driveMode === 'inverter'
+                    ? 'インバータ駆動時は選択できません'
+                    : ''
+                "
+                @click="setBreakerMode('motor_breaker')"
+              >
                 モーターブレーカー
               </button>
 
-              <button type="button" :class="['chip-btn', formData.breakerMode === 'mccb' ? 'active' : '']" @click="formData.breakerMode = 'mccb'">配線用遮断器 (MCCB)</button>
+              <button
+                type="button"
+                :class="[
+                  'chip-btn',
+                  formData.breakerMode === 'mccb' ? 'active' : '',
+                ]"
+                @click="setBreakerMode('mccb')"
+              >
+                配線用遮断器 (MCCB)
+              </button>
             </div>
           </div>
         </div>
@@ -113,13 +215,16 @@
       <!-- 1. 入力未完了時案内 -->
       <div v-if="!canCalculateBasic" class="empty-state form-card">
         <span class="card-title text-slate-400">算出待機中</span>
-        <p class="mt-4 text-sm text-slate-500">「周波数」「相・電圧」「出力 (kW)」を選択すると定格電流が計算されます。</p>
+        <p class="mt-4 text-sm text-slate-500">
+          「周波数」「相・電圧」「出力
+          (kW)」を選択すると定格電流が計算されます。
+        </p>
       </div>
 
       <!-- 2. 結果表示（Notice一元化） -->
       <Notice
         v-else
-        :drive-mode="formData.driveMode"
+        :drive-mode="formData.driveMode || 'direct'"
         :calculated-amp="mc.calculatedAmp.value"
         :display-total-load-amp="mc.totalLoadAmp.value"
         :motor-count="formData.quantity || 1"
@@ -135,47 +240,61 @@
         :elcb-info="mc.elcbInfo.value"
         :thermal-info="thermalInfo"
         :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="mc.matchedCapacitors.value || []"
-        :catalog="mc.capacitorCatalog.value || []"
-        :target-uf="mc.targetUf.value || 0"
+        :recommended-capacitors="cap.recommendedCapacitors.value || []"
+        :candidate-capacitors="cap.candidateCapacitors.value || []"
+        :loading="cap.isLoading.value"
         @select-capacitor-candidate="handleCapacitorSelect"
         @selectCapacitorCandidate="handleCapacitorSelect"
       />
 
       <div v-if="canCalculateBasic && !canCalculateFull" class="info-card mt-3">
-        <p class="text-xs text-slate-400">※「環境条件」「駆動方式」「保護遮断器種別」を選択すると詳細な機器選定結果が表示されます。</p>
+        <p class="text-xs text-slate-400">
+          ※「環境条件」「駆動方式」「保護遮断器種別」を選択すると詳細な機器選定結果が表示されます。
+        </p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
-import SelectEnvironment from '@/components/Motor/SelectEnvironment.vue';
-import Notice from '@/components/common/Notice.vue';
-import { useMotorCalc } from '@/composables/useMotorCalc';
-import { useThermal } from '@/composables/useThermal';
-import { localDb } from '@/utils/localDb';
-import type { 
-  PowerFrequency, 
-  EnvironmentType, 
-  MotorBreakerType 
-} from '@/types/appDefinitions';
-import type { CapacitorProduct } from '@/utils/capacitor';
+import { ref, reactive, computed, watch, onMounted, toRef } from "vue";
+import SelectEnvironment from "@/components/Motor/SelectEnvironment.vue";
+import Notice from "@/components/common/Notice.vue";
+import { useMotorCalc } from "@/composables/useMotorCalc";
+import { useCapacitor } from "@/composables/useCapacitor";
+import { useThermal } from "@/composables/useThermal";
+import { localDb } from "@/utils/localDb";
+import type {
+  PowerFrequency,
+  EnvironmentType,
+  MotorBreakerType,
+} from "@/types/appDefinitions";
+import type { CapacitorProduct } from "@/base/capacitorBase";
 
 const mc = useMotorCalc();
 const isFreqSaved = ref(false);
 
 const formData = reactive({
-  frequency: null as PowerFrequency | null,
+  frequency: 50 as PowerFrequency,
   systemId: null as string | null,
   motorKw: null as number | null,
-  quantity: null as number | null,
-  otherLoadIr: null as number | null,
-  environment: null as EnvironmentType | null,
-  driveMode: null as 'direct' | 'inverter' | null,
-  breakerMode: null as MotorBreakerType | null,
+  quantity: 1 as number,
+  otherLoadIr: 0 as number,
+  environment: "normal" as EnvironmentType,
+  driveMode: "direct" as "direct" | "inverter",
+  breakerMode: "auto" as MotorBreakerType,
 });
+
+// useCapacitor Composable の初期化と連携
+const cap = useCapacitor(
+  toRef(formData, "motorKw"),
+  toRef(formData, "frequency"),
+  mc.voltage,
+  mc.powerFactor,
+  mc.targetPowerFactor,
+  mc.efficiency,
+  toRef(formData, "driveMode")
+);
 
 onMounted(() => {
   const savedFreq = localDb.getFrequency();
@@ -184,9 +303,7 @@ onMounted(() => {
     mc.frequency.value = savedFreq;
     isFreqSaved.value = true;
   }
-  if (typeof mc.loadCapacitorCatalog === 'function') {
-    mc.loadCapacitorCatalog();
-  }
+  cap.loadCapacitorCatalog();
 });
 
 const updateFrequency = (freq: PowerFrequency) => {
@@ -196,38 +313,88 @@ const updateFrequency = (freq: PowerFrequency) => {
   isFreqSaved.value = true;
 };
 
-// フォーム値と Composable（useMotorCalc）状態の一括バインド・同期監視
-watch(() => formData.motorKw, (val) => { mc.outputKw.value = val ?? 0; });
-watch(() => formData.quantity, (val) => { mc.motorCount.value = val ?? 1; });
-watch(() => formData.otherLoadIr, (val) => { mc.otherLoadAmp.value = val ?? 0; });
-watch(() => formData.environment, (val) => { if (val) mc.environment.value = val; });
-watch(() => formData.driveMode, (val) => { 
-  if (val) mc.driveMode.value = val;
-  if (val === 'inverter' && formData.breakerMode === 'motor_breaker') {
-    formData.breakerMode = 'auto';
+// 7. 駆動方式の設定
+const setDriveMode = (mode: "direct" | "inverter") => {
+  formData.driveMode = mode;
+  mc.driveMode.value = mode;
+  if (mode === "inverter") {
+    formData.breakerMode = "mccb";
+    mc.breakerTypeMode.value = "mccb";
   }
-});
-watch(() => formData.breakerMode, (val) => { if (val) mc.breakerTypeMode.value = val; });
-watch(() => formData.systemId, (val) => {
-  if (val === '1P3W_100V') mc.voltage.value = 100;
-  if (val === '1P3W_200V' || val === '3P3W') mc.voltage.value = 200;
-});
+};
 
-const { thermalInfo } = useThermal(mc.calculatedAmp, mc.driveMode, mc.motorCount);
+// 8. 保護遮断器種別の設定
+const setBreakerMode = (mode: MotorBreakerType) => {
+  if (formData.driveMode === "inverter" && mode === "motor_breaker") {
+    return;
+  }
+  formData.breakerMode = mode;
+  mc.breakerTypeMode.value = mode;
+};
+
+// フォーム値と Composable（useMotorCalc）状態の一括バインド
+watch(
+  () => formData.motorKw,
+  (val) => {
+    mc.outputKw.value = val ?? 0;
+  }
+);
+watch(
+  () => formData.quantity,
+  (val) => {
+    mc.motorCount.value = val ?? 1;
+  }
+);
+watch(
+  () => formData.otherLoadIr,
+  (val) => {
+    mc.otherLoadAmp.value = val ?? 0;
+  }
+);
+watch(
+  () => formData.environment,
+  (val) => {
+    if (val) mc.environment.value = val;
+  }
+);
+watch(
+  () => formData.systemId,
+  (val) => {
+    if (val === "1P3W_100V") mc.voltage.value = 100;
+    if (val === "1P3W_200V" || val === "3P3W") mc.voltage.value = 200;
+  }
+);
+
+const { thermalInfo } = useThermal(
+  mc.calculatedAmp,
+  mc.driveMode,
+  mc.motorCount
+);
 
 const canCalculateBasic = computed(() => {
-  return formData.frequency !== null && formData.systemId !== null && formData.motorKw !== null && formData.motorKw > 0;
+  return (
+    formData.frequency !== null &&
+    formData.systemId !== null &&
+    formData.motorKw !== null &&
+    formData.motorKw > 0
+  );
 });
 
 const canCalculateFull = computed(() => {
-  return canCalculateBasic.value && formData.environment !== null && formData.driveMode !== null && formData.breakerMode !== null;
+  return (
+    canCalculateBasic.value &&
+    formData.environment !== null &&
+    formData.driveMode !== null &&
+    formData.breakerMode !== null
+  );
 });
 
 const recommendedInstallation = computed(() => {
-  if (!formData.systemId || !formData.driveMode) return '';
-  let txt = 'D種接地工事 (使用電圧300V以下)';
-  if (formData.driveMode === 'inverter') {
-    txt += '\n※インバータ駆動時のノイズ対策として、二次側配線にはシールド付きケーブル（CV-S等）の使用と、インバータ専用配線工事を推奨します。';
+  if (!formData.systemId || !formData.driveMode) return "";
+  let txt = "D種接地工事 (使用電圧300V以下)";
+  if (formData.driveMode === "inverter") {
+    txt +=
+      "\n※インバータ駆動時のノイズ対策として、二次側配線にはシールド付きケーブル（CV-S等）の使用と、インバータ専用配線工事を推奨します。";
   }
   return txt;
 });
@@ -236,42 +403,43 @@ const recommendedInstallation = computed(() => {
  * モーダル内等でコンデンサ候補が選択された際のハンドラ
  */
 const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
-  console.log('Selected Capacitor:', capacitor);
+  console.log("Selected Capacitor:", capacitor);
 };
 </script>
 
 <style scoped>
-.motor-calc-container { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 2rem; 
-  width: 100%; 
-  max-width: 1200px; 
-  margin: 0 auto; 
-  box-sizing: border-box; 
+.motor-calc-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
-.input-section, .result-section { 
-  width: 100%; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 1rem; 
+.input-section,
+.result-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 @media (min-width: 992px) {
-  .motor-calc-container { 
-    flex-direction: row; 
-    align-items: flex-start; 
-    gap: 40px; 
+  .motor-calc-container {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
   }
-  .input-section { 
-    flex: 1.2; 
-    min-width: 450px; 
+  .input-section {
+    flex: 1.2;
+    min-width: 450px;
   }
-  .result-section { 
-    flex: 1; 
-    min-width: 350px; 
-    position: sticky; 
-    top: 2rem; 
+  .result-section {
+    flex: 1;
+    min-width: 350px;
+    position: sticky;
+    top: 2rem;
   }
   .form-card {
     padding: 32px;
@@ -296,10 +464,10 @@ const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
   font-weight: bold;
   color: #f8fafc;
 }
-.input-group { 
-  display: flex; 
-  flex-direction: column; 
-  margin-bottom: 24px; 
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
 }
 .sub-label {
   display: flex;
@@ -348,7 +516,9 @@ const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.chip-btn:hover { border-color: #0284c7; }
+.chip-btn:hover {
+  border-color: #0284c7;
+}
 .chip-btn.active {
   background-color: #0284c7;
   color: #ffffff;
@@ -364,9 +534,9 @@ const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
   box-shadow: none;
 }
 
-.empty-state { 
-  text-align: center; 
-  padding: 3rem 1rem; 
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
 }
 .info-card {
   background-color: #0f172a;
@@ -376,8 +546,16 @@ const handleCapacitorSelect = (capacitor: CapacitorProduct) => {
   text-align: center;
 }
 
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mt-3 { margin-top: 0.75rem; }
-.mt-4 { margin-top: 1rem; }
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mt-3 {
+  margin-top: 0.75rem;
+}
+.mt-4 {
+  margin-top: 1rem;
+}
 </style>
