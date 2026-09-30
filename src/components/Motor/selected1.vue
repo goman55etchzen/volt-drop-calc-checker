@@ -52,8 +52,8 @@
   
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import type { EnvironmentType, PowerFrequency } from '@/types/appDefinitions';
-
+import type { PowerFrequency } from '@/types/appDefinitions';
+import type { EnvironmentType } from '@/base/breakerBase'
 const voltage = defineModel<number>('voltage', { required: true });
 const frequency = defineModel<PowerFrequency>('frequency', { required: true });
 const environment = defineModel<EnvironmentType>('environment', { required: true });

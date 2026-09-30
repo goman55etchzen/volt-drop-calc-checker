@@ -1,5 +1,6 @@
 // src/composables/useMotorCalc.ts
-import { ref, computed, watch } from "vue";
+
+import { ref, computed, watch, onMounted } from "vue";
 import {
   EnvironmentType,
   PowerFrequency,
@@ -7,8 +8,12 @@ import {
 } from "@/types/appDefinitions";
 import { processDirectMotorCalc } from "@/utils/directMotorCalc";
 import { processInverterMotorCalc } from "@/utils/inverterMotorCalc";
-import { selectExtendedMotorBreaker } from "@/base/breakerBase";
-import { useElb } from "./useElb";
+import {
+  CapacitorProduct,
+  findClosestCapacitorGroup,
+} from "@/base/capacitorBase";
+import { fetchCapacitorCatalog } from "@/composables/useCapacitor";
+import { useBreaker } from "@/composables/useBreaker";
 
 export type DriveMode = "direct" | "inverter";
 
@@ -31,6 +36,17 @@ export function useMotorCalc() {
 
   // ブレーカー選択モード ('auto' | 'motor_breaker' | 'mccb')
   const breakerTypeMode = ref<MotorBreakerType>("auto");
+
+  // カタログデータ状態
+  const capacitorCatalog = ref<CapacitorProduct[]>([]);
+
+  onMounted(async () => {
+    try {
+      capacitorCatalog.value = await fetchCapacitorCatalog();
+    } catch (e) {
+      console.error(e);
+    }
+  });
 
   // 駆動モード変更時の自動切替（インバータ時はMCCB固定）
   watch(driveMode, (newMode) => {
@@ -85,7 +101,7 @@ export function useMotorCalc() {
 
   const groundingInfo = computed(() => currentCalcResult.value.groundingInfo);
 
-  // 進相コンデンサ基本情報
+  // 進相コンデンサ情報
   const capacitorInfo = computed(() => {
     const base = currentCalcResult.value.capacitorInfo;
     const count = motorCount.value;
@@ -99,38 +115,32 @@ export function useMotorCalc() {
     };
   });
 
-  // 漏電遮断器選定（useElb Composable との連携）
-  const { elcbInfo, extendedElcbInfo } = useElb(
-    totalMotorAmp,
-    otherLoadAmp,
-    requiredWireAmp,
-    environment,
-  );
-
-  // モーター・配線用遮断器選定（拡張結果）
-  const extendedBreakerInfo = computed(() => {
-    return selectExtendedMotorBreaker({
-      outputKw: outputKw.value,
-      singleAmp: calculatedAmp.value,
-      motorCount: motorCount.value,
-      otherLoadAmp: otherLoadAmp.value,
-      wireAllowAmp: requiredWireAmp.value,
-      breakerTypeMode: breakerTypeMode.value,
-      driveMode: driveMode.value,
-      environment: environment.value,
-    });
+  // 適合コンデンサ検索
+  const matchedCapacitors = computed(() => {
+    if (driveMode.value === "inverter") return [];
+    return findClosestCapacitorGroup(
+      capacitorCatalog.value,
+      voltage.value,
+      frequency.value,
+      capacitorInfo.value.recommendedMicroFarad ?? 0,
+    );
   });
 
-  // 標準ブレーカー選定結果
-  const breakerInfo = computed(() => {
-    const ext = extendedBreakerInfo.value;
-    return {
-      selectedType: ext.selectedType,
-      recommendedAmp: ext.recommendedAmp,
-      requiresThermalRelay: ext.requiresThermalRelay,
-      isOver15kW: ext.isOver15kW,
-      warningNote: ext.warningNote,
-    };
+  // ブレーカー・ELCB選定処理を useBreaker に一括移管・分離
+  const {
+    breakerInfo,
+    extendedBreakerInfo,
+    elcbInfo,
+    extendedElcbInfo,
+  } = useBreaker({
+    outputKw,
+    singleAmp: calculatedAmp,
+    motorCount,
+    otherLoadAmp,
+    wireAllowAmp: requiredWireAmp,
+    breakerTypeMode,
+    driveMode,
+    environment,
   });
 
   // ブレーカー容量計算サマリ
@@ -180,6 +190,8 @@ export function useMotorCalc() {
     elcbInfo,
     extendedElcbInfo,
     capacitorInfo,
+    matchedCapacitors,
     setPreset,
+    capacitorCatalog,
   };
 }

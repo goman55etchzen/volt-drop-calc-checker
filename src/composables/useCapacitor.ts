@@ -1,34 +1,34 @@
 // src/composables/useCapacitor.ts
-import { ref, computed, type Ref } from "vue";
+import { ref, computed, type Ref } from 'vue';
 import {
   type CapacitorProduct,
   calculateRequiredKvar,
   calculateTargetUf,
   findClosestCapacitorGroup,
   findCandidateCapacitors,
-} from "@/base/capacitorBase";
+} from '@/base/capacitorBase';
 
 /**
  * DB APIからコンデンサカタログを取得
  */
 export const fetchCapacitorCatalog = async (): Promise<CapacitorProduct[]> => {
-  const res = await fetch("/api/capacitors");
-  if (!res.ok) throw new Error("コンデンサデータの取得に失敗しました");
-  const data: CapacitorProduct[] = await res.json();
+  const res = await fetch('/api/capacitors');
+  if (!res.ok) throw new Error('コンデンサデータの取得に失敗しました');
+  const data = await res.json();
   return data;
 };
 
 /**
- * コンデンサ選定・管理 Composable
+ * コンデンサ選定 Composable
  */
 export function useCapacitor(
-  motorKw: Ref<number | null | undefined>,
-  frequency: Ref<number | null | undefined>,
-  voltage: Ref<number | null | undefined>,
-  powerFactor: Ref<number | null | undefined>,
-  targetPowerFactor: Ref<number | null | undefined>,
-  efficiency: Ref<number | null | undefined>,
-  driveMode?: Ref<string | undefined>
+  motorKw: Ref<number | null>,
+  frequency: Ref<number | null>,
+  voltage: Ref<number>,
+  powerFactor: Ref<number>,
+  targetPowerFactor: Ref<number>,
+  efficiency: Ref<number>,
+  driveMode?: Ref<'direct' | 'inverter'>
 ) {
   const capacitorCatalog = ref<CapacitorProduct[]>([]);
   const isLoading = ref<boolean>(false);
@@ -38,7 +38,7 @@ export function useCapacitor(
     try {
       capacitorCatalog.value = await fetchCapacitorCatalog();
     } catch (e) {
-      console.error("コンデンサカタログの読み込みエラー:", e);
+      console.error(e);
     } finally {
       isLoading.value = false;
     }
@@ -48,14 +48,14 @@ export function useCapacitor(
    * 必要無効電力 (kvar) の算出
    */
   const requiredKvar = computed(() => {
-    if (driveMode && driveMode.value === "inverter") return 0;
-
-    const kw = motorKw.value ?? 0;
-    const pf = powerFactor.value ?? 0.85;
-    const tPf = targetPowerFactor.value ?? 0.95;
-    const eff = efficiency.value ?? 0.85;
-
-    return calculateRequiredKvar(kw, pf, tPf, eff);
+    const kw = motorKw.value;
+    if (!kw || kw <= 0) return 0;
+    return calculateRequiredKvar(
+      kw,
+      powerFactor.value || 0.85,
+      targetPowerFactor.value || 0.95,
+      efficiency.value || 0.85
+    );
   });
 
   /**
@@ -63,23 +63,21 @@ export function useCapacitor(
    */
   const targetUf = computed(() => {
     const kvar = requiredKvar.value;
-    const f = frequency.value ?? 0;
-    const v = voltage.value ?? 0;
-
+    const f = frequency.value || 0;
+    const v = voltage.value || 0;
     return calculateTargetUf(kvar, f, v);
   });
 
   /**
-   * 推奨コンデンサリスト（目標静電容量に最も近いグループ）
+   * 推奨コンデンサリスト
    */
   const recommendedCapacitors = computed(() => {
     if (
-      driveMode?.value === "inverter" ||
       !motorKw.value ||
       !frequency.value ||
       !voltage.value ||
       capacitorCatalog.value.length === 0 ||
-      targetUf.value <= 0
+      requiredKvar.value <= 0
     ) {
       return [];
     }
@@ -93,11 +91,10 @@ export function useCapacitor(
   });
 
   /**
-   * その他の適応候補リスト（目標の ±35% 以内）
+   * その他の適応候補リスト
    */
   const candidateCapacitors = computed(() => {
     if (
-      driveMode?.value === "inverter" ||
       !motorKw.value ||
       !frequency.value ||
       !voltage.value ||
@@ -111,8 +108,7 @@ export function useCapacitor(
       capacitorCatalog.value,
       voltage.value,
       frequency.value,
-      targetUf.value,
-      0.35
+      targetUf.value
     );
   });
 

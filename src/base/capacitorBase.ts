@@ -196,20 +196,20 @@ export interface CapacitorMasterDatabase {
 // ==========================================
 
 export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
-  { kw: 0.2,  uf50Hz: 15,  kvar50Hz: 0.19, uf60Hz: 10,  kvar60Hz: 0.15 },
-  { kw: 0.4,  uf50Hz: 20,  kvar50Hz: 0.25, uf60Hz: 15,  kvar60Hz: 0.23 },
-  { kw: 0.75, uf50Hz: 30,  kvar50Hz: 0.38, uf60Hz: 20,  kvar60Hz: 0.30 },
-  { kw: 1.0,  uf50Hz: 30,  kvar50Hz: 0.38, uf60Hz: 20,  kvar60Hz: 0.30 },
-  { kw: 1.1,  uf50Hz: 30,  kvar50Hz: 0.38, uf60Hz: 20,  kvar60Hz: 0.30 },
-  { kw: 1.5,  uf50Hz: 40,  kvar50Hz: 0.50, uf60Hz: 30,  kvar60Hz: 0.45 },
-  { kw: 2.0,  uf50Hz: 50,  kvar50Hz: 0.63, uf60Hz: 40,  kvar60Hz: 0.60 },
-  { kw: 2.2,  uf50Hz: 50,  kvar50Hz: 0.63, uf60Hz: 40,  kvar60Hz: 0.60 },
-  { kw: 3.0,  uf50Hz: 50,  kvar50Hz: 0.63, uf60Hz: 40,  kvar60Hz: 0.60 },
-  { kw: 3.7,  uf50Hz: 75,  kvar50Hz: 0.94, uf60Hz: 50,  kvar60Hz: 0.75 },
-  { kw: 4.0,  uf50Hz: 75,  kvar50Hz: 0.94, uf60Hz: 50,  kvar60Hz: 0.75 },
-  { kw: 5.0,  uf50Hz: 100, kvar50Hz: 1.26, uf60Hz: 75,  kvar60Hz: 1.13 },
-  { kw: 5.5,  uf50Hz: 100, kvar50Hz: 1.26, uf60Hz: 75,  kvar60Hz: 1.13 },
-  { kw: 7.5,  uf50Hz: 150, kvar50Hz: 1.88, uf60Hz: 100, kvar60Hz: 1.51 },
+  { kw: 0.2, uf50Hz: 15, kvar50Hz: 0.19, uf60Hz: 10, kvar60Hz: 0.15 },
+  { kw: 0.4, uf50Hz: 20, kvar50Hz: 0.25, uf60Hz: 15, kvar60Hz: 0.23 },
+  { kw: 0.75, uf50Hz: 30, kvar50Hz: 0.38, uf60Hz: 20, kvar60Hz: 0.3 },
+  { kw: 1.0, uf50Hz: 30, kvar50Hz: 0.38, uf60Hz: 20, kvar60Hz: 0.3 },
+  { kw: 1.1, uf50Hz: 30, kvar50Hz: 0.38, uf60Hz: 20, kvar60Hz: 0.3 },
+  { kw: 1.5, uf50Hz: 40, kvar50Hz: 0.5, uf60Hz: 30, kvar60Hz: 0.45 },
+  { kw: 2.0, uf50Hz: 50, kvar50Hz: 0.63, uf60Hz: 40, kvar60Hz: 0.6 },
+  { kw: 2.2, uf50Hz: 50, kvar50Hz: 0.63, uf60Hz: 40, kvar60Hz: 0.6 },
+  { kw: 3.0, uf50Hz: 50, kvar50Hz: 0.63, uf60Hz: 40, kvar60Hz: 0.6 },
+  { kw: 3.7, uf50Hz: 75, kvar50Hz: 0.94, uf60Hz: 50, kvar60Hz: 0.75 },
+  { kw: 4.0, uf50Hz: 75, kvar50Hz: 0.94, uf60Hz: 50, kvar60Hz: 0.75 },
+  { kw: 5.0, uf50Hz: 100, kvar50Hz: 1.26, uf60Hz: 75, kvar60Hz: 1.13 },
+  { kw: 5.5, uf50Hz: 100, kvar50Hz: 1.26, uf60Hz: 75, kvar60Hz: 1.13 },
+  { kw: 7.5, uf50Hz: 150, kvar50Hz: 1.88, uf60Hz: 100, kvar60Hz: 1.51 },
   { kw: 10.0, uf50Hz: 200, kvar50Hz: 2.51, uf60Hz: 150, kvar60Hz: 2.26 },
   { kw: 11.0, uf50Hz: 200, kvar50Hz: 2.51, uf60Hz: 150, kvar60Hz: 2.26 },
   { kw: 15.0, uf50Hz: 250, kvar50Hz: 3.14, uf60Hz: 200, kvar60Hz: 3.02 },
@@ -222,7 +222,7 @@ export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
   { kw: 40.0, uf50Hz: 600, kvar50Hz: 7.54, uf60Hz: 500, kvar60Hz: 7.54 },
   { kw: 45.0, uf50Hz: 750, kvar50Hz: 9.42, uf60Hz: 600, kvar60Hz: 9.04 },
   { kw: 50.0, uf50Hz: 900, kvar50Hz: 11.3, uf60Hz: 750, kvar60Hz: 11.3 },
-  { kw: 55.0, uf50Hz: 900, kvar50Hz: 11.3, uf60Hz: 750, kvar60Hz: 11.3 }
+  { kw: 55.0, uf50Hz: 900, kvar50Hz: 11.3, uf60Hz: 750, kvar60Hz: 11.3 },
 ];
 
 // ==========================================
@@ -233,7 +233,7 @@ export function calculateRequiredKvar(
   motorKw: number,
   powerFactor: number = 0.85,
   targetPowerFactor: number = 0.95,
-  efficiency: number = 0.85
+  efficiency: number = 0.85,
 ): number {
   if (!motorKw || motorKw <= 0) return 0;
 
@@ -251,18 +251,19 @@ export function calculateRequiredKvar(
 export function calculateTargetUf(
   requiredKvar: number,
   frequency: number,
-  voltage: number
+  voltage: number,
 ): number {
   if (requiredKvar <= 0 || !frequency || !voltage) return 0;
 
-  const cFarad = (requiredKvar * 1000) / (2 * Math.PI * frequency * Math.pow(voltage, 2));
+  const cFarad =
+    (requiredKvar * 1000) / (2 * Math.PI * frequency * Math.pow(voltage, 2));
   const uFarad = cFarad * 1000000;
 
   return Math.round(uFarad * 100) / 100;
 }
 
 export function getStandardCapacitorForMotor(
-  motorKw: number
+  motorKw: number,
 ): CapacitorTableEntry | undefined {
   return MOTOR_CAPACITOR_TABLE_200V.find((entry) => entry.kw === motorKw);
 }
@@ -271,15 +272,20 @@ export function getStandardCapacitorForMotor(
 // 4. 選定・検索・フィルタリングロジック (Selection Engine)
 // ==========================================
 
-export function isVoltageMatch(productVoltage: number, targetVoltage: number): boolean {
-  return productVoltage >= targetVoltage && productVoltage <= targetVoltage * 1.1;
+export function isVoltageMatch(
+  productVoltage: number,
+  targetVoltage: number,
+): boolean {
+  return (
+    productVoltage >= targetVoltage && productVoltage <= targetVoltage * 1.1
+  );
 }
 
-function extractUf(p: CapacitorProduct): number {
+export function extractUf(p: CapacitorProduct): number {
   return p.uf ?? p.capacity_uf ?? 0;
 }
 
-function isHzMatch(p: CapacitorProduct, targetHz: number): boolean {
+export function isHzMatch(p: CapacitorProduct, targetHz: number): boolean {
   const productHz = p.hz ?? p.frequency_hz;
   if (productHz !== undefined && productHz !== 0) return productHz === targetHz;
   return true;
@@ -289,12 +295,12 @@ export function findClosestCapacitorGroup(
   catalog: CapacitorProduct[],
   targetVoltage: number,
   targetHz: number,
-  targetUf: number
+  targetUf: number,
 ): CapacitorProduct[] {
   if (!catalog.length || targetUf <= 0) return [];
 
   const filtered = catalog.filter(
-    (p) => isVoltageMatch(p.voltage, targetVoltage) && isHzMatch(p, targetHz)
+    (p) => isVoltageMatch(p.voltage, targetVoltage) && isHzMatch(p, targetHz),
   );
 
   if (!filtered.length) return [];
@@ -318,7 +324,7 @@ export function findCandidateCapacitors(
   targetVoltage: number,
   targetHz: number,
   targetUf: number,
-  tolerance: number = 0.35
+  tolerance: number = 0.35,
 ): CapacitorProduct[] {
   if (!catalog.length || targetUf <= 0) return [];
 
@@ -337,7 +343,9 @@ export function findCandidateCapacitors(
 // 5. データ正規化・アダプター関数 (Transformers)
 // ==========================================
 
-export function flattenCapacitorMaster(products: ProductMaster[]): CapacitorProduct[] {
+export function flattenCapacitorMaster(
+  products: ProductMaster[],
+): CapacitorProduct[] {
   const result: CapacitorProduct[] = [];
 
   for (const p of products) {

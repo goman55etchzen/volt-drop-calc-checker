@@ -233,16 +233,13 @@
         :motor-kw="formData.motorKw || 0"
         :frequency="formData.frequency || 50"
         :show-details="canCalculateFull"
-        :power-factor="mc.powerFactor.value"
-        :target-power-factor="mc.targetPowerFactor.value"
-        :efficiency="mc.efficiency.value"
         :breaker-info="mc.breakerInfo.value"
         :elcb-info="mc.elcbInfo.value"
         :thermal-info="thermalInfo"
         :recommended-installation="recommendedInstallation"
         :recommended-capacitors="cap.recommendedCapacitors.value || []"
-        :candidate-capacitors="cap.candidateCapacitors.value || []"
-        :loading="cap.isLoading.value"
+        :catalog="cap.capacitorCatalog.value || []"
+        :target-uf="cap.targetUf.value || 0"
         @select-capacitor-candidate="handleCapacitorSelect"
         @selectCapacitorCandidate="handleCapacitorSelect"
       />
@@ -268,7 +265,7 @@ import type {
   PowerFrequency,
   EnvironmentType,
   MotorBreakerType,
-} from "@/types/appDefinitions";
+} from "@/base/breakerBase";
 import type { CapacitorProduct } from "@/base/capacitorBase";
 
 const mc = useMotorCalc();
@@ -293,7 +290,7 @@ const cap = useCapacitor(
   mc.powerFactor,
   mc.targetPowerFactor,
   mc.efficiency,
-  toRef(formData, "driveMode")
+  toRef(formData, "driveMode"),
 );
 
 onMounted(() => {
@@ -337,38 +334,38 @@ watch(
   () => formData.motorKw,
   (val) => {
     mc.outputKw.value = val ?? 0;
-  }
+  },
 );
 watch(
   () => formData.quantity,
   (val) => {
     mc.motorCount.value = val ?? 1;
-  }
+  },
 );
 watch(
   () => formData.otherLoadIr,
   (val) => {
     mc.otherLoadAmp.value = val ?? 0;
-  }
+  },
 );
 watch(
   () => formData.environment,
   (val) => {
     if (val) mc.environment.value = val;
-  }
+  },
 );
 watch(
   () => formData.systemId,
   (val) => {
     if (val === "1P3W_100V") mc.voltage.value = 100;
     if (val === "1P3W_200V" || val === "3P3W") mc.voltage.value = 200;
-  }
+  },
 );
 
 const { thermalInfo } = useThermal(
   mc.calculatedAmp,
   mc.driveMode,
-  mc.motorCount
+  mc.motorCount,
 );
 
 const canCalculateBasic = computed(() => {
