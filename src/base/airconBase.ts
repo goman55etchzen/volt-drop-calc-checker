@@ -1,4 +1,4 @@
-import type { CableTypeCode } from "./cableBase";
+import { CABLE_SPECS, type CableTypeCode } from "./cableBase";
 
 // ==========================================
 // 1. 型定義 (Types & Interfaces)
@@ -202,29 +202,26 @@ export const ROOM_OPTIONS = [
   { label: "子供部屋・書斎", value: "kids", desc: "標準洋室 ×1.00" },
 ] as const;
 
-/** 導体断面積マスタ (単芯/単線・より線表記からの換算用) */
-export const WIRE_AREA_MAP: Record<string, number> = {
-  "1.6mm": 2.01,
-  "2.0mm": 3.14,
-  "2.6mm": 5.31,
-  "2.0sq": 2.0,
-  "3.5sq": 3.5,
-  "5.5sq": 5.5,
-  "8.0sq": 8.0,
-  "14.0sq": 14.0,
-  "22.0sq": 22.0,
-};
+/**
+ * 電圧降下計算用・電線サイズ優先順位マスタ
+ * 断面積は cableBase.CABLE_SPECS から取得（ここでは名前と優先順位だけを持つ）。
+ * 順序は意図的: 単線(mm)を先に、より線(sq)を後に試す。
+ */
+const AIRCON_WIRE_PRIORITY = [
+  "1.6mm",
+  "2.0mm",
+  "2.6mm",
+  "3.5 sq",
+  "5.5 sq",
+  "8.0 sq",
+  "14.0 sq",
+] as const;
 
-/** 電圧降下計算用・電線サイズ優先順位マスタ */
-export const WIRE_SIZE_CANDIDATES = [
-  { name: "1.6mm", area: 2.01 },
-  { name: "2.0mm", area: 3.14 },
-  { name: "2.6mm", area: 5.31 },
-  { name: "3.5sq", area: 3.5 },
-  { name: "5.5sq", area: 5.5 },
-  { name: "8.0sq", area: 8.0 },
-  { name: "14.0sq", area: 14.0 },
-];
+export const WIRE_SIZE_CANDIDATES = AIRCON_WIRE_PRIORITY.map((name) => {
+  const spec = CABLE_SPECS.find((s) => s.size === name);
+  if (!spec) throw new Error(`CABLE_SPECS に ${name} がありません`);
+  return { name, area: spec.area };
+});
 
 // エアコン能力マスタ
 export const AC_SPECS: AcSpec[] = [

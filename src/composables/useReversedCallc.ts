@@ -13,18 +13,15 @@ import {
   SystemType,
   AvailableWireResult,
   SYSTEM_DEFINITIONS,
-  CABLE_SPECS,
   CABLE_TYPES,
-  calculateAllowableCurrent,
+  CableBase,
   calculateK2
 } from '@/base/cableBase'
 import { STANDARD_MOTOR_SPECS } from '@/base/motorBase'
 import { BREAKER_SIZES, THREE_PHASE_BREAKER_SIZES } from '@/base/breakerBase'
 
-export interface ExtendedAvailableWireResult extends AvailableWireResult {
-  limiter: 'drop' | 'heat' | 'none'; // ボトルネック要因
-  isRecommended: boolean;           // 推奨最小サイズフラグ
-}
+// limiter / isRecommended / maxDistanceMeters は CableBase 側の AvailableWireResult に統合済み
+export type ExtendedAvailableWireResult = AvailableWireResult
 
 export function useReversedCallc(
   voltage: Ref<number>,
@@ -171,81 +168,33 @@ export function useReversedCallc(
     calculationIssues.value.some((issue) => issue.level === 'error')
   )
 
-  // 電線サイズごとの判定算出
+  // 電線サイズごとの判定算出（計算ロジックは CableBase に一本化）
   const availableWires = computed<ExtendedAvailableWireResult[]>(() => {
     if (hasError.value) return []
 
-    const L = oneWayDistance.value
-    const e_allow = allowDropV.value
-    const sys = currentSystem.value
     const I = calculatedLoadCurrent.value
-    const cosTheta = effectivePowerFactor.value
-    const sinTheta = Math.sqrt(Math.max(0, 1 - cosTheta * cosTheta))
 
     // 耐熱必要電流基準 (モーター: 1.25倍/1.1倍則, 一般連続負荷: 1.25倍則)
-    let requiredWireAmp = I
+    let requiredHeatAmp = I
     if (loadType.value === 'motor') {
-      requiredWireAmp = I <= 50 ? I * 1.25 : I * 1.1
+      requiredHeatAmp = I <= 50 ? I * 1.25 : I * 1.1
     } else if (isContinuous.value) {
-      requiredWireAmp = I * 1.25
+      requiredHeatAmp = I * 1.25
     }
 
-    const rawResults = CABLE_SPECS.map((spec) => {
-      // 1. 電圧降下限界電流の計算
-      const z = ignorePowerFactor.value
-        ? spec.r
-        : spec.r * cosTheta + spec.x * sinTheta
-
-      const maxAmpereByDrop =
-        z > 0 && L > 0 ? (e_allow * 1000) / (sys.kFactor * z * L) : 0
-
-      // 2. 熱的許容電流の計算
-      const baseAllow = spec.baseAllowAmp[selectedCableType.value] ?? 0
-      
-      let allowAmpereByHeat = 0
-      if (baseAllow > 0) {
-        const calcRes = calculateAllowableCurrent({
-          baseAllowAmp: baseAllow,
-          maxTemp: currentCableType.value.maxTemp,
-          ambientTemp: ambientTemp.value,
-          wireCount: wireCount.value
-        })
-        allowAmpereByHeat = calcRes.singleAllowAmp
-      }
-
-      const effectiveMaxAmp = Math.min(maxAmpereByDrop, allowAmpereByHeat)
-      const isOkForLoad =
-        effectiveMaxAmp >= I && allowAmpereByHeat >= requiredWireAmp
-
-      let limiter: 'drop' | 'heat' | 'none' = 'none'
-      if (maxAmpereByDrop < allowAmpereByHeat) {
-        limiter = 'drop'
-      } else if (allowAmpereByHeat < maxAmpereByDrop) {
-        limiter = 'heat'
-      }
-
-      return {
-        wireName: spec.size,
-        area: spec.area,
-        maxAmpereByDrop: Number(maxAmpereByDrop.toFixed(1)),
-        allowAmpereByHeat: Number(allowAmpereByHeat.toFixed(1)),
-        effectiveMaxAmp: Number(effectiveMaxAmp.toFixed(1)),
-        isOkForLoad,
-        limiter,
-        isRecommended: false
-      }
+    return CableBase.evaluateAllWireSizes({
+      // 未知の systemId は従来どおり先頭定義にフォールバック
+      systemId: currentSystem.value.id,
+      voltage: voltage.value,
+      targetDropPercent: targetPercent.value,
+      current: I,
+      distance: oneWayDistance.value,
+      cableType: selectedCableType.value,
+      ambientTemp: ambientTemp.value,
+      wireCount: wireCount.value,
+      powerFactor: effectivePowerFactor.value,
+      requiredHeatAmp
     })
-
-    const okWires = rawResults.filter((w) => w.isOkForLoad)
-    let minArea = Infinity
-    if (okWires.length > 0) {
-      minArea = Math.min(...okWires.map((w) => w.area))
-    }
-
-    return rawResults.map((w) => ({
-      ...w,
-      isRecommended: w.isOkForLoad && w.area === minArea
-    }))
   })
 
   const recommendedWire = computed(() => {

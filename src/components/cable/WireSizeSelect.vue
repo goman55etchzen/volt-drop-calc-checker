@@ -38,8 +38,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
-  WIRE_SIZES,
-  CABLE_TYPES,
+  getWireSizesForCable,
   type CableTypeCode
 } from '@/base/cableBase';
 
@@ -63,20 +62,10 @@ type Emits = {
 
 const emit = defineEmits<Emits>();
 
-// 選択中のケーブル種別に応じた電線サイズ・許容電流リストを取得
-const currentWireList = computed(() => {
-  const targetCable = CABLE_TYPES.find((c) => c.id === props.selectedCableId);
-
-  // CableType には sizes 配列がないため、limits に登録されている
-  // 電線サイズだけを表示する。
-  if (targetCable) {
-    return WIRE_SIZES.filter(
-      (wire) => (targetCable.limits[wire.name] ?? 0) > 0,
-    );
-  }
-
-  return WIRE_SIZES;
-});
+// 選択中のケーブル種別で使える電線サイズ・基準許容電流（CABLE_SPECS から派生）
+const currentWireList = computed(() =>
+  getWireSizesForCable(props.selectedCableId),
+);
 
 const selectWire = (name: string) => {
   emit('update:selectedWireName', name);

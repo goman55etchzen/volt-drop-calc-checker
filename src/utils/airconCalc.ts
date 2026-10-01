@@ -8,9 +8,9 @@ import {
   type AirconRequiredWireSelectionResult,
   type AirconSelectionResult,
   AC_SPECS,
-  WIRE_AREA_MAP,
   WIRE_SIZE_CANDIDATES,
 } from "@/base/airconBase";
+import { CableBase } from "@/base/cableBase";
 
 // ==========================================
 // 1. ユーティリティ・補助計算関数
@@ -26,14 +26,19 @@ export function getAirconSystemId(spec: AcSpec): string {
   return "1P2W";
 }
 
+/** "VVF 1.6mm" → "1.6mm"（英字の種別プレフィックスと空白だけを除去） */
 export function extractWireSizeName(wireSizeStr: string): string {
   if (!wireSizeStr) return "1.6mm";
-  return wireSizeStr.replace(/^[A-Za-z0-9\-]+\s*/, "");
+  return wireSizeStr.replace(/^[A-Za-z][A-Za-z0-9-]*\s+/, "");
 }
 
+/** 断面積 [mm²]。cableBase.CABLE_SPECS を唯一の定義として参照する */
 export function getWireArea(wireSizeStr: string): number {
-  const cleanName = extractWireSizeName(wireSizeStr);
-  return WIRE_AREA_MAP[cleanName] ?? WIRE_AREA_MAP[wireSizeStr] ?? 2.01;
+  return (
+    CableBase.getCableSpec(extractWireSizeName(wireSizeStr))?.area ??
+    CableBase.getCableSpec(wireSizeStr)?.area ??
+    2.01
+  );
 }
 
 export function convertToTatami(
@@ -328,7 +333,7 @@ export function calculateAirconSelection(
     requiredWireSelectionInfo = selectCableSizeForDistance(
       selectedSpec,
       wiringDistanceMeters,
-      targetDropRatio
+      targetVoltageDropRatio
     );
   }
 

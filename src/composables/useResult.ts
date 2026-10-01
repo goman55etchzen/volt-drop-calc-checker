@@ -71,8 +71,8 @@ export function useResult(params: UseResultParams) {
   /** 最大許容配線長 (m) */
   const maxLen = computed<number>(() => {
     if (!recommendedWire.value) return 0
-    // 推奨電線の電圧降下制限距離または規定の許容長を取得（プロパティ名に応じて調整してください）
-    return recommendedWire.value.maxDistance ?? params.oneWayDistance.value ?? 0
+    // CableBase が算出した、推奨電線での電圧降下上の最大こう長 [m]
+    return recommendedWire.value.maxDistanceMeters
   })
 
   /** 電流オーバー・適合不能判定 */
