@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
-  CableTypeCode,
+  type CableTypeCode,
   CABLE_TYPES,
   CABLE_TEMP_GROUPS,
 } from '@/base/cableBase';

@@ -51,7 +51,7 @@ type Props = {
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  selectedCableId: 'vvf'
+  selectedCableId: 'vv'
 });
 
 // Emits型も直接定義して外部型参照エラーを解消
@@ -66,10 +66,16 @@ const emit = defineEmits<Emits>();
 // 選択中のケーブル種別に応じた電線サイズ・許容電流リストを取得
 const currentWireList = computed(() => {
   const targetCable = CABLE_TYPES.find((c) => c.id === props.selectedCableId);
-  if (targetCable && targetCable.sizes && targetCable.sizes.length > 0) {
-    return targetCable.sizes;
+
+  // CableType には sizes 配列がないため、limits に登録されている
+  // 電線サイズだけを表示する。
+  if (targetCable) {
+    return WIRE_SIZES.filter(
+      (wire) => (targetCable.limits[wire.name] ?? 0) > 0,
+    );
   }
-  return WIRE_SIZES; // フォールバック用デフォルト定義
+
+  return WIRE_SIZES;
 });
 
 const selectWire = (name: string) => {

@@ -1,7 +1,16 @@
 // src/base/capacitorBase.ts
 
+import type {
+  CalculationInputMode,
+  CableTypeCode,
+  LoadType,
+  InstallationType,
+  MotorBreakerSelectionResult,
+  ElcbSelectionResult,
+} from "@/types/appDefinitions";
+
 // ==========================================
-// 1. コンデンサ関連 型定義 (Types & Interfaces)
+// 1. コンデンサ関連 基本型定義 (Types & Interfaces)
 // ==========================================
 
 export interface CapacitorDimensions {
@@ -192,7 +201,38 @@ export interface CapacitorMasterDatabase {
 }
 
 // ==========================================
-// 2. 標準マスタデータ (Master Tables)
+// 2. コンデンサ関連 UIコンポーネント Props 型定義
+// ==========================================
+
+export interface CapacitorSectionCardProps {
+  voltage: number;
+  hz: number;
+  targetUf: number;
+  catalog: CapacitorProduct[];
+  recommendedCapacitors: CapacitorProduct[];
+  loading?: boolean;
+}
+
+export interface NoticeProps {
+  driveMode: "direct" | "inverter" | null;
+  calculatedAmp: number;
+  motorCount: number;
+  otherLoadAmp: number;
+  voltage: number;
+  motorKw: number;
+  frequency: number;
+  showDetails: boolean;
+  breakerInfo: MotorBreakerSelectionResult;
+  elcbInfo: ElcbSelectionResult;
+  thermalInfo: any;
+  recommendedInstallation: string;
+  recommendedCapacitors: CapacitorProduct[];
+  catalog: CapacitorProduct[];
+  targetUf: number;
+}
+
+// ==========================================
+// 3. 標準マスタデータ (Master Tables)
 // ==========================================
 
 export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
@@ -226,7 +266,7 @@ export const MOTOR_CAPACITOR_TABLE_200V: CapacitorTableEntry[] = [
 ];
 
 // ==========================================
-// 3. ドメイン計算ロジック (Calculation Core)
+// 4. ドメイン計算ロジック (Calculation Core)
 // ==========================================
 
 export function calculateRequiredKvar(
@@ -269,7 +309,7 @@ export function getStandardCapacitorForMotor(
 }
 
 // ==========================================
-// 4. 選定・検索・フィルタリングロジック (Selection Engine)
+// 5. 選定・検索・フィルタリングロジック (Selection Engine)
 // ==========================================
 
 export function isVoltageMatch(
@@ -340,7 +380,7 @@ export function findCandidateCapacitors(
 }
 
 // ==========================================
-// 5. データ正規化・アダプター関数 (Transformers)
+// 6. データ正規化・アダプター関数 (Transformers)
 // ==========================================
 
 export function flattenCapacitorMaster(
