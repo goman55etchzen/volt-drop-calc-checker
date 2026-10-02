@@ -13,6 +13,8 @@ import {
 
 const emit = defineEmits<{
   (e: "select-cable", payload: AirconCableSelectionPayload): void;
+  /** 入力・選定結果が変わるたびに自動送出（ライブ連携用） */
+  (e: "preview-cable", payload: AirconCableSelectionPayload): void;
 }>();
 
 // ==========================================
@@ -33,6 +35,9 @@ const {
 
   selectionResult,
   acMasterSpecs,
+  wiringDistance,
+  targetDropRatio,
+  wireLimitTable,
 
   toggleSpecTable,
   resetInputs,
@@ -43,9 +48,16 @@ const {
 // UI
 // ==========================================
 
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 const showAdvanced = ref<boolean>(false);
+
+// 選定結果が変わるたびに配線計算側へ自動連携
+watch(
+  () => getCableSelectionPayload(),
+  (payload) => emit("preview-cable", payload),
+  { immediate: true, deep: true },
+);
 
 // ==========================================
 // 選択肢
@@ -432,10 +444,94 @@ const handleSendToWireCalc = () => {
         </div>
         <!-- ★追加: 電圧降下限界最大亘長 -->
         <div class="spec-item highlight-item">
-          <span class="spec-label"> 許容最大配線長 (2.0%降下時) </span>
+          <span class="spec-label"> 許容最大配線長 ({{ targetDropRatio.toFixed(1) }}%降下時) </span>
           <span class="spec-value emphasize">
            約 {{ selectionResult.maxDistanceInfo.maxDistanceMeters }} m
           </span>
+        </div>
+      </div>
+
+      <!-- ======================================
+           限界配線長・予定配線長チェック
+           ====================================== -->
+
+      <div class="limit-panel">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="distance-input">予定配線長 (m・片道)</label>
+            <input
+              id="distance-input"
+              v-model.number="wiringDistance"
+              type="number"
+              min="0"
+              step="1"
+              class="form-input"
+              placeholder="0 = 未指定"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">許容電圧降下率</label>
+            <div class="segmented-control">
+              <button
+                type="button"
+                class="segment-btn"
+                :class="{ active: targetDropRatio === 2.0 }"
+                @click="targetDropRatio = 2.0"
+              >
+                2.0%
+              </button>
+              <button
+                type="button"
+                class="segment-btn"
+                :class="{ active: targetDropRatio === 3.0 }"
+                @click="targetDropRatio = 3.0"
+              >
+                3.0%
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="selectionResult.voltageDropCheckInfo"
+          class="recommendation-note"
+        >
+          <p>{{ selectionResult.voltageDropCheckInfo.statusNote }}</p>
+          <p v-if="selectionResult.requiredWireSelectionInfo">
+            {{ selectionResult.requiredWireSelectionInfo.selectionNote }}
+          </p>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="spec-table">
+            <thead>
+              <tr>
+                <th>電線</th>
+                <th>断面積</th>
+                <th>許容電流</th>
+                <th>限界長({{ targetDropRatio.toFixed(1) }}%)</th>
+                <th>限界長(3.0%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="w in wireLimitTable"
+                :key="w.name"
+                :class="{ 'is-selected': w.isRecommended }"
+              >
+                <td>
+                  {{ w.name }}
+                  <span v-if="w.isRecommended">（推奨）</span>
+                  <span v-if="!w.heatOk" class="heat-ng">電流不足</span>
+                </td>
+                <td>{{ w.area }}mm²</td>
+                <td>{{ w.allowAmpA }}A</td>
+                <td>{{ w.maxDistanceMeters }}m</td>
+                <td>{{ w.maxDistance3PercentMeters }}m</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -446,21 +542,7 @@ const handleSendToWireCalc = () => {
           {{ selectionResult.recommendationNote }}
         </p>
       </div>
-
-      <!-- 配線計算へ -->
-
-      <div class="action-row">
-        <button
-          type="button"
-          class="btn btn-primary"
-          @click="handleSendToWireCalc"
-        >
-          この電線サイズ （{{
-            selectionResult.selectedSpec.recommendedWireSize
-          }}） で電圧降下計算へ送る
-        </button>
-      </div>
-    </section>
+      </section>
 
     <!-- ========================================
          マスタ
@@ -1054,5 +1136,28 @@ const handleSendToWireCalc = () => {
 
 .spec-table tr.is-selected td {
   border-color: #0284c7;
+}
+
+/* 限界配線長パネル */
+.limit-panel {
+  background-color: #162032;
+  border: 1px solid #2d3d54;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.limit-panel .table-wrapper {
+  margin-top: 1rem;
+}
+
+.limit-panel .recommendation-note {
+  margin: 1rem 0 0;
+}
+
+.heat-ng {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  color: #f87171;
 }
 </style>

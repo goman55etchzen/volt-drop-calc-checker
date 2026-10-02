@@ -164,10 +164,27 @@ export interface AirconCableSelectionPayload {
   breakerPoles: string;
   capacityKw: number;
   tatamiStandard: string;
-  /** 電圧降下基準による最大亘長 [m] */
+  /** 電圧降下基準による最大亘長 [m]（エアコン側の参考値。正は配線計算側 CableBase） */
   maxDistanceMeters: number;
+  /** 限界長算出に使った許容電圧降下率 [%] */
+  targetDropPercent: number;
   /** 指定配線長 [m]（オプション） */
   wiringDistanceMeters?: number;
+}
+
+/** 電線サイズ別の限界配線長テーブル 1行 */
+export interface WireLimitRow {
+  name: string;
+  area: number;
+  /** 目標降下率での限界長 [m] */
+  maxDistanceMeters: number;
+  /** 3.0%降下での限界長 [m] */
+  maxDistance3PercentMeters: number;
+  /** 熱的許容電流 [A]（周囲30℃・単独布設） */
+  allowAmpA: number;
+  /** 熱的に maxCurrentA を流せるか */
+  heatOk: boolean;
+  isRecommended: boolean;
 }
 
 // ==========================================
@@ -186,6 +203,13 @@ export const DEFAULT_AIRCON_INPUTS: Required<AirconInputParams> = {
   targetVoltageDropRatio: 2.0,
   wiringDistanceMeters: 0,
 };
+
+/**
+ * エアコン専用回路の許容電流計算で使う条数。
+ * CableBase は条数 1〜3 で電流減少係数 0.7 を掛けるため、単独布設(係数1.0)として
+ * 扱うには 0 を渡す（calculateK2: wireCount <= 0 → 1.0）。
+ */
+export const AIRCON_WIRE_COUNT = 0;
 
 export const UNIT_OPTIONS = [
   { label: "畳（帖）", value: "tatami" },
