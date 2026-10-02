@@ -274,7 +274,7 @@ import {
   CABLE_TYPES,
   CABLE_TEMP_GROUPS
 } from '@/types/appDefinitions'
-import ReversedResult from '@/components/ReversedResult.vue'
+import ReversedResult from '@/components/result/ReversedResult.vue'
 
 const props = defineProps<{
   voltage: number

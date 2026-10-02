@@ -139,7 +139,7 @@
 
 <script setup lang="ts">
 import { toRefs } from 'vue'
-import ResultCard from '@/components/ResultCard.vue'
+import ResultCard from '@/components/result/ResultCard.vue'
 import {
   CalculationInputMode,
   CableTypeCode,

@@ -183,11 +183,11 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import ElbSelectionCard from "@/components/Motor/ElbSelectionCard.vue";
-import MotorBreakerCard from "@/components/Motor/MotorBreakerCard.vue";
-import MccbSelectCard from "@/components/Motor/MccbSelectCard.vue";
-import Thermal from "@/components/Motor/Thermal.vue";
-import CapacitorSectionCard from "@/components/Motor/CapacitorSectionCard.vue";
+import ElbSelectionCard from "@/components/breaker/ElbSelectionCard.vue";
+import MotorBreakerCard from "@/components/breaker/MotorBreakerCard.vue";
+import MccbSelectCard from "@/components/breaker/MccbSelectCard.vue";
+import Thermal from "@/components/thermal/Thermal.vue";
+import CapacitorSectionCard from "@/components/capacitor/CapacitorSectionCard.vue";
 
 import type {
   MotorBreakerSelectionResult,
