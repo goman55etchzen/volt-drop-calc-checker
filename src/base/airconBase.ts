@@ -1,4 +1,4 @@
-import { CABLE_SPECS, type CableTypeCode } from "./cableBase";
+import type { CableTypeCode } from "./cableBase";
 
 // ==========================================
 // 1. 型定義 (Types & Interfaces)
@@ -164,32 +164,16 @@ export interface AirconCableSelectionPayload {
   breakerPoles: string;
   capacityKw: number;
   tatamiStandard: string;
-  /** 電圧降下基準による最大亘長 [m]（エアコン側の参考値。正は配線計算側 CableBase） */
+  /** 電圧降下基準による最大亘長 [m] */
   maxDistanceMeters: number;
-  /** 限界長算出に使った許容電圧降下率 [%] */
-  targetDropPercent: number;
   /** 指定配線長 [m]（オプション） */
   wiringDistanceMeters?: number;
-}
-
-/** 電線サイズ別の限界配線長テーブル 1行 */
-export interface WireLimitRow {
-  name: string;
-  area: number;
-  /** 目標降下率での限界長 [m] */
-  maxDistanceMeters: number;
-  /** 3.0%降下での限界長 [m] */
-  maxDistance3PercentMeters: number;
-  /** 熱的許容電流 [A]（周囲30℃・単独布設） */
-  allowAmpA: number;
-  /** 熱的に maxCurrentA を流せるか */
-  heatOk: boolean;
-  isRecommended: boolean;
 }
 
 // ==========================================
 // 2. 定数・UIオプション・マスタデータ定義
 // ==========================================
+export const AIRCON_WIRE_COUNT = 3;
 
 export const DEFAULT_AIRCON_INPUTS: Required<AirconInputParams> = {
   areaValue: 12,
@@ -203,13 +187,6 @@ export const DEFAULT_AIRCON_INPUTS: Required<AirconInputParams> = {
   targetVoltageDropRatio: 2.0,
   wiringDistanceMeters: 0,
 };
-
-/**
- * エアコン専用回路の許容電流計算で使う条数。
- * CableBase は条数 1〜3 で電流減少係数 0.7 を掛けるため、単独布設(係数1.0)として
- * 扱うには 0 を渡す（calculateK2: wireCount <= 0 → 1.0）。
- */
-export const AIRCON_WIRE_COUNT = 0;
 
 export const UNIT_OPTIONS = [
   { label: "畳（帖）", value: "tatami" },
@@ -226,26 +203,29 @@ export const ROOM_OPTIONS = [
   { label: "子供部屋・書斎", value: "kids", desc: "標準洋室 ×1.00" },
 ] as const;
 
-/**
- * 電圧降下計算用・電線サイズ優先順位マスタ
- * 断面積は cableBase.CABLE_SPECS から取得（ここでは名前と優先順位だけを持つ）。
- * 順序は意図的: 単線(mm)を先に、より線(sq)を後に試す。
- */
-const AIRCON_WIRE_PRIORITY = [
-  "1.6mm",
-  "2.0mm",
-  "2.6mm",
-  "3.5 sq",
-  "5.5 sq",
-  "8.0 sq",
-  "14.0 sq",
-] as const;
+/** 導体断面積マスタ (単芯/単線・より線表記からの換算用) */
+export const WIRE_AREA_MAP: Record<string, number> = {
+  "1.6mm": 2.01,
+  "2.0mm": 3.14,
+  "2.6mm": 5.31,
+  "2.0sq": 2.0,
+  "3.5sq": 3.5,
+  "5.5sq": 5.5,
+  "8.0sq": 8.0,
+  "14.0sq": 14.0,
+  "22.0sq": 22.0,
+};
 
-export const WIRE_SIZE_CANDIDATES = AIRCON_WIRE_PRIORITY.map((name) => {
-  const spec = CABLE_SPECS.find((s) => s.size === name);
-  if (!spec) throw new Error(`CABLE_SPECS に ${name} がありません`);
-  return { name, area: spec.area };
-});
+/** 電圧降下計算用・電線サイズ優先順位マスタ */
+export const WIRE_SIZE_CANDIDATES = [
+  { name: "1.6mm", area: 2.01 },
+  { name: "2.0mm", area: 3.14 },
+  { name: "2.6mm", area: 5.31 },
+  { name: "3.5sq", area: 3.5 },
+  { name: "5.5sq", area: 5.5 },
+  { name: "8.0sq", area: 8.0 },
+  { name: "14.0sq", area: 14.0 },
+];
 
 // エアコン能力マスタ
 export const AC_SPECS: AcSpec[] = [

@@ -44,11 +44,11 @@
       <!-- 2-2. 選定保護遮断器（タップで拡大） -->
       <div class="clickable-card-wrapper" @click="openModal('breaker')">
         <MotorBreakerCard
-          v-if="driveMode === 'direct'"
+          v-if="breakerInfo.selectedType === 'motor_breaker'"
           :breaker-info="breakerInfo"
         />
         <MccbSelectCard
-          v-else-if="driveMode === 'inverter'"
+          v-else
           :breaker-info="breakerInfo"
         />
         <div class="tap-hint-bar">🔍 タップして拡大</div>
@@ -56,7 +56,7 @@
 
       <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
       <div
-        v-if="recommendedCapacitors && recommendedCapacitors.length > 0"
+        v-if="showCapacitor"
         class="clickable-card-wrapper"
         @click="openModal('capacitor')"
       >
@@ -64,7 +64,7 @@
           :voltage="voltage"
           :hz="frequency"
           :target-uf="targetUf"
-          :catalog="catalog"
+          :candidate-capacitors="candidateCapacitors"
           :recommended-capacitors="recommendedCapacitors"
         />
         <div class="tap-hint-bar">🔍 タップして拡大・DB候補試覧</div>
@@ -145,11 +145,11 @@
           <template v-if="activeModal === 'breaker'">
             <div class="modal-scale-wrapper">
               <MotorBreakerCard
-                v-if="driveMode === 'direct'"
+                v-if="breakerInfo.selectedType === 'motor_breaker'"
                 :breaker-info="breakerInfo"
               />
               <MccbSelectCard
-                v-else-if="driveMode === 'inverter'"
+                v-else
                 :breaker-info="breakerInfo"
               />
             </div>
@@ -170,7 +170,7 @@
               :voltage="voltage"
               :hz="frequency"
               :target-uf="targetUf"
-              :catalog="catalog"
+              :candidate-capacitors="candidateCapacitors"
               :recommended-capacitors="recommendedCapacitors"
               @select-candidate="handleSelectCandidate"
             />
@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import ElbSelectionCard from "@/components/breaker/ElbSelectionCard.vue";
 import MotorBreakerCard from "@/components/breaker/MotorBreakerCard.vue";
 import MccbSelectCard from "@/components/breaker/MccbSelectCard.vue";
@@ -194,9 +194,12 @@ import type {
   ElcbSelectionResult,
 } from "@/types/appDefinitions";
 import type { ThermalSelectionResult } from "@/composables/useThermal";
-import type { CapacitorProduct } from "@/base/capacitorBase";
+import {
+  findCandidateCapacitors,
+  type CapacitorProduct,
+} from "@/base/capacitorBase";
 
-defineProps<{
+const props = withDefaults(defineProps<{
   driveMode: "direct" | "inverter" | null;
   calculatedAmp: number;
   motorCount: number;
@@ -212,11 +215,23 @@ defineProps<{
   recommendedCapacitors: CapacitorProduct[];
   catalog: CapacitorProduct[];
   targetUf: number;
-}>();
+  /** 進相コンデンサ欄を表示するか（モーターブレーカー選定＋設置時のみ true） */
+  showCapacitor?: boolean;
+}>(), { showCapacitor: true });
 
 const emit = defineEmits<{
   (e: "selectCapacitorCandidate", capacitor: CapacitorProduct): void;
 }>();
+
+// DBから目標容量±35%の適応候補を算出（CapacitorSectionCard の候補リスト用）
+const candidateCapacitors = computed(() =>
+  findCandidateCapacitors(
+    props.catalog,
+    props.voltage,
+    props.frequency,
+    props.targetUf,
+  ),
+);
 
 const activeModal = ref<
   "result" | "elb" | "breaker" | "thermal" | "capacitor" | null

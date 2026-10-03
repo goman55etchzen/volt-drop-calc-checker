@@ -9,7 +9,6 @@ import {
   type AirconSelectionResult,
   AC_SPECS,
   WIRE_SIZE_CANDIDATES,
-  AIRCON_WIRE_COUNT,
 } from "@/base/airconBase";
 import { CableBase } from "@/base/cableBase";
 
@@ -77,20 +76,12 @@ export function getRoomMultiplier(roomType: RoomType = "living"): number {
 
 // ==========================================
 // 2. 電圧降下・配線長・ケーブル選定ロジック
-//    電圧降下式は CableBase（r・x・kFactor）に一本化。
-//    配線計算画面と同じ式なので、連携先の表示値と一致する。
 // ==========================================
 
-/** "VVF 1.6mm" 等を CABLE_SPECS の正式名("1.6mm")に解決 */
-function resolveWireName(wireSizeStr: string): string {
-  const n = extractWireSizeName(wireSizeStr);
-  return CableBase.getCableSpec(n)?.size ?? n;
-}
-
-const floor1 = (v: number): number => Math.floor(v * 10) / 10;
-
 /**
- * 許容電圧降下率に基づく限界配線長 [m]（片道）を算出
+ * 許容電圧降下率に基づく限界配線長 [m] を算出
+ * 簡略計算式: L = (e * A * 1000) / (k * I)
+ *  - 単相2線100V / 単相3線200V線間 ともに配線定数 k = 35.6
  */
 export function calculateAirconMaxDistance(
   spec: AcSpec,
@@ -98,25 +89,21 @@ export function calculateAirconMaxDistance(
   wireSizeOverride?: string
 ): AirconMaxDistanceResult {
   const wireSizeStr = wireSizeOverride || spec.recommendedWireSize;
-  const wireName = resolveWireName(wireSizeStr);
   const area = getWireArea(wireSizeStr);
   const currentA = spec.maxCurrentA;
-  const systemId = getAirconSystemId(spec);
+  const voltage = spec.voltage;
+  const k = 35.6; // 1P2W, 1P3W (線間) 定数
 
-  const allowableDropVolts = (spec.voltage * targetDropRatio) / 100;
-  const calc = (ratio: number) =>
-    floor1(
-      CableBase.calculateMaxDistance(
-        spec.voltage,
-        ratio,
-        currentA,
-        wireName,
-        systemId
-      )
-    );
+  // 許容電圧降下 [V]
+  const allowableDropVolts = (voltage * targetDropRatio) / 100;
+  const allowableDropVolts3 = (voltage * 3.0) / 100;
 
-  const maxDistanceMeters = calc(targetDropRatio);
-  const maxDistance3PercentMeters = calc(3.0);
+  // L [m] = (e [V] * A [mm2] * 1000) / (k * I [A])
+  const rawDistance = (allowableDropVolts * area * 1000) / (k * currentA);
+  const rawDistance3 = (allowableDropVolts3 * area * 1000) / (k * currentA);
+
+  const maxDistanceMeters = Math.floor(rawDistance * 10) / 10;
+  const maxDistance3PercentMeters = Math.floor(rawDistance3 * 10) / 10;
 
   return {
     wireSize: wireSizeStr,
@@ -139,6 +126,10 @@ export function calculateAirconVoltageDrop(
   wireSizeOverride?: string
 ): AirconVoltageDropCheckResult {
   const wireSizeStr = wireSizeOverride || spec.recommendedWireSize;
+  const area = getWireArea(wireSizeStr);
+  const currentA = spec.maxCurrentA;
+  const voltage = spec.voltage;
+  const k = 35.6;
 
   if (distanceMeters <= 0) {
     return {
@@ -152,13 +143,9 @@ export function calculateAirconVoltageDrop(
     };
   }
 
-  const dropVolts = CableBase.calculateVoltageDrop({
-    systemId: getAirconSystemId(spec),
-    current: spec.maxCurrentA,
-    distance: distanceMeters,
-    wireSizeName: resolveWireName(wireSizeStr),
-  });
-  const dropRatioPercent = (dropVolts / spec.voltage) * 100;
+  // 電圧降下 e = (k * I * L) / (1000 * A)
+  const dropVolts = (k * currentA * distanceMeters) / (1000 * area);
+  const dropRatioPercent = (dropVolts / voltage) * 100;
 
   const roundedVolts = Math.round(dropVolts * 100) / 100;
   const roundedRatio = Math.round(dropRatioPercent * 100) / 100;
@@ -187,7 +174,7 @@ export function calculateAirconVoltageDrop(
 }
 
 /**
- * 指定配線長 [m] に対し、「電圧降下」かつ「熱的許容電流」を満たす最小の電線を選定
+ * 指定配線長 [m] に対し、許容電圧降下率を満たす最適なケーブル（電線サイズ）を自動選定
  */
 export function selectCableSizeForDistance(
   spec: AcSpec,
@@ -196,46 +183,43 @@ export function selectCableSizeForDistance(
 ): AirconRequiredWireSelectionResult {
   const currentA = spec.maxCurrentA;
   const voltage = spec.voltage;
-  const systemId = getAirconSystemId(spec);
-  const system = CableBase.getSystem(systemId);
+  const k = 35.6;
   const allowableDropVolts = (voltage * targetDropRatio) / 100;
 
-  const dropOf = (name: string): number =>
-    CableBase.calculateVoltageDrop({
-      systemId,
-      current: currentA,
-      distance: distanceMeters,
-      wireSizeName: name,
-    });
-  const heatOk = (name: string): boolean =>
-    CableBase.getAllowableCurrent(spec.cableTypeCode, name, 30, AIRCON_WIRE_COUNT)
-      .totalAllowAmp >= currentA;
-
-  // 必要最小断面積（概算表示用）
+  // 必要最小断面積 A_req = (k * I * L) / (1000 * e_allow)
   const requiredArea =
-    distanceMeters > 0 && allowableDropVolts > 0 && system
-      ? (system.k * currentA * distanceMeters) / (1000 * allowableDropVolts)
+    distanceMeters > 0
+      ? (k * currentA * distanceMeters) / (1000 * allowableDropVolts)
       : 0;
+
   const roundedReqArea = Math.round(requiredArea * 100) / 100;
 
-  const found = WIRE_SIZE_CANDIDATES.find(
-    (c) => heatOk(c.name) && dropOf(c.name) <= allowableDropVolts + 1e-9
+  // マスタから条件を満たす最小の電線を選定
+  let selectedCandidate = WIRE_SIZE_CANDIDATES.find(
+    (c) => c.area >= requiredArea
   );
-  const selectedCandidate =
-    found ?? WIRE_SIZE_CANDIDATES[WIRE_SIZE_CANDIDATES.length - 1];
 
-  const actualDropVolts = dropOf(selectedCandidate.name);
+  if (!selectedCandidate) {
+    selectedCandidate =
+      WIRE_SIZE_CANDIDATES[WIRE_SIZE_CANDIDATES.length - 1];
+  }
+
+  const actualDropVolts =
+    distanceMeters > 0
+      ? (k * currentA * distanceMeters) / (1000 * selectedCandidate.area)
+      : 0;
   const actualDropRatio = (actualDropVolts / voltage) * 100;
+
   const roundedActualVolts = Math.round(actualDropVolts * 100) / 100;
   const roundedActualRatio = Math.round(actualDropRatio * 100) / 100;
 
   let selectionNote = "";
   if (distanceMeters <= 0) {
     selectionNote = "配線長を入力すると適切な電線サイズを推奨します。";
-  } else if (found) {
+  } else if (selectedCandidate.area >= requiredArea) {
     selectionNote = `配線長 ${distanceMeters}m (許容降下率${targetDropRatio.toFixed(1)}%): 推奨線径は【${selectedCandidate.name}】(${selectedCandidate.area}mm²) です (実電圧降下: ${roundedActualVolts}V / ${roundedActualRatio}%)。`;
   } else {
-    selectionNote = `配線長 ${distanceMeters}m: 標準適合範囲を超えるため、要個別設計検討（必要断面積: 約${roundedReqArea}mm²）。`;
+    selectionNote = `配線長 ${distanceMeters}m: 標準適合範囲を超えるため、要個別設計検討（必要断面積: ${roundedReqArea}mm²）。`;
   }
 
   return {

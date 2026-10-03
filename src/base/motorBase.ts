@@ -1,14 +1,15 @@
 // src/base/motorBase.ts
+
 import type {
-    EnvironmentType,
-    PowerFrequency,
-    MotorBreakerType,
-    MotorBreakerSelectionResult,
-    ElcbSelectionResult,
-    GroundingResult,
-  } from '@/types/appDefinitions';
-  import { 
-    CapacitorSelectionResult } from '@/base/capacitorBase'
+  EnvironmentType,
+  MotorBreakerType,
+  MotorBreakerSelectionResult,
+  ElcbSelectionResult,
+  GroundingResult,
+} from "@/base/breakerBase";
+import { THREE_PHASE_BREAKER_SIZES } from "@/base/breakerBase";
+import type { PowerFrequency } from "@/base/irvoltBase";
+import type { CapacitorSelectionResult } from "@/base/capacitorBase";
 
   /**
    * 電動機標準仕様エントリー
@@ -73,14 +74,28 @@ import type {
     { kw: 45.0, amp200V: 182.0, amp400V: 91.0, defaultPowerFactor: 0.89, defaultEfficiency: 0.93 },
     { kw: 55.0, amp200V: 220.0, amp400V: 110.0, defaultPowerFactor: 0.89, defaultEfficiency: 0.93 },
   ];
-  
+
   /**
-   * 三相配線用遮断器の標準フレームサイズ（A）
+   * 旧アプリAPI互換用のモーター仕様型。定義元は motorBase.ts に統一。
    */
-  export const THREE_PHASE_BREAKER_SIZES = [
-    15, 20, 30, 40, 50, 60, 75, 100, 125, 150, 175, 200, 225, 250, 300, 400, 500, 600
-  ];
-  
+  export interface MotorSpec {
+    kw: number;
+    amp: number;
+    defaultCosTheta: number;
+  }
+
+  /**
+   * 旧アプリAPI互換用。STANDARD_MOTOR_SPECS の200V値から生成するため、
+   * モーター仕様データの実体は STANDARD_MOTOR_SPECS に一本化。
+   */
+  export const MOTOR_SPECS: MotorSpec[] = STANDARD_MOTOR_SPECS
+    .filter((spec) => spec.amp200V > 0)
+    .map((spec) => ({
+      kw: spec.kw,
+      amp: spec.amp200V,
+      defaultCosTheta: spec.defaultPowerFactor,
+    }));
+
   /**
    * 電動機計算コア・ベースクラス
    */

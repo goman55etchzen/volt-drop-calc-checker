@@ -36,6 +36,17 @@ export interface ElcbSelectionResult {
   description: string;
 }
 
+/** 接地工事判定結果 */
+export interface GroundingResult {
+  groundType: "D種接地工事" | "C種接地工事";
+  groundResistance: number;
+  allowableResistanceWithElcb: number;
+  insulationResistance: number;
+  groundWireDiameter: string;
+  requiresELCB: boolean;
+  notes: string[];
+}
+
 /** 遮断器選定パラメータ */
 export interface SelectBreakerParams {
   outputKw: number;
@@ -73,6 +84,7 @@ export interface ElcbCandidate {
   operatingTime: string;
   label:
     | "標準推奨"
+    | "標準形（一般屋内）"
     | "高感度形（人身保護・水回り）"
     | "中感度形（インバータ誤動作防止）"
     | "時延形（保護協調用）";

@@ -206,6 +206,26 @@
               </button>
             </div>
           </div>
+
+          <!-- 9. 進相コンデンサ（モーターブレーカー選定時のみ入力欄に切替） -->
+          <div class="input-group">
+            <CapacitorInputSection
+              :model-value="capInput.state"
+              :available="capInput.isAvailable.value"
+              :reason="capInput.unavailableReason.value"
+              :warning="capInput.pfWarning.value"
+              :notice="capInput.basisNotice.value"
+              :show-motor-class="capInput.showMotorClass.value"
+              :show-poles="capInput.showPoles.value"
+              :target-uf="cap.targetUf.value"
+              :target-kvar="cap.targetKvar.value"
+              :formula-uf="cap.formulaUf.value"
+              :required-kvar="cap.requiredKvar.value"
+              :source="cap.targetSource.value"
+              :table-label="cap.standardCapacitor.value?.tableLabel ?? ''"
+              @update:model-value="capInput.patch"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -237,11 +257,14 @@
         :elcb-info="mc.elcbInfo.value"
         :thermal-info="thermalInfo"
         :recommended-installation="recommendedInstallation"
-        :recommended-capacitors="cap.recommendedCapacitors.value || []"
+        :recommended-capacitors="
+          capInput.isActive.value ? cap.recommendedCapacitors.value || [] : []
+        "
+        :show-capacitor="capInput.isActive.value"
+        :capacitor-loading="cap.isLoading.value"
         :catalog="cap.capacitorCatalog.value || []"
         :target-uf="cap.targetUf.value || 0"
         @select-capacitor-candidate="handleCapacitorSelect"
-        @selectCapacitorCandidate="handleCapacitorSelect"
       />
 
       <div v-if="canCalculateBasic && !canCalculateFull" class="info-card mt-3">
@@ -257,8 +280,15 @@
 import { ref, reactive, computed, watch, onMounted, toRef } from "vue";
 import SelectEnvironment from "@/components/Motor/SelectEnvironment.vue";
 import Notice from "@/components/common/Notice.vue";
+import CapacitorInputSection from "@/components/capacitor/CapacitorSectionCard.vue";
+import { useCapacitorInput } from "@/composables/useCapacitorInput";
 import { useMotorCalc } from "@/composables/useMotorCalc";
-import { useCapacitor } from "@/composables/useCapacitor";
+import { useCapacitor, type CapacitorBasis } from "@/composables/useCapacitor";
+import type {
+  CapacitorPhase,
+  MotorClass,
+  MotorPoles,
+} from "@/base/capacitorStandard";
 import { useThermal } from "@/composables/useThermal";
 import { localDb } from "@/utils/localDb";
 import type {
@@ -282,6 +312,14 @@ const formData = reactive({
   breakerMode: "auto" as MotorBreakerType,
 });
 
+// 進相コンデンサの容量決定条件（入力欄 useCapacitorInput と useCapacitor で共有）
+const capBasis = ref<CapacitorBasis>("standard");
+const capMotorClass = ref<MotorClass>("standard");
+const capPoles = ref<MotorPoles>(4);
+const capPhase = computed<CapacitorPhase>(() =>
+  formData.systemId === "3P3W" ? "three" : "single",
+);
+
 // useCapacitor Composable の初期化と連携
 const cap = useCapacitor(
   toRef(formData, "motorKw"),
@@ -291,6 +329,12 @@ const cap = useCapacitor(
   mc.targetPowerFactor,
   mc.efficiency,
   toRef(formData, "driveMode"),
+  {
+    phase: capPhase,
+    basis: capBasis,
+    motorClass: capMotorClass,
+    poles: capPoles,
+  },
 );
 
 onMounted(() => {
@@ -361,6 +405,26 @@ watch(
     if (val === "1P3W_200V" || val === "3P3W") mc.voltage.value = 200;
   },
 );
+
+// 進相コンデンサ入力：保護遮断器が「モーターブレーカー」に選定されたときのみ有効
+const capInput = useCapacitorInput({
+  driveMode: toRef(formData, "driveMode"),
+  breakerType: computed(() => mc.breakerInfo.value.selectedType),
+  motorKw: toRef(formData, "motorKw"),
+  powerFactor: mc.powerFactor,
+  targetPowerFactor: mc.targetPowerFactor,
+  efficiency: mc.efficiency,
+  basis: capBasis,
+  motorClass: capMotorClass,
+  poles: capPoles,
+  isThreePhase: computed(() => capPhase.value === "three"),
+  requiredKvar: cap.requiredKvar,
+  formulaUf: cap.formulaUf,
+  targetUf: cap.targetUf,
+  targetKvar: cap.targetKvar,
+  standardCapacitor: cap.standardCapacitor,
+  targetSource: cap.targetSource,
+});
 
 const { thermalInfo } = useThermal(
   mc.calculatedAmp,

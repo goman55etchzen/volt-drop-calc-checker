@@ -1,13 +1,9 @@
 // src/base/capacitorBase.ts
 
 import type {
-  CalculationInputMode,
-  CableTypeCode,
-  LoadType,
-  InstallationType,
   MotorBreakerSelectionResult,
   ElcbSelectionResult,
-} from "@/types/appDefinitions";
+} from "@/base/breakerBase";
 
 // ==========================================
 // 1. コンデンサ関連 基本型定義 (Types & Interfaces)

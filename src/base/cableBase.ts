@@ -60,8 +60,6 @@ export interface WireSelectionParams {
   parallelCount?: number;
   powerFactor?: number;
   useImpedance?: boolean;
-  /** 耐熱側で必要な電流 [A]（電動機の 1.25/1.1 倍則など）。省略時は current */
-  requiredHeatAmp?: number;
 }
 
 export interface CableType {
@@ -78,7 +76,6 @@ export interface CableType {
 export interface WireSize {
   name: string;
   area: number;
-  /** 選択中ケーブル種別での基準許容電流 [A]。getWireSizesForCable() が設定する */
   amp?: number;
 }
 
@@ -93,18 +90,10 @@ export interface CableSpec {
 export interface AvailableWireResult {
   wireName: string;
   area: number;
-  /** 電圧降下から決まる許容電流 [A]（距離未指定時は Infinity） */
   maxAmpereByDrop: number;
-  /** 熱的許容電流 [A]（補正後。この種別で使えないサイズは 0） */
   allowAmpereByHeat: number;
   effectiveMaxAmp: number;
   isOkForLoad: boolean;
-  /** ボトルネック要因 */
-  limiter: "drop" | "heat" | "none";
-  /** 指定電流・許容降下率における電圧降下上の最大こう長 [m]（0.1m 切り捨て） */
-  maxDistanceMeters: number;
-  /** 条件を満たす最小断面積のサイズか */
-  isRecommended: boolean;
 }
 
 export interface ReductionFactorEntry {
@@ -115,9 +104,546 @@ export interface ReductionFactorEntry {
 
 // ==========================================
 // 2. 電線・ケーブル 定数・マスタデータ
-//    ★ CABLE_SPECS が唯一の定義。WIRE_SIZES / CABLE_TYPES.limits は派生。
-//    サイズ・許容電流・r/x を変えるときは CABLE_SPECS だけを編集する。
 // ==========================================
+
+export const WIRE_SIZES: WireSize[] = [
+  { name: "0.2 sq (2.5A)", area: 0.2, amp: 2.5 },
+  { name: "0.3 sq (5A)", area: 0.3, amp: 5.0 },
+  { name: "0.5 sq (5A)", area: 0.5, amp: 5.0 },
+  { name: "0.75 sq (6.6A)", area: 0.75, amp: 6.6 },
+  { name: "1.25 sq (11.6A)", area: 1.25, amp: 11.6 },
+  { name: "1.6mm", area: 2.01, amp: 27 },
+  { name: "2.0mm", area: 3.14, amp: 35 },
+  { name: "2.6mm", area: 5.31, amp: 48 },
+  { name: "2.0 sq", area: 2.0, amp: 19 },
+  { name: "3.0 sq (30A)", area: 3.0, amp: 30.0 },
+  { name: "3.5 sq", area: 3.5, amp: 30 },
+  { name: "5.0 sq (40A)", area: 5.0, amp: 40.0 },
+  { name: "5.5 sq", area: 5.5, amp: 42 },
+  { name: "8.0 sq", area: 8.0, amp: 54 },
+  { name: "14.0 sq", area: 14.0, amp: 76 },
+  { name: "22.0 sq", area: 22.0, amp: 98 },
+  { name: "38.0 sq", area: 38.0, amp: 140 },
+  { name: "60.0 sq", area: 60.0, amp: 185 },
+  { name: "100.0 sq", area: 100.0, amp: 255 },
+  { name: "150.0 sq", area: 150.0, amp: 325 },
+  { name: "200.0 sq", area: 200.0, amp: 390 },
+  { name: "250.0 sq", area: 250.0, amp: 445 },
+  { name: "325.0 sq", area: 325.0, amp: 525 },
+];
+
+export const REDUCTION_FACTOR_TABLE: ReductionFactorEntry[] = [
+  { minWires: 1, maxWires: 3, factor: 0.7 },
+  { minWires: 4, maxWires: 4, factor: 0.63 },
+  { minWires: 5, maxWires: 6, factor: 0.56 },
+  { minWires: 7, maxWires: 15, factor: 0.49 },
+  { minWires: 16, maxWires: 40, factor: 0.43 },
+  { minWires: 41, maxWires: Infinity, factor: 0.39 },
+];
+
+export const CABLE_TYPES: CableType[] = [
+  {
+    id: "vv",
+    name: "VVF (平形ビニル)",
+    desc: "標準室内配線 (許容温度 60℃)",
+    maxTemp: 60,
+    tempCategory: "60",
+    limits: {
+      "0.2 sq (2.5A)": 2.5,
+      "0.3 sq (5A)": 5.0,
+      "0.5 sq (5A)": 5.0,
+      "0.75 sq (6.6A)": 6.6,
+      "1.25 sq (11.6A)": 11.6,
+      "1.6mm": 18,
+      "2.0mm": 24,
+      "2.6mm": 35,
+      "2.0 sq": 19,
+      "3.0 sq (30A)": 30.0,
+      "3.5 sq": 27,
+      "5.0 sq (40A)": 40.0,
+      "5.5 sq": 37,
+      "8.0 sq": 49,
+      "14.0 sq": 69,
+      "22.0 sq": 80.0,
+    },
+  },
+  {
+    id: "vvr",
+    name: "VVR (丸形ビニル)",
+    desc: "幹配線・動力用丸形 (許容温度 60℃)",
+    maxTemp: 60,
+    tempCategory: "60",
+    limits: {
+      "0.2 sq (2.5A)": 2.5,
+      "0.3 sq (5A)": 5.0,
+      "0.5 sq (5A)": 5.0,
+      "0.75 sq (6.6A)": 6.6,
+      "1.25 sq (11.6A)": 11.6,
+      "1.6mm": 18,
+      "2.0mm": 24,
+      "2.6mm": 35,
+      "2.0 sq": 19,
+      "3.0 sq (30A)": 30.0,
+      "3.5 sq": 27,
+      "5.0 sq (40A)": 40.0,
+      "5.5 sq": 37,
+      "8.0 sq": 49,
+      "14.0 sq": 69,
+      "22.0 sq": 80.0,
+    },
+  },
+  {
+    id: "iv",
+    name: "IV (ビニル絶縁電線)",
+    desc: "配管内配線用 (許容温度 60℃)",
+    maxTemp: 60,
+    tempCategory: "60",
+    limits: {
+      "0.2 sq (2.5A)": 2.5,
+      "0.3 sq (5A)": 5.0,
+      "0.5 sq (5A)": 5.0,
+      "0.75 sq (6.6A)": 6.6,
+      "1.25 sq (11.6A)": 11.6,
+      "1.6mm": 27,
+      "2.0mm": 35,
+      "2.6mm": 48,
+      "2.0 sq": 27,
+      "3.0 sq (30A)": 30.0,
+      "3.5 sq": 37,
+      "5.0 sq (40A)": 40.0,
+      "5.5 sq": 49,
+      "8.0 sq": 61,
+      "14.0 sq": 88,
+      "22.0 sq": 115,
+    },
+  },
+  {
+    id: "em_eef",
+    name: "EM-EEF (エコ電線平形)",
+    desc: "耐燃性ポリエチレン (許容温度 75℃)",
+    maxTemp: 75,
+    tempCategory: "75",
+    limits: {
+      "0.2 sq (2.5A)": 2.8,
+      "0.3 sq (5A)": 5.5,
+      "0.5 sq (5A)": 5.5,
+      "0.75 sq (6.6A)": 7.2,
+      "1.25 sq (11.6A)": 13.0,
+      "1.6mm": 21,
+      "2.0mm": 28,
+      "2.6mm": 40,
+      "2.0 sq": 22,
+      "3.0 sq (30A)": 33.0,
+      "3.5 sq": 31,
+      "5.0 sq (40A)": 44.0,
+      "5.5 sq": 43,
+      "8.0 sq": 56,
+      "14.0 sq": 79,
+      "22.0 sq": 105,
+    },
+  },
+  {
+    id: "em_ief",
+    name: "EM-IEF (エコ絶縁電線)",
+    desc: "耐燃性ポリエチレン絶縁 (許容温度 75℃)",
+    maxTemp: 75,
+    tempCategory: "75",
+    limits: {
+      "0.2 sq (2.5A)": 2.8,
+      "0.3 sq (5A)": 5.5,
+      "0.5 sq (5A)": 5.5,
+      "0.75 sq (6.6A)": 7.2,
+      "1.25 sq (11.6A)": 13.0,
+      "1.6mm": 31,
+      "2.0mm": 40,
+      "2.6mm": 55,
+      "2.0 sq": 31,
+      "3.0 sq (34A)": 34.0,
+      "3.5 sq": 42,
+      "5.0 sq (46A)": 46.0,
+      "5.5 sq": 56,
+      "8.0 sq": 70,
+      "14.0 sq": 101,
+      "22.0 sq": 132,
+    },
+  },
+  {
+    id: "hiv",
+    name: "HIV (二種耐熱形ビニル)",
+    desc: "盤内・高耐熱配線 (許容温度 75℃)",
+    maxTemp: 75,
+    tempCategory: "75",
+    limits: {
+      "0.2 sq (2.5A)": 2.8,
+      "0.3 sq (5A)": 5.5,
+      "0.5 sq (5A)": 5.5,
+      "0.75 sq (6.6A)": 7.2,
+      "1.25 sq (11.6A)": 13.0,
+      "1.6mm": 31,
+      "2.0mm": 40,
+      "2.6mm": 55,
+      "2.0 sq": 31,
+      "3.0 sq (34A)": 34.0,
+      "3.5 sq": 42,
+      "5.0 sq (46A)": 46.0,
+      "5.5 sq": 56,
+      "8.0 sq": 70,
+      "14.0 sq": 101,
+      "22.0 sq": 132,
+    },
+  },
+  {
+    id: "cv",
+    name: "CV 1C (単心3条)",
+    desc: "高容量幹配線 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 33,
+      "2.0mm": 44,
+      "2.6mm": 57,
+      "2.0 sq": 33,
+      "3.5 sq": 44,
+      "5.5 sq": 57,
+      "8.0 sq": 78,
+      "14.0 sq": 110,
+      "22.0 sq": 145,
+      "38.0 sq": 205,
+      "60.0 sq": 275,
+      "100.0 sq": 385,
+      "150.0 sq": 495,
+      "200.0 sq": 605,
+      "250.0 sq": 700,
+      "325.0 sq": 835,
+    },
+  },
+  {
+    id: "cvd",
+    name: "CVD (2心より合わせ)",
+    desc: "単相2線式幹配線 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 27,
+      "2.0mm": 38,
+      "2.6mm": 49,
+      "2.0 sq": 27,
+      "3.5 sq": 38,
+      "5.5 sq": 49,
+      "8.0 sq": 60,
+      "14.0 sq": 86,
+      "22.0 sq": 110,
+      "38.0 sq": 155,
+      "60.0 sq": 210,
+      "100.0 sq": 290,
+      "150.0 sq": 373,
+      "200.0 sq": 445,
+      "250.0 sq": 510,
+      "325.0 sq": 610,
+    },
+  },
+  {
+    id: "cvt",
+    name: "CVT (3心より合わせ)",
+    desc: "三相/単三幹配線 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 25,
+      "2.0mm": 35,
+      "2.6mm": 46,
+      "2.0 sq": 25,
+      "3.5 sq": 35,
+      "5.5 sq": 46,
+      "8.0 sq": 51,
+      "14.0 sq": 73,
+      "22.0 sq": 96,
+      "38.0 sq": 132,
+      "60.0 sq": 181,
+      "100.0 sq": 253,
+      "150.0 sq": 324,
+      "200.0 sq": 385,
+      "250.0 sq": 445,
+      "325.0 sq": 528,
+    },
+  },
+  {
+    id: "cvq",
+    name: "CVQ (4心より合わせ)",
+    desc: "4線式配線 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 24,
+      "2.0mm": 33,
+      "2.6mm": 43,
+      "2.0 sq": 24,
+      "3.5 sq": 33,
+      "5.5 sq": 43,
+      "8.0 sq": 48,
+      "14.0 sq": 69,
+      "22.0 sq": 91,
+      "38.0 sq": 125,
+      "60.0 sq": 171,
+      "100.0 sq": 240,
+      "150.0 sq": 307,
+      "200.0 sq": 365,
+      "250.0 sq": 421,
+      "325.0 sq": 501,
+    },
+  },
+  {
+    id: "cv_2c",
+    name: "CV-2C (シース2心)",
+    desc: "一括シース丸形2心 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 26,
+      "2.0mm": 36,
+      "2.6mm": 46,
+      "2.0 sq": 26,
+      "3.5 sq": 36,
+      "5.5 sq": 46,
+      "8.0 sq": 57,
+      "14.0 sq": 81,
+      "22.0 sq": 105,
+      "38.0 sq": 148,
+      "60.0 sq": 198,
+      "100.0 sq": 280,
+      "150.0 sq": 356,
+      "200.0 sq": 423,
+      "250.0 sq": 489,
+      "325.0 sq": 583,
+    },
+  },
+  {
+    id: "cv_3c",
+    name: "CV-3C (シース3心)",
+    desc: "一括シース丸形3心 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 24,
+      "2.0mm": 33,
+      "2.6mm": 40,
+      "2.0 sq": 24,
+      "3.5 sq": 33,
+      "5.5 sq": 40,
+      "8.0 sq": 48,
+      "14.0 sq": 69,
+      "22.0 sq": 91,
+      "38.0 sq": 126,
+      "60.0 sq": 170,
+      "100.0 sq": 242,
+      "150.0 sq": 308,
+      "200.0 sq": 368,
+      "250.0 sq": 423,
+      "325.0 sq": 501,
+    },
+  },
+  {
+    id: "cv_4c",
+    name: "CV-4C (シース4心)",
+    desc: "一括シース丸形4心 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 22,
+      "2.0mm": 30,
+      "2.6mm": 38,
+      "2.0 sq": 22,
+      "3.5 sq": 30,
+      "5.5 sq": 38,
+      "8.0 sq": 45,
+      "14.0 sq": 65,
+      "22.0 sq": 86,
+      "38.0 sq": 119,
+      "60.0 sq": 161,
+      "100.0 sq": 229,
+      "150.0 sq": 291,
+      "200.0 sq": 349,
+      "250.0 sq": 402,
+      "325.0 sq": 475,
+    },
+  },
+  {
+    id: "mlfc",
+    name: "MLFC (難燃ポリフレックス)",
+    desc: "盤内・端末配線用 (許容温度 90℃)",
+    maxTemp: 90,
+    tempCategory: "90",
+    limits: {
+      "1.6mm": 33,
+      "2.0mm": 44,
+      "2.6mm": 57,
+      "2.0 sq": 33,
+      "3.5 sq": 44,
+      "5.5 sq": 57,
+      "8.0 sq": 78,
+      "14.0 sq": 110,
+      "22.0 sq": 145,
+      "38.0 sq": 205,
+      "60.0 sq": 275,
+      "100.0 sq": 385,
+      "150.0 sq": 495,
+      "200.0 sq": 605,
+      "250.0 sq": 700,
+      "325.0 sq": 835,
+    },
+  },
+  {
+    id: "ow",
+    name: "OW (屋外用架空ビニル)",
+    desc: "屋外空調架空線 (高放熱)",
+    maxTemp: 60,
+    tempCategory: "outdoor",
+    limits: {
+      "0.2 sq (2.5A)": 3.5,
+      "0.3 sq (5A)": 7.0,
+      "0.5 sq (5A)": 7.0,
+      "0.75 sq (6.6A)": 9.0,
+      "1.25 sq (11.6A)": 16.0,
+      "1.6mm": 32,
+      "2.0mm": 42,
+      "2.6mm": 58,
+      "2.0 sq": 32,
+      "3.0 sq (30A)": 40.0,
+      "3.5 sq": 44,
+      "5.0 sq (40A)": 55.0,
+      "5.5 sq": 58,
+      "8.0 sq": 75,
+      "14.0 sq": 107,
+      "22.0 sq": 140,
+    },
+  },
+  {
+    id: "dv",
+    name: "DV (引込用ビニル)",
+    desc: "建物引込部空中配線 (高放熱)",
+    maxTemp: 60,
+    tempCategory: "outdoor",
+    limits: {
+      "0.2 sq (2.5A)": 3.5,
+      "0.3 sq (5A)": 7.0,
+      "0.5 sq (5A)": 7.0,
+      "0.75 sq (6.6A)": 9.0,
+      "1.25 sq (11.6A)": 16.0,
+      "1.6mm": 30,
+      "2.0mm": 39,
+      "2.6mm": 54,
+      "2.0 sq": 30,
+      "3.0 sq (38A)": 38.0,
+      "3.5 sq": 41,
+      "5.0 sq (52A)": 52.0,
+      "5.5 sq": 54,
+      "8.0 sq": 70,
+      "14.0 sq": 99,
+      "22.0 sq": 130,
+    },
+  },
+  {
+    id: "vct",
+    name: "VCT (ビニルキャブタイヤケーブル)",
+    desc: "移動用機器・延長ケーブル用 (※屋内固定配線不可)",
+    maxTemp: 60,
+    tempCategory: "60",
+    isIndoorWiringForbidden: true,
+    warningMessage:
+      "VCTは機器への電源供給・延長用です。壁内や天井などの屋内固定配線には使用できません（電気設備技術基準）。",
+    limits: {
+      "0.75 sq (6.6A)": 7,
+      "1.25 sq (11.6A)": 12,
+      "2.0 sq": 19,
+      "3.5 sq": 27,
+      "5.5 sq": 37,
+      "8.0 sq": 49,
+      "14.0 sq": 69,
+      "22.0 sq": 88,
+    },
+  },
+  {
+    id: "vctf",
+    name: "VCTF / VCT-F (ビニルキャブタイヤコード)",
+    desc: "小型機器・延長コード用 (※屋内固定配線不可)",
+    maxTemp: 60,
+    tempCategory: "60",
+    isIndoorWiringForbidden: true,
+    warningMessage:
+      "VCTFは小型機器電源供給・延長コード専用です。壁内等の固定配線には使用できません（内線規程）。",
+    limits: {
+      "0.2 sq (2.5A)": 2.5,
+      "0.3 sq (5A)": 5.0,
+      "0.5 sq (5A)": 5.0,
+      "0.75 sq (6.6A)": 7,
+      "1.25 sq (11.6A)": 12,
+      "2.0 sq": 17,
+    },
+  },
+  {
+    id: "vff",
+    name: "VFF (小判コード / 平形コード)",
+    desc: "器具コード・家庭用延長コード (※屋内固定配線不可)",
+    maxTemp: 60,
+    tempCategory: "60",
+    isIndoorWiringForbidden: true,
+    warningMessage:
+      "小判コード(VFF)は器具電源・延長用です。壁内や造営物への固定配線には使用できません。",
+    limits: {
+      "0.2 sq (2.5A)": 2.5,
+      "0.3 sq (5A)": 5.0,
+      "0.5 sq (5A)": 5.0,
+      "0.75 sq (6.6A)": 7,
+      "1.25 sq (11.6A)": 12,
+      "2.0 sq": 17,
+    },
+  },
+];
+
+export const CABLE_TEMP_GROUPS = [
+  { label: "60℃ (低熱・標準室内配線)", items: ["vv", "vvr", "iv"] },
+  { label: "75℃ (中熱・エコ・耐熱)", items: ["em_eef", "em_ief", "hiv"] },
+  {
+    label: "90℃ (高耐熱・大容量幹配線)",
+    items: ["cv", "cvd", "cvt", "cvq", "cv_2c", "cv_3c", "cv_4c", "mlfc"],
+  },
+  { label: "屋外空中架空 (放熱良好)", items: ["ow", "dv"] },
+  {
+    label: "機器電源・延長コード (※屋内固定配線不可)",
+    items: ["vct", "vctf", "vff"],
+  },
+];
+
+export const SYSTEM_DEFINITIONS: SystemType[] = [
+  {
+    id: "1P2W",
+    label: "単相2線式 / 直流2線",
+    defaultVoltage: 100,
+    k: 35.6,
+    kFactor: 2.0,
+  },
+  {
+    id: "1P3W_100V",
+    label: "単相3線式 (100V負荷)",
+    defaultVoltage: 100,
+    k: 17.8,
+    kFactor: 1.0,
+  },
+  {
+    id: "1P3W_200V",
+    label: "単相3線式 (200V負荷)",
+    defaultVoltage: 200,
+    k: 35.6,
+    kFactor: 2.0,
+  },
+  {
+    id: "3P3W",
+    label: "三相3線式 (線間)",
+    defaultVoltage: 200,
+    k: 30.8,
+    kFactor: 1.732,
+  },
+];
 
 export const CABLE_SPECS: CableSpec[] = [
   {
@@ -608,247 +1134,6 @@ export const CABLE_SPECS: CableSpec[] = [
   },
 ];
 
-export const REDUCTION_FACTOR_TABLE: ReductionFactorEntry[] = [
-  { minWires: 1, maxWires: 3, factor: 0.7 },
-  { minWires: 4, maxWires: 4, factor: 0.63 },
-  { minWires: 5, maxWires: 6, factor: 0.56 },
-  { minWires: 7, maxWires: 15, factor: 0.49 },
-  { minWires: 16, maxWires: 40, factor: 0.43 },
-  { minWires: 41, maxWires: Infinity, factor: 0.39 },
-];
-
-const CABLE_TYPE_META: Omit<CableType, "limits">[] = [
-  {
-    id: "vv",
-    name: "VVF (平形ビニル)",
-    desc: "標準室内配線 (許容温度 60℃)",
-    maxTemp: 60,
-    tempCategory: "60",
-  },
-  {
-    id: "vvr",
-    name: "VVR (丸形ビニル)",
-    desc: "幹配線・動力用丸形 (許容温度 60℃)",
-    maxTemp: 60,
-    tempCategory: "60",
-  },
-  {
-    id: "iv",
-    name: "IV (ビニル絶縁電線)",
-    desc: "配管内配線用 (許容温度 60℃)",
-    maxTemp: 60,
-    tempCategory: "60",
-  },
-  {
-    id: "em_eef",
-    name: "EM-EEF (エコ電線平形)",
-    desc: "耐燃性ポリエチレン (許容温度 75℃)",
-    maxTemp: 75,
-    tempCategory: "75",
-  },
-  {
-    id: "em_ief",
-    name: "EM-IEF (エコ絶縁電線)",
-    desc: "耐燃性ポリエチレン絶縁 (許容温度 75℃)",
-    maxTemp: 75,
-    tempCategory: "75",
-  },
-  {
-    id: "hiv",
-    name: "HIV (二種耐熱形ビニル)",
-    desc: "盤内・高耐熱配線 (許容温度 75℃)",
-    maxTemp: 75,
-    tempCategory: "75",
-  },
-  {
-    id: "cv",
-    name: "CV 1C (単心3条)",
-    desc: "高容量幹配線 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "cvd",
-    name: "CVD (2心より合わせ)",
-    desc: "単相2線式幹配線 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "cvt",
-    name: "CVT (3心より合わせ)",
-    desc: "三相/単三幹配線 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "cvq",
-    name: "CVQ (4心より合わせ)",
-    desc: "4線式配線 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "cv_2c",
-    name: "CV-2C (シース2心)",
-    desc: "一括シース丸形2心 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "cv_3c",
-    name: "CV-3C (シース3心)",
-    desc: "一括シース丸形3心 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "cv_4c",
-    name: "CV-4C (シース4心)",
-    desc: "一括シース丸形4心 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "mlfc",
-    name: "MLFC (難燃ポリフレックス)",
-    desc: "盤内・端末配線用 (許容温度 90℃)",
-    maxTemp: 90,
-    tempCategory: "90",
-  },
-  {
-    id: "ow",
-    name: "OW (屋外用架空ビニル)",
-    desc: "屋外空調架空線 (高放熱)",
-    maxTemp: 60,
-    tempCategory: "outdoor",
-  },
-  {
-    id: "dv",
-    name: "DV (引込用ビニル)",
-    desc: "建物引込部空中配線 (高放熱)",
-    maxTemp: 60,
-    tempCategory: "outdoor",
-  },
-  {
-    id: "vct",
-    name: "VCT (ビニルキャブタイヤケーブル)",
-    desc: "移動用機器・延長ケーブル用 (※屋内固定配線不可)",
-    maxTemp: 60,
-    tempCategory: "60",
-    isIndoorWiringForbidden: true,
-    warningMessage:
-      "VCTは機器への電源供給・延長用です。壁内や天井などの屋内固定配線には使用できません（電気設備技術基準）。",
-  },
-  {
-    id: "vctf",
-    name: "VCTF / VCT-F (ビニルキャブタイヤコード)",
-    desc: "小型機器・延長コード用 (※屋内固定配線不可)",
-    maxTemp: 60,
-    tempCategory: "60",
-    isIndoorWiringForbidden: true,
-    warningMessage:
-      "VCTFは小型機器電源供給・延長コード専用です。壁内等の固定配線には使用できません（内線規程）。",
-  },
-  {
-    id: "vff",
-    name: "VFF (小判コード / 平形コード)",
-    desc: "器具コード・家庭用延長コード (※屋内固定配線不可)",
-    maxTemp: 60,
-    tempCategory: "60",
-    isIndoorWiringForbidden: true,
-    warningMessage:
-      "小判コード(VFF)は器具電源・延長用です。壁内や造営物への固定配線には使用できません。",
-  },
-];
-
-export const CABLE_TEMP_GROUPS = [
-  { label: "60℃ (低熱・標準室内配線)", items: ["vv", "vvr", "iv"] },
-  { label: "75℃ (中熱・エコ・耐熱)", items: ["em_eef", "em_ief", "hiv"] },
-  {
-    label: "90℃ (高耐熱・大容量幹配線)",
-    items: ["cv", "cvd", "cvt", "cvq", "cv_2c", "cv_3c", "cv_4c", "mlfc"],
-  },
-  { label: "屋外空中架空 (放熱良好)", items: ["ow", "dv"] },
-  {
-    label: "機器電源・延長コード (※屋内固定配線不可)",
-    items: ["vct", "vctf", "vff"],
-  },
-];
-
-export const SYSTEM_DEFINITIONS: SystemType[] = [
-  {
-    id: "1P2W",
-    label: "単相2線式 / 直流2線",
-    defaultVoltage: 100,
-    k: 35.6,
-    kFactor: 2.0,
-  },
-  {
-    id: "1P3W_100V",
-    label: "単相3線式 (100V負荷)",
-    defaultVoltage: 100,
-    k: 17.8,
-    kFactor: 1.0,
-  },
-  {
-    id: "1P3W_200V",
-    label: "単相3線式 (200V負荷)",
-    defaultVoltage: 200,
-    k: 35.6,
-    kFactor: 2.0,
-  },
-  {
-    id: "3P3W",
-    label: "三相3線式 (線間)",
-    defaultVoltage: 200,
-    k: 30.8,
-    kFactor: 1.732,
-  },
-];
-
-// ==========================================
-// 派生データ（CABLE_SPECS から生成。直接編集しない）
-// ==========================================
-
-/** 全サイズ一覧（CABLE_SPECS の並び順） */
-export const WIRE_SIZES: WireSize[] = CABLE_SPECS.map((spec) => ({
-  name: spec.size,
-  area: spec.area,
-}));
-
-const buildLimits = (id: CableTypeCode): Record<string, number> =>
-  Object.fromEntries(
-    CABLE_SPECS.filter((spec) => spec.baseAllowAmp[id] > 0).map((spec) => [
-      spec.size,
-      spec.baseAllowAmp[id],
-    ]),
-  );
-
-/** ケーブル種別一覧。limits は CABLE_SPECS.baseAllowAmp からの派生 */
-export const CABLE_TYPES: CableType[] = CABLE_TYPE_META.map((meta) => ({
-  ...meta,
-  limits: buildLimits(meta.id),
-}));
-
-/**
- * 指定ケーブル種別で使える電線サイズ一覧（amp = 基準許容電流）。
- * UI の電線サイズ選択はこれを使う。
- */
-export function getWireSizesForCable(cableTypeId: CableTypeCode): WireSize[] {
-  return CABLE_SPECS.filter((spec) => spec.baseAllowAmp[cableTypeId] > 0).map(
-    (spec) => ({
-      name: spec.size,
-      area: spec.area,
-      amp: spec.baseAllowAmp[cableTypeId],
-    }),
-  );
-}
-
-// ==========================================
-// 3. 許容電流・動的補正計算エンジン関数群
-// ==========================================
-
 export const REDUCTION_FACTORS: Record<InstallationType, number> = {
   conduit_3: 0.7,
   conduit_4: 0.63,
@@ -919,30 +1204,46 @@ export function calculateAllowableCurrent(params: {
   };
 }
 
-// ==========================================
-// 4. 名前解決ヘルパー
-// ==========================================
-
-/** "2.0 sq" / "2.0sq" / "2.0 sq (19A)" を同一視して比較用に正規化 */
 function normalizeWireSizeName(name: string): string {
   return name
-    .replace(/\(.*?\)/g, "")
     .replace(/\s+/g, "")
+    .replace(/sq$/i, "sq")
     .toLowerCase();
+}
+
+function findWireSize(wireSizeName: string): WireSize | undefined {
+  const exact = WIRE_SIZES.find((wire) => wire.name === wireSizeName);
+  if (exact) return exact;
+  const normalized = normalizeWireSizeName(wireSizeName);
+  return WIRE_SIZES.find(
+    (wire) => normalizeWireSizeName(wire.name) === normalized,
+  );
 }
 
 function findCableSpec(wireSizeName: string): CableSpec | undefined {
   const exact = CABLE_SPECS.find((spec) => spec.size === wireSizeName);
   if (exact) return exact;
+
   const normalized = normalizeWireSizeName(wireSizeName);
-  return CABLE_SPECS.find(
+  const normalizedMatch = CABLE_SPECS.find(
     (spec) => normalizeWireSizeName(spec.size) === normalized,
   );
+  if (normalizedMatch) return normalizedMatch;
+
+  const wire = findWireSize(wireSizeName);
+  if (!wire) return undefined;
+  return CABLE_SPECS.find((spec) => Math.abs(spec.area - wire.area) < 1e-9);
 }
 
-function findWireSize(wireSizeName: string): WireSize | undefined {
-  const spec = findCableSpec(wireSizeName);
-  return spec ? { name: spec.size, area: spec.area } : undefined;
+function findCableLimit(cable: CableType, wireSizeName: string): number {
+  const exact = cable.limits[wireSizeName];
+  if (exact !== undefined) return exact;
+
+  const normalized = normalizeWireSizeName(wireSizeName);
+  const entry = Object.entries(cable.limits).find(
+    ([name]) => normalizeWireSizeName(name) === normalized,
+  );
+  return entry?.[1] ?? 0;
 }
 
 function getEffectiveImpedance(
@@ -957,13 +1258,6 @@ function getEffectiveImpedance(
   const sinPhi = Math.sqrt(Math.max(0, 1 - pf * pf));
   return spec.r * pf + spec.x * sinPhi;
 }
-
-const round1 = (v: number): number =>
-  Number.isFinite(v) ? Math.round(v * 10) / 10 : v;
-
-// ==========================================
-// 5. CableBase（配線計算の唯一の窓口）
-// ==========================================
 
 export class CableBase {
   static getSystem(systemId: string): SystemType | undefined {
@@ -983,7 +1277,7 @@ export class CableBase {
   }
 
   static isValidWireSize(wireSizeName: string): boolean {
-    return findCableSpec(wireSizeName) !== undefined;
+    return findWireSize(wireSizeName) !== undefined;
   }
 
   static isIndoorWiringForbidden(cableTypeId: CableTypeCode): boolean {
@@ -998,9 +1292,12 @@ export class CableBase {
     parallelCount = 1,
   ): ReturnType<typeof calculateAllowableCurrent> {
     const cable = this.getCableType(cableTypeId);
-    const spec = findCableSpec(wireSizeName);
-    const baseAllowAmp = spec?.baseAllowAmp[cableTypeId] ?? 0;
-    if (!cable || baseAllowAmp <= 0) {
+    if (!cable) {
+      return { k1: 0, k2: 0, singleAllowAmp: 0, totalAllowAmp: 0 };
+    }
+
+    const baseAllowAmp = findCableLimit(cable, wireSizeName);
+    if (baseAllowAmp <= 0) {
       return { k1: 0, k2: 0, singleAllowAmp: 0, totalAllowAmp: 0 };
     }
 
@@ -1025,7 +1322,11 @@ export class CableBase {
     const equivalent = getEffectiveImpedance(spec, powerFactor, useImpedance);
 
     return (
-      (params.current * params.distance * equivalent * system.kFactor) / 1000
+      params.current *
+      params.distance *
+      equivalent *
+      system.kFactor /
+      1000
     );
   }
 
@@ -1051,123 +1352,119 @@ export class CableBase {
     }
 
     const allowableDropV = voltage * (targetDropPercent / 100);
-    const equivalent = getEffectiveImpedance(spec, powerFactor, useImpedance);
+    const equivalent = getEffectiveImpedance(
+      spec,
+      powerFactor,
+      useImpedance,
+    );
     if (equivalent <= 0) return 0;
 
-    return (allowableDropV * 1000) / (current * equivalent * system.kFactor);
+    return (
+      (allowableDropV * 1000) /
+      (current * equivalent * system.kFactor)
+    );
   }
 
   static getAdjacentWireSize(
     wireSizeName: string,
     step: "next" | "prev",
   ): string {
-    const index = CABLE_SPECS.findIndex(
-      (spec) => spec === findCableSpec(wireSizeName),
+    const normalized = normalizeWireSizeName(wireSizeName);
+    const index = WIRE_SIZES.findIndex(
+      (wire) => normalizeWireSizeName(wire.name) === normalized,
     );
     if (index < 0) return wireSizeName;
 
     const delta = step === "next" ? 1 : -1;
     const nextIndex = Math.min(
       Math.max(0, index + delta),
-      CABLE_SPECS.length - 1,
+      WIRE_SIZES.length - 1,
     );
-    return CABLE_SPECS[nextIndex].size;
+    return WIRE_SIZES[nextIndex].name;
   }
 
-  /**
-   * 全サイズを評価する（useReversedCallc はこれを呼ぶだけ）。
-   * - 距離 <= 0 : 電圧降下の制約なし（maxAmpereByDrop = Infinity）
-   * - 電圧 <= 0 または許容降下率 <= 0 : どのサイズも不可（maxAmpereByDrop = 0）
-   * - 不明な systemId : 全サイズ不可（呼び出し側でフォールバックすること）
-   */
   static evaluateAllWireSizes(
     params: WireSelectionParams,
   ): AvailableWireResult[] {
-    const system = this.getSystem(params.systemId);
-    const cable = this.getCableType(params.cableType);
-    const requiredHeatAmp = params.requiredHeatAmp ?? params.current;
-    const allowableDropV =
-      params.voltage > 0 && params.targetDropPercent > 0
-        ? params.voltage * (params.targetDropPercent / 100)
-        : 0;
-
-    const rows = CABLE_SPECS.map((spec) => {
-      const heat = cable
-        ? this.getAllowableCurrent(
-            params.cableType,
-            spec.size,
-            params.ambientTemp,
-            params.wireCount,
-            params.parallelCount ?? 1,
-          )
-        : { totalAllowAmp: 0 };
-      const allowAmpereByHeat = heat.totalAllowAmp;
-
-      const z = getEffectiveImpedance(
-        spec,
-        params.powerFactor ?? 1,
-        params.useImpedance ?? false,
+    return WIRE_SIZES.map((wire) => {
+      const allowableCurrentInfo = this.getAllowableCurrent(
+        params.cableType,
+        wire.name,
+        params.ambientTemp,
+        params.wireCount,
+        params.parallelCount ?? 1,
       );
-      const kFactor = system?.kFactor ?? 0;
 
-      let maxAmpereByDrop: number;
-      let maxDistanceMeters: number;
-      if (!system || allowableDropV <= 0 || z <= 0) {
-        maxAmpereByDrop = system && allowableDropV > 0 ? Infinity : 0; // z<=0 は降下なし
-        maxDistanceMeters = 0;
-      } else {
-        maxAmpereByDrop =
-          params.distance > 0
-            ? (allowableDropV * 1000) / (params.distance * z * kFactor)
-            : Infinity;
-        maxDistanceMeters =
-          params.current > 0
-            ? Math.floor(
-                ((allowableDropV * 1000) / (params.current * z * kFactor)) * 10,
-              ) / 10
-            : 0;
-      }
+      const maxAmpereByDrop =
+        params.distance <= 0 ||
+        params.voltage <= 0 ||
+        params.targetDropPercent <= 0
+          ? Infinity
+          : (() => {
+              const system = this.getSystem(params.systemId);
+              const spec = this.getCableSpec(wire.name);
+              if (!system || !spec) return 0;
 
-      const effectiveMaxAmp = Math.min(maxAmpereByDrop, allowAmpereByHeat);
+              const allowableDropV =
+                params.voltage * (params.targetDropPercent / 100);
+              const equivalent = getEffectiveImpedance(
+                spec,
+                params.powerFactor ?? 1,
+                params.useImpedance ?? false,
+              );
+              if (equivalent <= 0) return Infinity;
+
+              return (
+                (allowableDropV * 1000) /
+                (params.distance * equivalent * system.kFactor)
+              );
+            })();
+
+      const allowAmpereByHeat = allowableCurrentInfo.totalAllowAmp;
+      const effectiveMaxAmp = Math.min(
+        maxAmpereByDrop,
+        allowAmpereByHeat,
+      );
       const isOkForLoad =
         allowAmpereByHeat > 0 &&
         Number.isFinite(effectiveMaxAmp) &&
-        params.current <= effectiveMaxAmp &&
-        allowAmpereByHeat >= requiredHeatAmp;
-
-      let limiter: AvailableWireResult["limiter"] = "none";
-      if (maxAmpereByDrop < allowAmpereByHeat) limiter = "drop";
-      else if (allowAmpereByHeat < maxAmpereByDrop) limiter = "heat";
+        params.current <= effectiveMaxAmp;
 
       return {
-        wireName: spec.size,
-        area: spec.area,
-        maxAmpereByDrop: round1(maxAmpereByDrop),
-        allowAmpereByHeat: round1(allowAmpereByHeat),
-        effectiveMaxAmp: round1(effectiveMaxAmp),
+        wireName: wire.name,
+        area: wire.area,
+        maxAmpereByDrop,
+        allowAmpereByHeat,
+        effectiveMaxAmp,
         isOkForLoad,
-        limiter,
-        maxDistanceMeters,
-        isRecommended: false,
-      } satisfies AvailableWireResult;
+      };
     });
-
-    const okAreas = rows.filter((r) => r.isOkForLoad).map((r) => r.area);
-    const minArea = okAreas.length > 0 ? Math.min(...okAreas) : Infinity;
-    return rows.map((r) => ({
-      ...r,
-      isRecommended: r.isOkForLoad && r.area === minArea,
-    }));
   }
 
-  /** 条件を満たす最小断面積のサイズ（なければ null） */
   static selectSuitableWireSize(
     params: WireSelectionParams,
   ): AvailableWireResult | null {
-    return (
-      this.evaluateAllWireSizes(params).find((r) => r.isRecommended) ?? null
-    );
+    const evaluations = this.evaluateAllWireSizes(params);
+    return evaluations.find((result) => result.isOkForLoad) ?? null;
   }
+}
+
+// ==========================================
+// 4. UI連携用ヘルパー関数群 (追加)
+// ==========================================
+
+export function getWireSizesForCable(cableId?: CableTypeCode): { name: string; amp: number }[] {
+  if (!cableId) return [];
+  const cable = CABLE_TYPES.find((c) => c.id === cableId);
+  if (!cable) return [];
+
+  // WIRE_SIZES の順序を保ちつつ、該当ケーブルで許容電流が定義されているものを返す
+  return WIRE_SIZES
+    .filter((wire) => (cable.limits[wire.name] ?? 0) > 0)
+    .map((wire) => ({
+      name: wire.name,
+      amp: cable.limits[wire.name],
+    }));
 }
 
 export default CableBase;

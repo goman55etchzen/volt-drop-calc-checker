@@ -7,6 +7,9 @@
 // 型定義
 // ==========================================
 
+/** 商用電源周波数 */
+export type PowerFrequency = 50 | 60;
+
 /** 配線方式の型 */
 export type SystemPhaseType = '1P2W' | '1P3W_100V' | '1P3W_200V' | '3P3W' | '3P4W';
 
