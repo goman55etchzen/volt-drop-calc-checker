@@ -1,4 +1,4 @@
-<!-- src/components/Motor/MotorBreakerCard.vue -->
+<!-- src/components/breaker/MotorBreakerCard.vue -->
 <!--
   直結（商用電源）駆動時の保護遮断器選定結果を表示する専用カード。
   Notice.vue から v-if="driveMode === 'direct'" で差し込む。

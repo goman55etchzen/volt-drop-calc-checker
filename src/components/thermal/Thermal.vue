@@ -1,4 +1,4 @@
-<!-- src/components/Motor/Thermal.vue -->
+<!-- src/components/thermal/Thermal.vue -->
 <template>
   <div class="thermal-card">
     <div class="card-header">

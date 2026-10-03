@@ -1,4 +1,4 @@
-<!-- src/components/Motor/ElbSelectionCard.vue -->
+<!-- src/components/breaker/ElbSelectionCard.vue -->
 <template>
   <div class="category-card">
     <div class="card-header">

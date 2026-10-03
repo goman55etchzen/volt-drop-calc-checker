@@ -1,4 +1,4 @@
-<!-- src/components/Motor/CapacitorInputSection.vue -->
+<!-- src/components/capacitor/CapacitorInputSection.vue -->
 <!-- 進相コンデンサ入力欄。モーターブレーカー選定時のみ入力フォームに切り替わる -->
 <template>
   <div class="cap-input">

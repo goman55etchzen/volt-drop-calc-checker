@@ -1,4 +1,4 @@
-<!-- src/components/selected1.vue -->
+<!-- src/components/irvolt/selected1.vue -->
 <template>
   <div class="selected-container">
     <!-- 1. 電源周波数 (最上部に独立したトグルスイッチ) -->

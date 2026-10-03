@@ -1,4 +1,4 @@
-// capacitor_2.ts
+// capacitor.ts
 
 export interface CapacitorProduct {
   maker: string;

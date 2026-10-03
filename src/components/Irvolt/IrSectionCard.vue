@@ -1,4 +1,4 @@
-<!-- src/components/IrSectionCard.vue -->
+<!-- src/components/irvolt/IrSectionCard.vue -->
 <template>
   <div>
     <!-- 画面右端の中央に固定するスライドトリガーボタン（細長いタブ） -->

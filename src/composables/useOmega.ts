@@ -1,4 +1,4 @@
-// composables/useOmega_2.ts
+// composables/useOmega.ts
 import { computed, Ref } from 'vue';
 import {
   EnvironmentType,

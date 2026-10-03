@@ -1,4 +1,4 @@
-<!-- src/components/Motor/MccbSelectCard.vue -->
+<!-- src/components/breaker/MccbSelectCard.vue -->
 <template>
   <div class="mccb-card">
     <div class="card-header">
