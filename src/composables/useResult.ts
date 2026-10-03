@@ -77,12 +77,13 @@ export function useResult(params: UseResultParams) {
 
   /** 電流オーバー・適合不能判定 */
   const isOverCurrent = computed<boolean>(() => {
-    // 重大エラーがある、または推奨電線が選定できない場合、または過電流警告がある場合に true
     if (hasError.value) return true
-    if (!recommendedWire.value) return true
-    return calculationIssues.value.some((issue) => issue.level === 'error')
+    if (calculationIssues.value.some((issue) => issue.level === 'error')) return true
+    
+    // 適合可能な電線が１つも存在しない場合のみ true（電流オーバー・適合不能）とする
+    const hasOkWire = availableWires.value.some(w => w.isOkForLoad)
+    return !hasOkWire
   })
-
   // 4. 表示用データおよび共通カード用インターフェースを集約して返す
   return {
     // 共通カード用表示データ

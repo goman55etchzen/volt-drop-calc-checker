@@ -78,9 +78,13 @@ export function useReversedResult(params: UseReversedResultParams) {
 
   /** 過電流・エラー判定フラグ */
   const isOverCurrent = computed<boolean>(() => {
-    if (hasError.value || !recommendedWire.value) return true
-    return calculationIssues.value.some((issue) => issue.level === 'error')
-  })
+    if (hasError.value) return true
+    if (calculationIssues.value.some((issue) => issue.level === 'error')) return true
+    
+    // 推奨電線の有無ではなく、「適合可能な電線が１つでもあるか」で判定する
+    const hasOkWire = availableWires.value.some(w => w.isOkForLoad)
+    return !hasOkWire
+  }) // ← ★ ここが欠落していました
 
   // 4. コンポーネントへ返すデータオブジェクト
   return {
