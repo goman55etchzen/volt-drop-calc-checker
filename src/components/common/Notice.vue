@@ -54,7 +54,8 @@
         <div class="tap-hint-bar">🔍 タップして拡大</div>
       </div>
 
-      <!-- 2-3. 推奨進相コンデンサ（タップで拡大） -->
+      <!-- 2-3. 推奨進相コンデンサ（非表示化して長さを短縮） -->
+      <!--
       <div
         v-if="showCapacitor"
         class="clickable-card-wrapper"
@@ -69,6 +70,7 @@
         />
         <div class="tap-hint-bar">🔍 タップして拡大・DB候補試覧</div>
       </div>
+      -->
 
       <!-- 2-4. サーマルリレー選定（タップで拡大） -->
       <div class="clickable-card-wrapper" @click="openModal('thermal')">
@@ -164,7 +166,8 @@
             />
           </div>
 
-          <!-- 5. コンデンサ単体の拡大 -->
+          <!-- 5. コンデンサ単体の拡大（非表示化） -->
+          <!--
           <div v-if="activeModal === 'capacitor'" class="modal-scale-wrapper">
             <CapacitorSectionCard
               :voltage="voltage"
@@ -175,6 +178,7 @@
               @select-candidate="handleSelectCandidate"
             />
           </div>
+          -->
         </div>
       </div>
     </div>
