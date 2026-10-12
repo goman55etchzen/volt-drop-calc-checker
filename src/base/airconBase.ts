@@ -228,6 +228,8 @@ export const WIRE_SIZE_CANDIDATES = [
 ];
 
 // エアコン能力マスタ
+// ※ 20A回路（最大電流20A）において、3条減少係数0.7を考慮しても
+// 許容電流が20A以上を確保できる安全な電線サイズ（2.6mmなど）を推奨に設定
 export const AC_SPECS: AcSpec[] = [
   {
     capacityKw: 2.2,
@@ -268,7 +270,7 @@ export const AC_SPECS: AcSpec[] = [
     maxCurrentA: 20.0,
     breakerAmp: 20,
     breakerPoles: "2P1E",
-    recommendedWireSize: "2.0mm",
+    recommendedWireSize: "2.6mm", // 20A回路の許容電流を確保するため2.6mmへ引き上げ
     cableTypeCode: "vv",
   },
   {
@@ -282,7 +284,7 @@ export const AC_SPECS: AcSpec[] = [
     maxCurrentA: 20.0,
     breakerAmp: 20,
     breakerPoles: "2P1E",
-    recommendedWireSize: "2.0mm",
+    recommendedWireSize: "2.6mm", // 20A回路の許容電流を確保するため2.6mmへ引き上げ
     cableTypeCode: "vv",
   },
   {
@@ -296,7 +298,7 @@ export const AC_SPECS: AcSpec[] = [
     maxCurrentA: 20.0,
     breakerAmp: 20,
     breakerPoles: "2P2E",
-    recommendedWireSize: "2.0mm",
+    recommendedWireSize: "2.6mm", // 20A回路の許容電流を確保するため2.6mmへ引き上げ
     cableTypeCode: "vv",
   },
   {
@@ -310,7 +312,7 @@ export const AC_SPECS: AcSpec[] = [
     maxCurrentA: 20.0,
     breakerAmp: 20,
     breakerPoles: "2P2E",
-    recommendedWireSize: "2.0mm",
+    recommendedWireSize: "2.6mm", // 20A回路の許容電流を確保するため2.6mmへ引き上げ
     cableTypeCode: "vv",
   },
   {
@@ -324,7 +326,7 @@ export const AC_SPECS: AcSpec[] = [
     maxCurrentA: 20.0,
     breakerAmp: 20,
     breakerPoles: "2P2E",
-    recommendedWireSize: "2.0mm",
+    recommendedWireSize: "2.6mm", // 20A回路の許容電流を確保するため2.6mmへ引き上げ
     cableTypeCode: "vv",
   },
   {
@@ -338,7 +340,7 @@ export const AC_SPECS: AcSpec[] = [
     maxCurrentA: 20.0,
     breakerAmp: 20,
     breakerPoles: "2P2E",
-    recommendedWireSize: "2.0mm",
+    recommendedWireSize: "2.6mm", // 20A回路の許容電流を確保するため2.6mmへ引き上げ
     cableTypeCode: "vv",
   },
   {
